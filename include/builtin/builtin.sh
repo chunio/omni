@@ -1,0 +1,239 @@
+#!/bin/bash
+
+# interface : 2.0.0
+# author : zengweitao@gmail.com
+# datetime : 2024/05/20
+# memo : the function call order is not sensitive in the one shell
+
+:<<MARK
+MARK
+
+# ##################################################
+# global variable[START]
+# initialize the associative array（cannot be combined into one line of code）
+# declare -A VARI_GLOBAL
+VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s%3N)
+# [/bin/bash]環境狀態，值：SLAVE/fork（default），MASTER/source
+VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
+VARI_GLOBAL["BUILTIN_OMNI_ROOT_ID"]="a000ac7b2867e2e68319b20d58e8203b.omni"
+# TODO : VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"] >> 緩存配置
+VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="/windows/code/backend/chunio/omni"
+VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
+VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
+# 支持（run mode）：1絕對路徑2相對路徑3符號鏈接($0等于：/usr/local/bin/omni.interface)
+# 僅適用於「source bash」[START]
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+# VARI_GLOBAL["BASH_NAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
+# 僅適用於「source bash」[END]
+# 僅適用於「fork bash」[START]
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "$0")")
+# VARI_GLOBAL["BASH_NAME"]=$(basename "$(readlink -f "$0")")
+# 僅適用於「fork bash」[END]
+VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/cloud"
+VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/runtime"
+# YYYYMMDD.HHMMSS.mmm
+VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | awk '{print strftime("%Y%m%d.%H%M%S", $1/1000) "." substr($1, length($1)-2)}')
+VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace"
+VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo"
+VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.command"
+VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]=""
+VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
+VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
+VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
+# global variable[END]
+# ##################################################
+
+# ##################################################
+# protected function[START]
+function funcProtectedDebugRecover() {
+  trap 'echo "[ ${LINENO} / $(date +%Y-%m-%d\ %H:%M:%S) ] : ${BASH_COMMAND}" >> "${VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]}"' DEBUG
+  return 0
+}
+
+function funcProtectedErrRecover() {
+  # include : 1/exit code，2/return code
+  variMixCode=$1
+  variLine=$2
+  if [[ $variExitCode != ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]} ]]; then
+      tail -n 20 "${VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+      echo "[ error（recover : ERR） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variMixCode" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  fi
+  exit $variExitCode
+}
+
+function funcProtectedExitRecover(){
+  variExitCode=$1
+  variLine=$2
+  echo "[ error（recover : EXIT） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variExitCode"
+  # tail -n 20 ${VARI_GLOBAL["COMAND_URI"]}
+  return 0
+}
+
+# ##################################################
+# interface function[START]
+function funcProtectedConstruct() {
+  # 禁止：於當前環境執行（如：source interface.sh）
+  if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
+      echo "the run mode is prohibited"
+      echo "example : "'${symbolLink}'" | /${VARI_GLOBAL["BASH_NAME"]} | ./${VARI_GLOBAL["BASH_NAME"]} | bash ${VARI_GLOBAL["BASH_NAME"]}"
+      return 1
+  fi
+  mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
+  if [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt 30 ]; then
+      rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"/*
+  fi
+  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "[ TRACE : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  echo "[ TODO : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  return 0
+}
+
+# cloud resource init
+function funcProtectedCloudInit() {
+    return 0
+}
+
+# local environment init
+function funcProtectedLocalInit(){
+    return 0
+}
+
+function funcProtectedDestruct() {
+  variEndTime=$(date +%s%3N)
+  variExecuteTime=$((variEndTime - ${VARI_GLOBAL["BUILTIN_START_TIME"]}))
+  variHour=$((variExecuteTime / 3600000))
+  variMinute=$(((variExecuteTime % 3600000) / 60000))
+  variSecond=$(((variExecuteTime % 60000) / 1000))
+  variMillisecond=$((variExecuteTime % 1000))
+  echo "start : $(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S').$(printf "%03d" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000)))" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "end : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S').$(printf "%03d" $((${variEndTime}%1000)))" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "execute : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  # echo "exit code : ${variExitCode}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  cat "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  return $variExitCode
+}
+
+# --------------------------------------------------
+
+function funcProtectedPullOmniRootPath(){
+    variRootIdUri=$(find / -name "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_ID"]}" -print -quit 2>/dev/null)
+    variOmniRootPath=$(dirname "$variRootIdUri")
+    echo 'omni / root path : '"$variOmniRootPath" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+    echo ${variOmniRootPath}
+}
+
+function funcProtectedCheckRequiredParameter() {
+  variRequiredNum=$1
+  # --------------------------------------------------
+  # call example :
+  # variParameterDescList=("parameter1 desc1" "parameter2 desc2")
+  # funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  # --------------------------------------------------
+  # parameter desc :
+  # variParameterDescList[@] ： 數組引用
+  # ${!2} ： 解除引用
+  # --------------------------------------------------
+  variParameterDescList=("${!2}")
+  variCurrentNum=$3
+  # 檢查結果，值：0失敗，1成功（默認）
+  variCheckLabel=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+  if [[ $variCurrentNum -lt $variRequiredNum ]]; then
+    variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+  fi
+  variParameterExplain=$(printf "%s" ":<<MARK\n")
+  variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
+  for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
+    variParameterExplain+=$(printf "\n%s" "\$$((i+1)) : ${variParameterDescList[$i]}")
+  done
+  variParameterExplain+=$(printf "\n%s\n" "MARK")
+  echo -e "$variParameterExplain" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  if [[ $variCheckLabel == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ]]; then
+      return 1
+  else
+      return 0
+  fi
+}
+
+function funcProtectedCheckOptionParameter() {
+  variRequiredNum=$1
+  # --------------------------------------------------
+  # call example :
+  # variParameterDescList=("parameter1 desc1" "parameter2 desc2")
+  # funcProtectedOptionParameter 2 variParameterDescList[@]
+  # --------------------------------------------------
+  # parameter desc :
+  # variParameterDescList[@] ： 數組引用
+  # ${!2} ： 解除引用
+  # --------------------------------------------------
+  variParameterDescList=("${!2}")
+  # 檢查結果，值：0失敗，1成功（默認）
+  variCheckLabel="option"
+  # 重置至終端默認
+  COLOR_RESET='\033[0m'
+  # 背景綠色，字體黑色
+  COLOR_GREEN_BLACK='\033[42;30m'
+  variParameterExplain=$(printf "%s" ":<<MARK\n")
+  variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
+  for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
+    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
+  done
+  variParameterExplain+=$(printf "\n%s\n" "MARK")
+  echo -e "$variParameterExplain" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  return 0
+}
+
+function funcProtectedPullEncryptEnvi(){
+  # 1 check：the index of the encrypted value must exist in both $VARI_GLOBAL and $VARI_ENCRYPT
+  # 2 return : $VARI_ENCRYPT["index"]
+  variIndex=$1
+  if [[ -z "${VARI_ENCRYPT[${variIndex}]}" ]]; then
+    echo ${VARI_ENCRYPT[${variIndex}]}
+  else
+    echo ${VARI_GLOBAL[${variIndex}]}
+  fi
+  return 0
+}
+
+# $VARI_GLOBAL >> string
+# TODO : to be debugged
+function funcProtectedSerializeVariGlobal() {
+  echo ${VARI_GLOBAL["BUILTIN_START_TIME"]}
+  local variString=""
+  for variIndex in "${!VARI_GLOBAL[@]}"; do
+    local variValue="${VARI_GLOBAL[$variIndex]}"
+    # handle single quote
+    variValue="${variValue//\'/\'\\\'\'}"
+    variString+="${variIndex}='${variValue}';"
+  done
+  echo "${variString}"
+}
+
+# string >> [refresh]$VARI_GLOBAL
+# TODO : to be debugged
+function funcProtectedDeserializeVariGlobal() {
+  local variSerialize="$1"
+  IFS=';'
+  read -ra variArray <<< "$variSerialize"
+  # 遍歷「variArray」,將「每個元素」以等號分割（左邊/下標，右邊/鍵值（且：移除單引號）)
+  for variItem in "${variArray[@]}"; do
+      IFS='=' read -r variIndex variValue <<< "$variItem"
+      VARI_GLOBALE["$variIndex"]="${variValue//\'}"
+      # echo "$variIndex : ${VARI_GLOBALE[$variIndex]}"
+  done
+}
+# protected function[END]
+# ##################################################
+
+# ##################################################
+# public function[START]
+# release to cloud/internet
+function funcPublicReleaseCloud(){
+    echo "archived && upload"
+    return 0
+}
+# public function[END]
+# ##################################################
