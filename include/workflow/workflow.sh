@@ -7,7 +7,9 @@
 MARK
 
 # ##################################################
-if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "SALVE" ]]; then
+if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "MASTER" ]]; then
+  set +e
+else
   # [set -e]：trap >> exit the bash
   # [set +e]：trap >> continue the bash
   # DEBUG : [當前棧段]每一命令執行時觸發

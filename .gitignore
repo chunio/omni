@@ -2,4 +2,13 @@
 cloud/
 runtime/
 vendor/
+ignore/
+.settings/
 encrypt.envi
+.project
+.DS_Store
+.buildpath
+*.log
+*.cache
+*.patch
+!.gitkeep

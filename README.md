@@ -58,7 +58,6 @@ omni
 │       ├── runtime
 │       ├── encrypt.envi
 │       └── unit.sh
-├── a000ac7b2867e2e68319b20d58e8203b.omni
 ├── README.md
 └── .gitignore
 ```

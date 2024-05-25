@@ -7,6 +7,7 @@
 MARK
 
 declare -A VARI_GLOBAL
+VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" || true
@@ -22,7 +23,7 @@ VARI_GLOBAL["SERVICE_NAME"]="php8370"
 
 # ##################################################
 # protected function[START]
-function funcProtectedPHP8370CloudInit() {
+function funcProtected8370CloudInit() {
     rm -f /var/run/yum.pid
     variPackageList=(
       epel-release
@@ -70,10 +71,10 @@ function funcProtectedPHP8370CloudInit() {
       local variCount=0
       while [ $variCount -lt $variRetry ]; do
         if yum install -y "$variEachPackage"; then
-          variCloudInstallResult["$variEachPackage"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
           break
         else
-          variCloudInstallResult["$variEachPackage"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
           ((variCount++))
         fi
       done
@@ -82,15 +83,15 @@ function funcProtectedPHP8370CloudInit() {
     source /opt/rh/devtoolset-9/enable
     package-cleanup --oldkernels --count=1 && yum -y autoremove && yum clean all && rm -rf /var/cache/yum
     # --------------------------------------------------
-    echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    for variEachPackage in "${variCloudInstallResult[@]}"; do
-      echo "$variEachPackage : ${variCloudInstallResult[$variEachPackage]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    for variEachPackage in "${!variCloudInstallResult[@]}"; do
+      echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     done
+    echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     # --------------------------------------------------
     return 0
 }
 
-function funcProtectedPHP8370LocalInit(){
+function funcProtected8370LocalInit(){
     echo 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/openssl/lib/pkgconfig' >> /etc/bashrc
     source /etc/bashrc
     # update libzip[START]
@@ -133,12 +134,12 @@ LDSOCONF
     fi
     # php process user[END]
     # --------------------------------------------------
-    echo "# ${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     # --------------------------------------------------
     return 0
 }
 
-function funcProtectedPHP8370Main(){
+function funcProtected8370Main(){
     local variPart1Button=true
     local variPart2Button=true
     source /etc/bashrc # DEBUG_LABEL
@@ -642,11 +643,11 @@ SYSTEMCTLPHPFPM8370SERVICE
             }
             # custom install[END]
             # --------------------------------------------------
-            for variExtenstionName in "${variExtensionInstallResult[@]}"; do
+            for variExtenstionName in "${!variExtensionInstallResult[@]}"; do
                 if ${VARI_GLOBAL["BIN_NAME"]} -m | grep -q "${variExtenstionName}"; then
-                    echo "${variExtenstionName} : ${VARI_TRUE_LABEL}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+                    echo "${variExtenstionName} : ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
                 else
-                    echo "${variExtenstionName} : ${VARI_FALSE_LABEL}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+                    echo "${variExtenstionName} : ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
                 fi
             done
             # --------------------------------------------------
@@ -697,7 +698,7 @@ SYSTEMCTLPHPFPM8370SERVICE
         }
     fi
     # --------------------------------------------------
-    echo "# ${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     # --------------------------------------------------
     return 0
 }
@@ -706,10 +707,10 @@ SYSTEMCTLPHPFPM8370SERVICE
 
 # ##################################################
 # public function[START]
-function funcPublicEnvironmentInit(){
-  funcProtectedPHP8370CloudInit
-  funcProtectedPHP8370LocalInit
-  funcProtectedPHP8370Main
+function funcPublic8370EnvironmentInit(){
+  funcProtected8370CloudInit
+  funcProtected8370LocalInit
+  funcProtected8370Main
   return 0
 }
 
@@ -727,24 +728,20 @@ function funcPublicRebuildImage(){
   # docker exec -it php8370 /bin/bash
   # docker exec -it php8370 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8370Handler.sh funcPublicBuiltinMain; exec /bin/bash"
   # docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
-  docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") environmentInit"
+  docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit"
   # --------------------------------------------------
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
+  docker ps --filter "name=${variContainerName}"
+  docker images --filter "reference=${variImagePattern}"
   return 0
 }
 
 function funcPublicReleaseImage(){
-    if [ $# -ne 2 ]; then
-      echo "2 parameter is required（$1/container name，$2/image pattern（example：chunio/php:8370））"
-      return 1
-    fi
-  variContainerName=$1;
-  variImagePattern=$2;
-  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
-  echo "docker commit $variContainerId $variImagePattern"
-  docker commit $variContainerId $variImagePattern
+  variParameterDescList=("image pattern（example：chunio/php:8370）")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variImagePattern=${1}
   variRootPath=$(funcPrivatePullRootPath)
   cd $variRootPath/internal/docker
   ./docker.sh releaseImage $variImagePattern

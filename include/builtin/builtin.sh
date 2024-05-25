@@ -12,11 +12,9 @@ MARK
 # global variable[START]
 # initialize the associative array（cannot be combined into one line of code）
 # declare -A VARI_GLOBAL
+# if [[ ${#VARI_GLOBAL[@]} -eq 0 ]]; then
 VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s%3N)
 # [/bin/bash]環境狀態，值：SLAVE/fork（default），MASTER/source
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
-VARI_GLOBAL["BUILTIN_OMNI_ROOT_ID"]="a000ac7b2867e2e68319b20d58e8203b.omni"
-# TODO : VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"] >> 緩存配置
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="/windows/code/backend/chunio/omni"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
@@ -32,7 +30,8 @@ VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
 VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/cloud"
 VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/runtime"
 # YYYYMMDD.HHMMSS.mmm
-VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | awk '{print strftime("%Y%m%d.%H%M%S", $1/1000) "." substr($1, length($1)-2)}')
+# VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | awk '{print strftime("%Y%m%d.%H%M%S", $1/1000) "." substr($1, length($1)-2)}')
+VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | awk 'BEGIN{ TZ="Asia/Shanghai" } {print strftime("%Y%m%d.%H%M%S", $1/1000) "." substr($1, length($1)-2)}')
 VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace"
 VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo"
 VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.command"
@@ -40,6 +39,7 @@ VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]=""
 VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
 VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
+# fi
 # global variable[END]
 # ##################################################
 
@@ -84,7 +84,7 @@ function funcProtectedConstruct() {
   fi
   echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   echo "[ TRACE : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  # echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   echo "[ TODO : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   return 0
 }
@@ -106,31 +106,27 @@ function funcProtectedDestruct() {
   variMinute=$(((variExecuteTime % 3600000) / 60000))
   variSecond=$(((variExecuteTime % 60000) / 1000))
   variMillisecond=$((variExecuteTime % 1000))
-  echo "start : $(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S').$(printf "%03d" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000)))" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "end : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S').$(printf "%03d" $((${variEndTime}%1000)))" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "execute : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  # funcProtectedTrace ${VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]}
+
   # echo "exit code : ${variExitCode}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  funcProtectedTrace "--------------------------------------------------"
   cat "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  funcProtectedTodo "--------------------------------------------------"
   cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
-  return $variExitCode
+  printf "start   : %s.%03d\n" "$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000))
+  printf "end     : %s.%03d\n" "$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${variEndTime}%1000))
+  printf "execute : %d hour %d minute %d.%03d second\n" ${variHour} ${variMinute} ${variSecond} ${variMillisecond}
+  echo "--------------------------------------------------"
+  return 0
 }
 
 # --------------------------------------------------
-
-function funcProtectedPullOmniRootPath(){
-    variRootIdUri=$(find / -name "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_ID"]}" -print -quit 2>/dev/null)
-    variOmniRootPath=$(dirname "$variRootIdUri")
-    echo 'omni / root path : '"$variOmniRootPath" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-    echo ${variOmniRootPath}
-}
 
 function funcProtectedCheckRequiredParameter() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
-  # variParameterDescList=("parameter1 desc1" "parameter2 desc2")
+  # local variParameterDescList=("parameter1 desc1" "parameter2 desc2")
   # funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   # --------------------------------------------------
   # parameter desc :
@@ -162,7 +158,7 @@ function funcProtectedCheckOptionParameter() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
-  # variParameterDescList=("parameter1 desc1" "parameter2 desc2")
+  # local variParameterDescList=("parameter1 desc1" "parameter2 desc2")
   # funcProtectedOptionParameter 2 variParameterDescList[@]
   # --------------------------------------------------
   # parameter desc :
@@ -225,6 +221,33 @@ function funcProtectedDeserializeVariGlobal() {
       # echo "$variIndex : ${VARI_GLOBALE[$variIndex]}"
   done
 }
+
+# only applicable for adding a single line record
+function funcProtectedTrace(){
+  echo "${1}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  return 0
+}
+
+# only applicable for adding a single line record
+function funcProtectedTodo(){
+  echo "${1}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  return 0
+}
+
+function funcProtectedUpdateVariGlobalBuiltinValue() {
+  local variIndex=${1}
+  local variValue=${2}
+  if [ ${variIndex} == "BUILTIN_OMNI_ROOT_PATH" ]; then
+    variOmniRootPath=${variValue}
+  else
+    variOmniRootPath=${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}
+  fi
+  local variBuiltinUri="${variOmniRootPath}/include/builtin/builtin.sh"
+  local variNewRecord='VARI_GLOBAL["'${variIndex}'"]="'${variValue}'"'
+  sed -i "/^VARI_GLOBAL\[\"BUILTIN_OMNI_ROOT_PATH\"\]=/c$variNewRecord" ${variBuiltinUri}
+  return 0
+}
+
 # protected function[END]
 # ##################################################
 
@@ -235,5 +258,6 @@ function funcPublicReleaseCloud(){
     echo "archived && upload"
     return 0
 }
+
 # public function[END]
 # ##################################################
