@@ -79,13 +79,18 @@ function funcProtectedConstruct() {
       return 1
   fi
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
-  if [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt 30 ]; then
-      rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"/*
+  if [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt 10 ]; then
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*
+    #  variKeepList=("$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]})" "$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]})")
+    #  for variTempFile in ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*; do
+    #    if [[ ! " ${variKeepList[*]} " =~ " $variTempFile " ]]; then
+    #      rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variTempFile}
+    #    fi
+    #  done
   fi
-  echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  echo "[ TRACE : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  # echo "--------------------------------------------------" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
-  echo "[ TODO : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  touch ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]} ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+  variStartTimeFormat="$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
+  funcProtectedTrace ":<<${variStartTimeFormat}"
   return 0
 }
 
@@ -106,16 +111,28 @@ function funcProtectedDestruct() {
   variMinute=$(((variExecuteTime % 3600000) / 60000))
   variSecond=$(((variExecuteTime % 60000) / 1000))
   variMillisecond=$((variExecuteTime % 1000))
-  # funcProtectedTrace ${VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]}
+  variStartTimeFormat="$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
+  variEndTimeFormat="$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
+  funcProtectedTrace "${variEndTimeFormat}"
+  echo "--------------------------------------------------"
+  echo "[ trace : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace ]"
+  if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" ]]; then
+    cat "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  fi
+  echo "--------------------------------------------------"
+  if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" ]]; then
+    echo "[ todo : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]"
+    cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  else
+    echo "[ todo : no action is required ]"
+  fi
+  echo "--------------------------------------------------"
+  # printf "start   : %s.%03d\n" "$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000))
+  # printf "end     : %s.%03d\n" "$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${variEndTime}%1000))
+  # echo "start : $(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
+  # echo "end   : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
 
-  # echo "exit code : ${variExitCode}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  funcProtectedTrace "--------------------------------------------------"
-  cat "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  funcProtectedTodo "--------------------------------------------------"
-  cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" # && rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
-  printf "start   : %s.%03d\n" "$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000))
-  printf "end     : %s.%03d\n" "$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${variEndTime}%1000))
-  printf "execute : %d hour %d minute %d.%03d second\n" ${variHour} ${variMinute} ${variSecond} ${variMillisecond}
+  echo "[ duration : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second ]"
   echo "--------------------------------------------------"
   return 0
 }
@@ -140,13 +157,13 @@ function funcProtectedCheckRequiredParameter() {
   if [[ $variCurrentNum -lt $variRequiredNum ]]; then
     variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
   fi
-  variParameterExplain=$(printf "%s" ":<<MARK\n")
+  variParameterExplain=$(printf "%s" ":<<PARAMETER\n")
   variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "\$$((i+1)) : ${variParameterDescList[$i]}")
   done
-  variParameterExplain+=$(printf "\n%s\n" "MARK")
-  echo -e "$variParameterExplain" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
+  echo -e "$variParameterExplain" # >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   if [[ $variCheckLabel == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ]]; then
       return 1
   else
@@ -172,13 +189,13 @@ function funcProtectedCheckOptionParameter() {
   COLOR_RESET='\033[0m'
   # 背景綠色，字體黑色
   COLOR_GREEN_BLACK='\033[42;30m'
-  variParameterExplain=$(printf "%s" ":<<MARK\n")
+  variParameterExplain=$(printf "%s" ":<<PARAMETER\n")
   variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done
-  variParameterExplain+=$(printf "\n%s\n" "MARK")
-  echo -e "$variParameterExplain" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
+  echo -e "$variParameterExplain" # >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   return 0
 }
 

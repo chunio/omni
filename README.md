@@ -3,7 +3,7 @@
 ```
 [root@localhost /]# git clone https://github.com/chunio/omni.git
 [root@localhost /]# ./omni/init/system/system.sh init && source /etc/bashrc
-[root@localhost /]# omni.system init
+[root@localhost /]# omni.system version
 ```
 #### New Module
 ```

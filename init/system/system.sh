@@ -22,7 +22,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # global variable[START]
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
 VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
-# the file executed in the current bash（default：fork bash）
+VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
 # global variable[END]
 # ##################################################
 
@@ -70,6 +70,7 @@ function funcProtectedOptionInit(){
   done
   # remove leading and trailing whitespace/移除首末空格
   variIncludeOptionList=$(echo ${variIncludeOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
+  echo "[ ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin.sh -> ${variIncludeOptionList} ]" >> ${VARI_GLOBAL["VERSION_URI"]}
   echo "[ ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin.sh -> ${variIncludeOptionList} ]" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   # inherit the public functions from builtin.sh[END]
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
@@ -87,7 +88,11 @@ function funcProtectedOptionInit(){
     done
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    echo "$variEachUnitCommand -> $variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    # update init.version[START]
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="master" || variEachBashEvni="slave"
+    echo "$variEachUnitCommand / ${variEachBashEvni} -> $variEachOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
+    echo "$variEachUnitCommand / ${variEachBashEvni} -> $variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    # update init.version[END]
     funcProtectedComplete "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
   done
   # 「source /usr/share/bash-completion/bash_completion」成功返回：exit 1（待理解？）
@@ -130,6 +135,7 @@ function funcPublicInit(){
   local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   variRefreshCache=${1:-0}
+  echo '' > ${VARI_GLOBAL["VERSION_URI"]}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
     variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
@@ -153,6 +159,39 @@ function funcPublicInit(){
   # pull *.sh list[END]
   funcProtectedCommandInit "${variAbleUnitFileURIList}"
   funcProtectedOptionInit "${variAbleUnitFileURIList}"
+  return 0
+}
+
+function funcPublicArchiveUnit(){
+  local variParameterDescList=("unit name（limited to the ./omni/module/*）" "save to [ the path ]")
+  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  variSaveToThePath=${2}
+  variArchiveCommand=omni.${variUnitName}
+  # [ ${variSaveToThePath} == "/" ] && variSaveToThePath=""
+  variArchivePath=${variSaveToThePath}/${variArchiveCommand}
+  rm -rf ${variArchivePath} ${variSaveToThePath}/${variArchiveCommand}.tgz
+  mkdir -p ${variArchivePath}/module
+  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,include,init} ${variArchivePath}
+  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/module/${variUnitName} ${variArchivePath}/module
+  # flush the useless data[START]
+  find ${variArchivePath} -type f -name "encrypt.envi" -exec truncate -s 0 {} \;
+  variRuntimePathList=$(find ${variArchivePath} -type d -name "runtime")
+  for variEachRuntimePath in ${variRuntimePathList}; do
+    rm -rf "${variEachRuntimePath:?}"/*
+  done
+  # flush the useless data[END]
+  echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
+  echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
+  tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
+  rm -rf ${variSaveToThePath}/${variArchiveCommand}
+  return 0
+}
+
+function funcPublicVersion(){
+  cat ${VARI_GLOBAL["VERSION_URI"]} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 # public function[END]
