@@ -454,7 +454,7 @@ slowlog = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/php-fpm-slow.log
 PHPFPMCONF
         # --------------------------------------------------
         # /lib/systemd/system/php-fpm-8370.service（模板官方/8370：/usr/local/src/php-8.3.7/sapi/fpm/php-fpm.service）
-cat <<'SYSTEMCTLPHPFPM8370SERVICE' > /lib/systemd/system/${VARI_GLOBAL["${VARI_SERVICE_NAME}"]}.service
+cat <<'SYSTEMCTLPHPFPM8370SERVICE' > /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
 [Unit]
 Description=The PHP FastCGI Process Manager
 After=network.target
@@ -478,10 +478,10 @@ RestrictNamespaces=true
 [Install]
 WantedBy=multi-user.target
 SYSTEMCTLPHPFPM8370SERVICE
-        chmod 745 /lib/systemd/system/${VARI_GLOBAL["${VARI_SERVICE_NAME}"]}.service
-        systemctl enable ${VARI_GLOBAL["${VARI_SERVICE_NAME}"]}.service
-        systemctl restart ${VARI_GLOBAL["${VARI_SERVICE_NAME}"]}.service
-        systemctl status ${VARI_GLOBAL["${VARI_SERVICE_NAME}"]}.service
+        chmod 745 /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
+        systemctl enable ${VARI_GLOBAL["SERVICE_NAME"]}.service
+        systemctl restart ${VARI_GLOBAL["SERVICE_NAME"]}.service
+        systemctl status ${VARI_GLOBAL["SERVICE_NAME"]}.service
         ln -sf /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php /usr/local/bin/php
         ln -sf /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php /usr/local/bin/${VARI_GLOBAL["BIN_NAME"]}
       }
@@ -492,7 +492,7 @@ SYSTEMCTLPHPFPM8370SERVICE
           # --------------------------------------------------
           # standard install[START]
           echo ';common external extension' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
-          mkdir -p /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}
+          mkdir -p /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
           variExtensionList=(
               # example : "extensionPackageFullName extensionPackageShortName extionsionName"
               # [hyperf3.1]導致衝突
@@ -523,8 +523,8 @@ SYSTEMCTLPHPFPM8370SERVICE
                   *)
               ;;
               esac
-                  rm -rf /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/${variEachExtensionInfo[1]}
-                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf ${variEachExtensionInfo[0]} -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/${variEachExtensionInfo[1]}
+                  rm -rf /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/${variEachExtensionInfo[1]}
+                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf ${variEachExtensionInfo[0]} -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/${variEachExtensionInfo[1]}
                   /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                   ./configure \
                   --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
@@ -535,7 +535,7 @@ SYSTEMCTLPHPFPM8370SERVICE
           # standard install[END]
           # custom install[START]
           {
-            mkdir -p /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}
+            mkdir -p /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
             echo ';custom external extension' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             {
                 # amqp[start]
@@ -552,7 +552,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 # echo '/usr/local/rabbitmq-c/lib64/' >> /etc/ld.so.conf
                 # ldconfig -v
                 ln -sf /usr/local/rabbitmq-c/lib64/ /usr/local/rabbitmq-c/lib
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf amqp-2.1.2.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/amqp-2.1.2
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf amqp-2.1.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/amqp-2.1.2
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
@@ -564,7 +564,7 @@ SYSTEMCTLPHPFPM8370SERVICE
             {
                 # yaml[START]
                 variExtensionInstallResult["yaml"]="yaml"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf yaml-2.2.3.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/yaml-2.2.3
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf yaml-2.2.3.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/yaml-2.2.3
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
@@ -575,7 +575,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 # geoip[START]
                 # ip database file : /usr/share/GeoIP
                 variExtensionInstallResult["geoip"]="geoip"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf geoip-1.1.1.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/geoip-1.1.1
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf geoip-1.1.1.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/geoip-1.1.1
                 # PHP7+，安全機制已調整，TSRMLS_CC && TSRMLS_DC不再需要
                 sed -i 's/ TSRMLS_CC//g' geoip.c
                 sed -i 's/ TSRMLS_DC//g' geoip.c
@@ -588,7 +588,7 @@ SYSTEMCTLPHPFPM8370SERVICE
             {
                 # swoole[START]
                 variExtensionInstallResult["swoole"]="swoole"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.2.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.2
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.2
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
@@ -602,7 +602,7 @@ SYSTEMCTLPHPFPM8370SERVICE
             {
                 # inotify[START]
                 variExtensionInstallResult["inotify"]="inotify"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
@@ -613,7 +613,7 @@ SYSTEMCTLPHPFPM8370SERVICE
             {
                 # xdebug[START]
                 variExtensionInstallResult["xdebug"]="xdebug"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf xdebug-3.3.2.tgz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/xdebug-3.3.2
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf xdebug-3.3.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/xdebug-3.3.2
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
@@ -626,9 +626,9 @@ SYSTEMCTLPHPFPM8370SERVICE
                 variExtensionInstallResult["sodium"]="sodium"
                 # 安裝依賴:libsodium
                 # https://download.libsodium.org/libsodium/releases
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libsodium-1.0.18-stable.tar.gz -C /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}
-                mv /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
-                cd /usr/local/src/PHPExtension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libsodium-1.0.18-stable.tar.gz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
+                mv /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
+                cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
                 ./configure --prefix=/usr/local
                 make -j8 && make install
                 # ldconfig
@@ -702,6 +702,11 @@ SYSTEMCTLPHPFPM8370SERVICE
     # --------------------------------------------------
     return 0
 }
+
+function funcProtected8370Destruct(){
+  rm -rf /usr/local/src/php-8.3.7 /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
+  return 0
+}
 # protected function[END]
 # ##################################################
 
@@ -711,12 +716,13 @@ function funcPublic8370EnvironmentInit(){
   funcProtected8370CloudInit
   funcProtected8370LocalInit
   funcProtected8370Main
+  funcProtected8370Destruct
   return 0
 }
 
 function funcPublicRebuildImage(){
   # 構建鏡像[START]
-  variParameterDescList=("image pattern（example：chunio/php:8370）")
+  variParameterDescList=("image pattern（example ：chunio/php:8370）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=$1
   variContainerName="php8370environment";
@@ -728,13 +734,14 @@ function funcPublicRebuildImage(){
   # docker exec -it php8370 /bin/bash
   # docker exec -it php8370 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8370Handler.sh funcPublicBuiltinMain; exec /bin/bash"
   # docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
-  docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit"
-  # --------------------------------------------------
+  docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit;"
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
   docker ps --filter "name=${variContainerName}"
   docker images --filter "reference=${variImagePattern}"
+  echo "${FUNCNAME} ${VARI_GLOBAL["SUCCESS_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "docker exec -it $variContainerName /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 
@@ -742,9 +749,7 @@ function funcPublicReleaseImage(){
   variParameterDescList=("image pattern（example：chunio/php:8370）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1}
-  variRootPath=$(funcPrivatePullRootPath)
-  cd $variRootPath/internal/docker
-  ./docker.sh releaseImage $variImagePattern
+  omni.docker releaseImage $variImagePattern
   return 0
 }
 

@@ -4,6 +4,8 @@
 # datetime : 2024/05/23
 
 :<<MARK
+/etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶）
+/etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
 MARK
 
 # if ! declare -p VARI_GLOBAL &>/dev/null; then
@@ -28,6 +30,13 @@ VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.ver
 
 # ##################################################
 # protected function[START]
+function funcProtectedCloudInit() {
+  if ! which lsof > /dev/null; then
+    yum install -y lsof
+  fi
+  return 0
+}
+
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
   local variEtcBashrcReloadStatus=0
@@ -126,6 +135,40 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
   chmod +x /etc/bash_completion.d/${variCommand}
   return 0
 }
+
+function funcProtectedNetwork() {
+  IPAddress=$1
+  echo 'TYPE=Ethernet
+NAME=ens33
+DEVICE=ens33
+DEFROUTE=yes
+BOOTPROTO=none
+BROWSER_ONLY=no
+PROXY_METHOD=none
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_PRIVACY=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+ONBOOT=yes
+PREFIX=24
+IPADDR='${IPAddress}'
+NETMASK=255.0.0.0
+GATEWAY=10.0.0.254
+DNS1=114.114.114.114
+UUID=ff0191ec-6709-4b23-93a2-9060de6d3f87' > /etc/sysconfig/network-scripts/ifcfg-eth0
+  echo 'search localhost
+nameserver 114.114.114.114' > /etc/resolv.conf
+  echo 'export http_proxy="http://192.168.255.1:10809"
+export https_proxy="http://192.168.255.1:10809"' >> /etc/profile
+  systemctl restart network.service
+}
+
+function funcProtectedEchoGreen(){
+  echo -e "\033[32m$1\033[0m"
+}
 # protected function[END]
 # ##################################################
 
@@ -192,6 +235,51 @@ function funcPublicArchiveUnit(){
 
 function funcPublicVersion(){
   cat ${VARI_GLOBAL["VERSION_URI"]} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  return 0
+}
+
+function funcPublicNewUnit(){
+  local variParameterDescList=("unit name")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
+    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    return 1
+  fi
+  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
+  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
+  return 0
+}
+
+function funcPublicShowPort(){
+  local variParameterDescList=("port")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variPort=${1}
+  variExpectAction=${2:-"cancel"}
+  variProcessIdList=$(lsof -i :${variPort} -t)
+  if [ -z "$variProcessIdList" ]; then
+    funcProtectedEchoGreen "${variPort} is not being listened to"
+  else
+    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
+    netstat -lutnp | grep ":${variPort}"
+    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
+    lsof -i :${variPort}
+    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
+    lsof -i :${variPort} -t | xargs -r ps -fp
+    if [ ${variExpectAction} == "confirm" ];then
+      variInput="confirm"
+    else
+      read -p "Do you want to release the port（$variPort） ? (type 'confirm' to release): " variInput
+    fi
+    if [[ "$variInput" == "confirm" ]]; then
+      for eachProcessId in ${variProcessIdList}
+      do
+          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
+          /usr/bin/kill -9 $eachProcessId
+          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
+      done
+    fi
+  fi
   return 0
 }
 # public function[END]

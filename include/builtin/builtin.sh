@@ -39,6 +39,8 @@ VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]=""
 VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
 VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
+# 「VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0」表示不限
+VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=10
 # fi
 # global variable[END]
 # ##################################################
@@ -52,19 +54,21 @@ function funcProtectedDebugRecover() {
 
 function funcProtectedErrRecover() {
   # include : 1/exit code，2/return code
-  variMixCode=$1
+  variCode=$1
   variLine=$2
-  if [[ $variExitCode != ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]} ]]; then
-      tail -n 20 "${VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-      echo "[ error（recover : ERR） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variMixCode" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  if [ ${variCode} != 0 ] && [ ${variCode} != ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]} ]; then
+      # tail -n 20 "${VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+      echo "[ error（recover : ERR） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variCode" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   fi
-  exit $variExitCode
+  return 0
 }
 
 function funcProtectedExitRecover(){
-  variExitCode=$1
+  variCode=$1
   variLine=$2
-  echo "[ error（recover : EXIT） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variExitCode"
+  if [ ${variCode} != 0 ] && [ ${variCode} != ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]} ]; then
+    echo "[ error（recover : EXIT） / $(date '+%Y-%m-%d %H:%M:%S') ] line : $variLine / exit code : $variCode"
+  fi
   # tail -n 20 ${VARI_GLOBAL["COMAND_URI"]}
   return 0
 }
@@ -79,7 +83,7 @@ function funcProtectedConstruct() {
       return 1
   fi
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
-  if [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt 10 ]; then
+  if [ ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} != 0 ] && [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} ]; then
     rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*
     #  variKeepList=("$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]})" "$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]})")
     #  for variTempFile in ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*; do
@@ -119,6 +123,7 @@ function funcProtectedDestruct() {
   if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" ]]; then
     cat "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   fi
+  rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   echo "--------------------------------------------------"
   if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" ]]; then
     echo "[ todo : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]"
@@ -126,12 +131,12 @@ function funcProtectedDestruct() {
   else
     echo "[ todo : no action is required ]"
   fi
+  rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   echo "--------------------------------------------------"
   # printf "start   : %s.%03d\n" "$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000))
   # printf "end     : %s.%03d\n" "$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${variEndTime}%1000))
   # echo "start : $(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
   # echo "end   : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
-
   echo "[ duration : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second ]"
   echo "--------------------------------------------------"
   return 0
@@ -154,13 +159,17 @@ function funcProtectedCheckRequiredParameter() {
   variCurrentNum=$3
   # 檢查結果，值：0失敗，1成功（默認）
   variCheckLabel=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+  # 重置至終端默認
+  COLOR_RESET='\033[0m'
+  # 背景綠色，字體黑色
+  COLOR_GREEN_BLACK='\033[42;30m'
   if [[ $variCurrentNum -lt $variRequiredNum ]]; then
     variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
   fi
-  variParameterExplain=$(printf "%s" ":<<PARAMETER\n")
-  variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
+  variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
+    variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is/are required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
-    variParameterExplain+=$(printf "\n%s" "\$$((i+1)) : ${variParameterDescList[$i]}")
+    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
   echo -e "$variParameterExplain" # >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -176,7 +185,7 @@ function funcProtectedCheckOptionParameter() {
   # --------------------------------------------------
   # call example :
   # local variParameterDescList=("parameter1 desc1" "parameter2 desc2")
-  # funcProtectedOptionParameter 2 variParameterDescList[@]
+  # funcProtectedCheckOptionParameter 2 variParameterDescList[@]
   # --------------------------------------------------
   # parameter desc :
   # variParameterDescList[@] ： 數組引用
@@ -189,8 +198,8 @@ function funcProtectedCheckOptionParameter() {
   COLOR_RESET='\033[0m'
   # 背景綠色，字體黑色
   COLOR_GREEN_BLACK='\033[42;30m'
-  variParameterExplain=$(printf "%s" ":<<PARAMETER\n")
-  variParameterExplain+=$(printf "%s\n" "[ $variCheckLabel ] $variRequiredNum parameter(s) is/are required :")
+  variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
+  variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is/are required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done
@@ -204,9 +213,9 @@ function funcProtectedPullEncryptEnvi(){
   # 2 return : $VARI_ENCRYPT["index"]
   variIndex=$1
   if [[ -z "${VARI_ENCRYPT[${variIndex}]}" ]]; then
-    echo ${VARI_ENCRYPT[${variIndex}]}
-  else
     echo ${VARI_GLOBAL[${variIndex}]}
+  else
+    echo ${VARI_ENCRYPT[${variIndex}]}
   fi
   return 0
 }
@@ -272,8 +281,11 @@ function funcProtectedUpdateVariGlobalBuiltinValue() {
 # public function[START]
 # release to cloud/internet
 function funcPublicReleaseCloud(){
-    echo "archived && upload"
-    return 0
+  variUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}
+  tar -czf /${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz ./cloud
+  ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/common/qiniu/qiniu.sh upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
+  return 0
 }
 
 # public function[END]

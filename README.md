@@ -1,17 +1,17 @@
-## Omni
-#### Installation
+# Omni
+## Installation
 ```
 [root@localhost /]# git clone https://github.com/chunio/omni.git
 [root@localhost /]# ./omni/init/system/system.sh init && source /etc/bashrc
 [root@localhost /]# omni.system version
 ```
-#### New Module
+## New Unit
 ```
-1[root@localhost /]# cp -rf ./omni/init/template ./omni/module/example
-2[root@localhost /]# mv ./omni/module/example/template.sh ./omni/module/example/example.sh
-3[root@localhost /]# vim ./omni/module/example/example.sh
+[root@localhost /]# omni.system newUnit example
+[root@localhost /]# # [unit]公共函數僅適用於外部調用，並且禁止內部調用
 ```
-#### Directory Structure
+
+## Directory Structure
 ```
 omni
 ├── common
@@ -62,8 +62,10 @@ omni
 └── .gitignore
 ```
 
-#### Common Symbol
+## Common Symbol
 ```
 「」
 ```
+
+
 

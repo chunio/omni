@@ -28,8 +28,9 @@ VARI_GLOBAL["DOCKER_PASSWORD"]=""
 # ##################################################
 # public function[START]
 function funcPublicReleaseImage(){
-  variParameterDescList=("1 parameter is required（$/image pattern（example : chunio/php:8370））")
+  variParameterDescList=("image pattern（example : chunio/php:8370）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variImagePattern=${1}
   variDockerUsername=$(funcProtectedPullEncryptEnvi "DOCKER_USERNAME")
   variDockerPassword=$(funcProtectedPullEncryptEnvi "DOCKER_PASSWORD")
   expect << EOF

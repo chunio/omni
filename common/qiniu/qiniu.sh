@@ -25,21 +25,6 @@ VARI_GLOBAL["QINIU_BUCKET_NAME"]=""
 VARI_GLOBAL["QINIU_BUCKET_DIRECTORY"]=""
 # example : VARI_GLOBAL["TODO_UPLOAD_LIST"]="example1.tgz example2.tgz"
 VARI_GLOBAL["TODO_UPLOAD_LIST"]=""
-
-
-VARIABLE_QINIU_ACCOUNT="zengweitao@msn.com"
-VARIABLE_QINIU_ACCESS_KEY="BqJfB_Wfr80at2T2KI7WdeCBUmPQk-EN8K2Y4htd"
-VARIABLE_QINIU_SECRET_KEY="U6c-G2wffEHy3n47bkguH92g1-Kj14GQ4HNQATrl"
-VARIABLE_QINIU_DOWNLOAD_DOMAIN="http://cloud.baichuan.wiki"
-# North America / Los Angeles
-VARIABLE_QINIU_BUCKET_NAME="zengweitao"
-# South China / Guangdong
-# QINIU_BUCKET_NAME="chunio"
-VARIABLE_QINIU_BUCKET_DIRECTORY="common"
-VARIABLE_TODO_UPLOAD_LIST=(
-  # "example1.tgz"
-  # "example2.tgz"
-)
 # global variable[END]
 # ##################################################
 
@@ -62,33 +47,21 @@ function funcProtectedCloudInit() {
 # ##################################################
 # public function[START]
 function funcPublicUpload(){
-  variParameterDescList=("--")
+  variParameterDescList=("the uri of the file to be uploaded")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variableTodoUploadFile=$1;
+  variTodoUploadFileUri=${1};
   # --------------------------------------------------
   variQiniuAccount=$(funcProtectedPullEncryptEnvi "QINIU_ACCOUNT")
   variQiniuAccessKey=$(funcProtectedPullEncryptEnvi "QINIU_ACCESS_KEY")
   variQiniuSecretKey=$(funcProtectedPullEncryptEnvi "QINIU_SECRET_KEY")
   variQiniuBucketName=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_NAME")
   variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
+  echo 'variQiniuBucketDirectory: ' $variQiniuBucketDirectory
   # --------------------------------------------------
   qshell account ${variQiniuAccessKey} ${variQiniuSecretKey} ${variQiniuAccount} &> /dev/null
-  if [ -n "$variableTodoUploadFile" ];then
-    # [優先等級1]存在參數時，則上傳目標文件
-    qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$variableTodoUploadFile ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/$variableTodoUploadFile
-  elif [ -z ${VARI_GLOBAL["TODO_UPLOAD_LIST"]} ];then
-    # [優先等級2]TODO_UPLOAD_LIST=(file1,file2,...)時，則上傳file1,file2,...
-    for variEachTodoUploadFile in ${VARI_GLOBAL["TODO_UPLOAD_LIST"]}; do
-        qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$variEachTodoUploadFile ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/$variEachTodoUploadFile
-        rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/${variEachTodoUploadFile}
-    done
-  else
-    # [優先等級3]TODO_UPLOAD_LIST=()時，則上傳static/{$all}
-    for variEachTodoUploadFile in "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}"/*
-    do
-        qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/${variEachTodoUploadFile} ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/${variEachTodoUploadFile}
-        rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/${variEachTodoUploadFile}
-    done
+  if [ -n "${variTodoUploadFileUri}" ];then
+    echo "qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri"
+    qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri
   fi
   return 0
 }

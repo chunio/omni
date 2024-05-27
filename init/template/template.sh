@@ -15,6 +15,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.s
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.sh"
 
 # ##################################################
+# reset builtin variable[START]
+
+# reset builtin variable[END]
+# ##################################################
+
+# ##################################################
 # global variable[START]
 
 # global variable[END]
