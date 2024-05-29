@@ -7,12 +7,18 @@
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" || true
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.sh"
+
+# ##################################################
+# reset builtin variable[START]
+
+# reset builtin variable[END]
+# ##################################################
 
 # ##################################################
 # global variable[START]
@@ -28,16 +34,11 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 
 # ##################################################
 # public function[START]
-function funcPublicUnicorn(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-  pwd && du -sh && ls -alh
-  return 0
-}
+function funcPublicStart(){
+  echo "cd /windows/code/backend/chunio/account/backend && php bin/swoft http:start"
+	cd /windows/code/backend/chunio/account/backend && php bin/swoft http:start
+	return 0
 
-function funcPublicHyperf(){
-  cd /windows/code/backend/haohaiyou/gopath/src/hyperf
-  pwd && du -sh && ls -alh
-  return 0
 }
 # public function[END]
 # ##################################################

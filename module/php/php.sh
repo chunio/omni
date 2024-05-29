@@ -4,6 +4,8 @@
 # datetime : 2024/05/20
 
 :<<MARK
+擴展列表	php -m
+擴展詳情	php --ri {$extensionName}
 MARK
 
 declare -A VARI_GLOBAL
@@ -18,6 +20,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # global variable[START]
 VARI_GLOBAL["BIN_NAME"]="php8370"
 VARI_GLOBAL["SERVICE_NAME"]="php8370"
+VARI_GLOBAL["CONTAINER_NAME"]="php8370environment"
 # global variable[END]
 # ##################################################
 
@@ -93,6 +96,7 @@ function funcProtected8370CloudInit() {
 
 function funcProtected8370LocalInit(){
     echo 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/openssl/lib/pkgconfig' >> /etc/bashrc
+    echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib' >> /etc/bashrc
     source /etc/bashrc
     # update libzip[START]
     rm -rf /usr/local/src/libzip-1.8.0
@@ -162,7 +166,8 @@ function funcProtected8370Main(){
         --with-config-file-path=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc \
         --with-mysql-sock=/usr/local/mysql/runtime/mysql.sock \
         --with-mhash \
-        --with-openssl \
+        --with-openssl=/usr/local/openssl \
+        --with-openssl-dir=/usr/local/openssl \
         --with-mysql=shared,mysqlnd \
         --with-mysqli=shared,mysqlnd \
         --with-pdo-mysql=shared,mysqlnd \
@@ -191,7 +196,6 @@ function funcProtected8370Main(){
         --enable-mbregex \
         --enable-sockets \
         --enable-session \
-        --enable-opcache \
         --enable-mbstring \
         --enable-calendar \
         --enable-inline-optimization \
@@ -207,9 +211,9 @@ function funcProtected8370Main(){
         #-----
         touch /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
         chmod 777 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
-        #cp /usr/local/php8370/etc/php-fpm.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.conf
-        #cp /usr/local/php8370/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.d/www.conf
-        #cp /usr/local/src/php-8.3.70/php.ini-production /usr/local/src/php-8.3.70/etc/php.ini
+        # cp /usr/local/php8370/etc/php-fpm.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.conf
+        # cp /usr/local/php8370/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.d/www.conf
+        # cp /usr/local/src/php-8.3.70/php.ini-production /usr/local/src/php-8.3.70/etc/php.ini
         # --------------------------------------------------
         # /usr/local/php8370/etc/php.ini
   cat <<PHPINI > /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
@@ -393,21 +397,6 @@ ldap.max_links = -1
 ;xdebug.remote_handler = "dbgp"
 ;xdebug.remote_log = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
 ;xdebug.idekey= PHPSTORM
-[opcache]
-;opcache.enable=1將導致代碼延時更新（即：存在緩存）
-opcache.enable = 0
-opcache.enable_cli = 0
-opcache.huge_code_pages = 0
-opcache.file_cache = /tmp
-;##################################################
-;推薦設置（未驗證）
-opcache.memory_consumption = 128
-opcache.interned_strings_buffer = 8
-opcache.max_accelerated_files = 4000
-;opcache.revalidate_freq（文件變更的檢測頻率（default:2，unit:second））
-opcache.revalidate_freq = 60
-opcache.fast_shutdown = 1
-;##################################################
 [xhprof]
 ;xhprof.output_dir = "/windows/LocalBranch/37/quantum/mobquantum.37.com.cn/wwwroot/XhprofTrace"
 [curl]
@@ -418,7 +407,6 @@ swoole.use_shortname = off
 extension_dir = "/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib/extensions/no-debug-non-zts-20230831"
 extension = mysqli.so
 extension = pdo_mysql.so
-zend_extension = opcache.so
 PHPINI
         # --------------------------------------------------
         # /usr/local/php8370/etc/php-fpm.conf
@@ -498,7 +486,6 @@ SYSTEMCTLPHPFPM8370SERVICE
               # [hyperf3.1]導致衝突
               # "psr-1.2.0.tgz psr-1.2.0 psr"
               "zip-1.22.3.tgz zip-1.22.3 zip"
-              "apcu-5.1.23.tgz apcu-5.1.23 apcu"
               # wget https://github.com/phpredis/phpredis/archive/4.1.1.tar.gz -O /data/download/phpredis-4.1.1.tar.gz
               "phpredis-6.0.2.tar.gz phpredis-6.0.2 redis"
               # mcrypt（備註：解決7.2+移除mcrypt(加密支持)導致的兼容性問題）
@@ -592,6 +579,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                --with-openssl-dir=/usr/local/openssl \
                 --enable-http2  \
                 --enable-openssl  \
                 --enable-mysqlnd  \
@@ -601,25 +589,29 @@ SYSTEMCTLPHPFPM8370SERVICE
             }
             {
                 # inotify[START]
-                variExtensionInstallResult["inotify"]="inotify"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
-                /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
-                ./configure \
-                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                --enable-inotify
-                make -j8 && make install
-                echo 'extension = inotify.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                if [[ ${variInotifyButton:-false} == true ]]; then
+                  variExtensionInstallResult["inotify"]="inotify"
+                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
+                  /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
+                  ./configure \
+                  --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                  --enable-inotify
+                  make -j8 && make install
+                  echo 'extension = inotify.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                fi
             }
             {
                 # xdebug[START]
-                variExtensionInstallResult["xdebug"]="xdebug"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf xdebug-3.3.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/xdebug-3.3.2
-                /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
-                ./configure \
-                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                --enable-xdebug
-                make -j8 && make install
-                echo 'zend_extension = xdebug.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                if [[ ${variXdebugButton:-false} == true ]]; then
+                  variExtensionInstallResult["xdebug"]="xdebug"
+                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf xdebug-3.3.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/xdebug-3.3.2
+                  /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
+                  ./configure \
+                  --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                  --enable-xdebug
+                  make -j8 && make install
+                  echo 'zend_extension = xdebug.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                fi
             }
             {
                 # sodium[START]
@@ -632,7 +624,6 @@ SYSTEMCTLPHPFPM8370SERVICE
                 ./configure --prefix=/usr/local
                 make -j8 && make install
                 # ldconfig
-                # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
                 # 安裝擴展/sodium.so
                 cd /usr/local/src/php-8.3.7/ext/sodium
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
@@ -669,7 +660,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 psr
                 uopz
                 trace
-                # except ：PHP>=8.1 && swoole >= 5.0.2
+                # 雖然官網顯示只要滿足「PHP >= 8.1 && swoole >= 5.0.2」即支持，但實際依然報錯：WARNING Server::check_worker_exit_status(): worker(pid=35270, id=4) abnormal exit, status=0, signal=11
                 xdebug
                 xhprof
                 blackfire
@@ -725,23 +716,22 @@ function funcPublicRebuildImage(){
   variParameterDescList=("image pattern（example ：chunio/php:8370）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=$1
-  variContainerName="php8370environment";
-  docker rm -f $variContainerName 2> /dev/null
+  docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null
   # docker run -d --privileged --name php8370 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
   # 鏡像不存在時自動執行：docker pull $variImageName
-  docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
+  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 centos:7.9.2009 /sbin/init
   # cd /windows/code/backend/chunio/automatic/docker/php8370
   # docker exec -it php8370 /bin/bash
   # docker exec -it php8370 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8370Handler.sh funcPublicBuiltinMain; exec /bin/bash"
-  # docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
-  docker exec -it $variContainerName /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit;"
-  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
+  # docker exec -it $VARI_GLOBAL["CONTAINER_NAME"] /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit;"
+  variContainerId=$(docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
-  docker ps --filter "name=${variContainerName}"
+  docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}"
   docker images --filter "reference=${variImagePattern}"
   echo "${FUNCNAME} ${VARI_GLOBAL["SUCCESS_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo "docker exec -it $variContainerName /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 
@@ -750,6 +740,19 @@ function funcPublicReleaseImage(){
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1}
   omni.docker releaseImage $variImagePattern
+  return 0
+}
+
+function funcPublicExec(){
+  echo 111
+  if ! docker ps | grep -q "${VARI_GLOBAL["CONTAINER_NAME"]}"; then
+    echo 11
+    mkdir -p /windows
+    docker stop ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
+    docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
+    docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9502:9501 chunio/php:8370 /sbin/init
+  fi
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash
   return 0
 }
 

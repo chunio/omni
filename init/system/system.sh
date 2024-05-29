@@ -158,6 +158,7 @@ IPADDR='${IPAddress}'
 NETMASK=255.0.0.0
 GATEWAY=10.0.0.254
 DNS1=114.114.114.114
+DNS2=8.8.8.8
 UUID=ff0191ec-6709-4b23-93a2-9060de6d3f87' > /etc/sysconfig/network-scripts/ifcfg-eth0
   echo 'search localhost
 nameserver 114.114.114.114' > /etc/resolv.conf
