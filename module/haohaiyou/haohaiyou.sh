@@ -35,10 +35,15 @@ function funcPublicUnicorn(){
 }
 
 function funcPublicHyperf(){
-  cd /windows/code/backend/haohaiyou/gopath/src/hyperf
-  pwd && du -sh && ls -alh
-  return 0
+  # cd /windows/code/backend/haohaiyou/gopath/src/hyperf
+  if ! docker ps | grep -q "hyperf"; then
+      docker run --name hyperf -v /windows/code/backend/haohaiyou/gopath/src/skeleton:/data/project -w /data/project -p 9501:9501 -it --privileged -u root --entrypoint /bin/sh hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3
+  fi
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash
+  # pwd && du -sh && ls -alh
+  # return 0
 }
+
 # public function[END]
 # ##################################################
 

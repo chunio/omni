@@ -744,15 +744,13 @@ function funcPublicReleaseImage(){
 }
 
 function funcPublicExec(){
-  echo 111
   if ! docker ps | grep -q "${VARI_GLOBAL["CONTAINER_NAME"]}"; then
-    echo 11
     mkdir -p /windows
     docker stop ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
     docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
-    docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9502:9501 chunio/php:8370 /sbin/init
+    docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 chunio/php:8370 /sbin/init
   fi
-  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd /windows/code/backend/haohaiyou/gopath/src/skeleton; exec /bin/bash"
   return 0
 }
 

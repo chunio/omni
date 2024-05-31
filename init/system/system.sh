@@ -31,9 +31,50 @@ VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.ver
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-  if ! which lsof > /dev/null; then
-    yum install -y lsof
-  fi
+  rm -f /var/run/yum.pid
+  variPackageList=(
+    epel-release
+    git
+    lsof
+    tree
+    wget
+    expect
+    dos2unix
+    net-tools
+    bash-completion
+  )
+  # -----
+  variCloudInitFinished=1
+  for variEachPackage in "${variPackageList[@]}";do
+    if ! yum list installed "${variEachPackage}" >/dev/null 2>&1; then
+        variCloudInitFinished=0
+        break
+    fi
+  done
+  # -----
+  local variRetry=2
+  declare -A variCloudInstallResult
+  for variEachPackage in "${variPackageList[@]}"; do
+    local variCount=0
+    while [ $variCount -lt $variRetry ]; do
+      if yum install -y "$variEachPackage"; then
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        break
+      else
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+        ((variCount++))
+      fi
+    done
+  done
+  ln -sf /usr/bin/cmake3 /usr/bin/cmake
+  source /opt/rh/devtoolset-9/enable
+  package-cleanup --oldkernels --count=1 && yum -y autoremove && yum clean all && rm -rf /var/cache/yum
+  # --------------------------------------------------
+  for variEachPackage in "${!variCloudInstallResult[@]}"; do
+    echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  done
+  echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  # --------------------------------------------------
   return 0
 }
 
@@ -137,34 +178,10 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
 }
 
 function funcProtectedNetwork() {
-  IPAddress=$1
-  echo 'TYPE=Ethernet
-NAME=ens33
-DEVICE=ens33
-DEFROUTE=yes
-BOOTPROTO=none
-BROWSER_ONLY=no
-PROXY_METHOD=none
-IPV4_FAILURE_FATAL=no
-IPV6INIT=yes
-IPV6_PRIVACY=no
-IPV6_AUTOCONF=yes
-IPV6_DEFROUTE=yes
-IPV6_FAILURE_FATAL=no
-IPV6_ADDR_GEN_MODE=stable-privacy
-ONBOOT=yes
-PREFIX=24
-IPADDR='${IPAddress}'
-NETMASK=255.0.0.0
-GATEWAY=10.0.0.254
-DNS1=114.114.114.114
-DNS2=8.8.8.8
-UUID=ff0191ec-6709-4b23-93a2-9060de6d3f87' > /etc/sysconfig/network-scripts/ifcfg-eth0
-  echo 'search localhost
-nameserver 114.114.114.114' > /etc/resolv.conf
   echo 'export http_proxy="http://192.168.255.1:10809"
 export https_proxy="http://192.168.255.1:10809"' >> /etc/profile
   systemctl restart network.service
+  # curl -x http://192.168.255.1:10809 https://www.google.com
 }
 
 function funcProtectedEchoGreen(){
@@ -281,6 +298,54 @@ function funcPublicShowPort(){
       done
     fi
   fi
+  return 0
+}
+
+# 基於純淨係統構建
+function funcPublicBuildSystem(){
+  # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
+  vim /etc/default/grub
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+  reboot
+  nmcli connection add type ethernet ifname eth0 con-name eth0
+  # 保留「{$NICName}==eth0」的，其餘全部分別刪除
+  nmcli connection delete {$NICName1}
+  nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.255.130/24 ipv4.gateway 192.168.255.254 ipv4.dns 114.114.114.114 connection.autoconnect yes
+  nmcli connection up eth0
+  cat <<IFCFGETH0 > /etc/sysconfig/network-scripts/ifcfg-eth0
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=eth0
+UUID=276a668b-6904-4c68-9479-263547f40fa6
+DEVICE=eth0
+ONBOOT=yes
+IPADDR=192.168.255.130
+PREFIX=24
+GATEWAY=192.168.255.254
+DNS1=114.114.114.114
+IFCFGETH0
+  systemctl restart network.service
+  systemctl disable firewalld
+  systemctl stop firewalld
+  systemctl status firewalld
+  # SELINUX=enforcing >> SELINUX=disabled
+  vi /etc/sysconfig/selinux
+  source /etc/sysconfig/selinux
+  # SELINUX=enforcing >> SELINUX=disabled
+  vi /etc/selinux/config
+  source /etc/selinux/config
+  reboot
+  # 查看「selinux」狀態
+  sestatus
   return 0
 }
 # public function[END]
