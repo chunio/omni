@@ -182,122 +182,9 @@ export https_proxy="http://192.168.255.1:10809"' >> /etc/profile
 function funcProtectedEchoGreen(){
   echo -e "\033[32m$1\033[0m"
 }
-# protected function[END]
-# ##################################################
-
-# ##################################################
-# public function[START]
-function funcPublicInit(){
-  local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
-  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  variRefreshCache=${1:-0}
-  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
-    echo '' > ${VARI_GLOBAL["VERSION_URI"]}
-    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
-    funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
-  fi
-  # pull *.sh list[START]
-  # filter : ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"] && ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}
-  # find "/windows/code/backend/chunio/omni" \
-  # -type d -path "/windows/code/backend/chunio/omni/vendor" -prune -o \
-  # -type d -path "/windows/code/backend/chunio/omni/include" -prune -o \
-  # -type d -regex ".*/template" -prune -o \
-  # -type f -name "*.sh" -print
-  local variFindCommand="find \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}\""
-  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]}; do
-      variFindCommand="$variFindCommand -type d -path \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/$variEachIgnoreDirectory\" -prune -o"
-  done
-  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}; do
-      variFindCommand="$variFindCommand -type d -regex \".*/$variEachIgnoreDirectory\" -prune -o"
-  done
-  variFindCommand="$variFindCommand -type f -name \"*${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}\" -print"
-  variAbleUnitFileURIList=$(eval "$variFindCommand" | sort -u)
-  # pull *.sh list[END]
-  funcProtectedCommandInit "${variAbleUnitFileURIList}"
-  funcProtectedOptionInit "${variAbleUnitFileURIList}"
-  return 0
-}
-
-function funcPublicArchiveUnit(){
-  local variParameterDescList=("unit name（limited to the ./omni/module/*）" "save to [ the path ]")
-  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
-  variSaveToThePath=${2}
-  variArchiveCommand=omni.${variUnitName}
-  # [ ${variSaveToThePath} == "/" ] && variSaveToThePath=""
-  variArchivePath=${variSaveToThePath}/${variArchiveCommand}
-  rm -rf ${variArchivePath} ${variSaveToThePath}/${variArchiveCommand}.tgz
-  mkdir -p ${variArchivePath}/module
-  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,include,init} ${variArchivePath}
-  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/module/${variUnitName} ${variArchivePath}/module
-  # flush the useless data[START]
-  find ${variArchivePath} -type f -name "encrypt.envi" -exec truncate -s 0 {} \;
-  variRuntimePathList=$(find ${variArchivePath} -type d -name "runtime")
-  for variEachRuntimePath in ${variRuntimePathList}; do
-    rm -rf "${variEachRuntimePath:?}"/*
-  done
-  # flush the useless data[END]
-  echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/profile" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
-  echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
-  tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
-  rm -rf ${variSaveToThePath}/${variArchiveCommand}
-  return 0
-}
-
-function funcPublicVersion(){
-  cat ${VARI_GLOBAL["VERSION_URI"]} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  return 0
-}
-
-function funcPublicNewUnit(){
-  local variParameterDescList=("unit name")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
-  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
-    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    return 1
-  fi
-  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
-  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
-  return 0
-}
-
-function funcPublicShowPort(){
-  local variParameterDescList=("port")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1}
-  variExpectAction=${2:-"cancel"}
-  variProcessIdList=$(lsof -i :${variPort} -t)
-  if [ -z "$variProcessIdList" ]; then
-    funcProtectedEchoGreen "${variPort} is not being listened to"
-  else
-    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
-    netstat -lutnp | grep ":${variPort}"
-    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
-    lsof -i :${variPort}
-    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
-    lsof -i :${variPort} -t | xargs -r ps -fp
-    if [ ${variExpectAction} == "confirm" ];then
-      variInput="confirm"
-    else
-      read -p "Do you want to release the port（$variPort） ? (type 'confirm' to release): " variInput
-    fi
-    if [[ "$variInput" == "confirm" ]]; then
-      for eachProcessId in ${variProcessIdList}
-      do
-          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
-          /usr/bin/kill -9 $eachProcessId
-          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
-      done
-    fi
-  fi
-  return 0
-}
 
 # 要求：基於純淨係統（centos7.9）
-function funcPublicSystemInit(){
+function funcProtectedSystemInitMark(){
   # step1：設置網絡
   variUsername=$(funcProtectedPullEncryptEnvi "USERNAME")
   variPassword=$(funcProtectedPullEncryptEnvi "PASSWORD")
@@ -348,6 +235,123 @@ cat <<FSTAB >> /etc/fstab
 //192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variUsername},password=${variPassword},uid=1005,gid=1005,vers=3.0 0 0
 FSTAB
   # TODO:echo 'set nu' >> ~/.vimrc
+  return 0
+}
+# protected function[END]
+# ##################################################
+
+# ##################################################
+# public function[START]
+function funcPublicInit(){
+  local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  variRefreshCache=${1:-0}
+  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
+    echo '' > ${VARI_GLOBAL["VERSION_URI"]}
+    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
+    funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
+  fi
+  # pull *.sh list[START]
+  # filter : ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"] && ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}
+  # find "/windows/code/backend/chunio/omni" \
+  # -type d -path "/windows/code/backend/chunio/omni/vendor" -prune -o \
+  # -type d -path "/windows/code/backend/chunio/omni/include" -prune -o \
+  # -type d -regex ".*/template" -prune -o \
+  # -type f -name "*.sh" -print
+  local variFindCommand="find \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}\""
+  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]}; do
+      variFindCommand="$variFindCommand -type d -path \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/$variEachIgnoreDirectory\" -prune -o"
+  done
+  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}; do
+      variFindCommand="$variFindCommand -type d -regex \".*/$variEachIgnoreDirectory\" -prune -o"
+  done
+  variFindCommand="$variFindCommand -type f -name \"*${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}\" -print"
+  variAbleUnitFileURIList=$(eval "$variFindCommand" | sort -u)
+  # pull *.sh list[END]
+  funcProtectedCommandInit "${variAbleUnitFileURIList}"
+  funcProtectedOptionInit "${variAbleUnitFileURIList}"
+  return 0
+}
+
+function funcPublicSaveUnit(){
+  local variParameterDescList=("unit name（limited to the ./omni/module/*）" "save to [ the path ]")
+  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  variSaveToThePath=${2}
+  variArchiveCommand=omni.${variUnitName}
+  # [ ${variSaveToThePath} == "/" ] && variSaveToThePath=""
+  variArchivePath=${variSaveToThePath}/${variArchiveCommand}
+  rm -rf ${variArchivePath} ${variSaveToThePath}/${variArchiveCommand}.tgz
+  mkdir -p ${variArchivePath}/module
+  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,include,init} ${variArchivePath}
+  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/module/${variUnitName} ${variArchivePath}/module
+  # flush the useless data[START]
+  find ${variArchivePath} -type f -name "encrypt.envi" -exec truncate -s 0 {} \;
+  variRuntimePathList=$(find ${variArchivePath} -type d -name "runtime")
+  for variEachRuntimePath in ${variRuntimePathList}; do
+    rm -rf "${variEachRuntimePath:?}"/*
+  done
+  # flush the useless data[END]
+  echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/profile" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
+  echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
+  tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
+  rm -rf ${variSaveToThePath}/${variArchiveCommand}
+  return 0
+}
+
+function funcPublicNewUnit(){
+  local variParameterDescList=("unit name")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
+    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    return 1
+  fi
+  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
+  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
+  return 0
+}
+
+function funcPublicShowPort(){
+  local variParameterDescList=("port")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variPort=${1}
+  variExpectAction=${2:-"cancel"}
+  variProcessIdList=$(lsof -i :${variPort} -t)
+  if [ -z "$variProcessIdList" ]; then
+    funcProtectedEchoGreen "${variPort} is not being listened to"
+  else
+    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
+    netstat -lutnp | grep ":${variPort}"
+    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
+    lsof -i :${variPort}
+    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
+    lsof -i :${variPort} -t | xargs -r ps -fp
+    if [ ${variExpectAction} == "confirm" ];then
+      variInput="confirm"
+    else
+      read -p "Do you want to release the port（$variPort） ? (type 'confirm' to release): " variInput
+    fi
+    if [[ "$variInput" == "confirm" ]]; then
+      for eachProcessId in ${variProcessIdList}
+      do
+          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
+          /usr/bin/kill -9 $eachProcessId
+          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
+      done
+    fi
+  fi
+  return 0
+}
+
+function funcPublicBuildDevelopmentEnvironment(){
+  return 0
+}
+
+function funcPublicVersion(){
+  cat ${VARI_GLOBAL["VERSION_URI"]} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 # public function[END]
