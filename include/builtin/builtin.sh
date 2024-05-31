@@ -40,7 +40,7 @@ VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
 VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
 # 「VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0」表示不限
-VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=10
+VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
 # fi
 # global variable[END]
 # ##################################################
@@ -129,7 +129,7 @@ function funcProtectedDestruct() {
     echo "[ todo : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]"
     cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   else
-    echo "[ todo : no action is required ]"
+    echo "[ todo : -- ]"
   fi
   rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   echo "--------------------------------------------------"

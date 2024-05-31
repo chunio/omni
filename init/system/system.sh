@@ -8,10 +8,6 @@
 /etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
 MARK
 
-# if ! declare -p VARI_GLOBAL &>/dev/null; then
-  # declare -A VARI_GLOBAL;
-# fi
-
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -25,6 +21,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
 VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
+VARI_GLOBAL["USERNAME"]=""
+VARI_GLOBAL["PASSWORD"]=""
 # global variable[END]
 # ##################################################
 
@@ -41,23 +39,23 @@ function funcProtectedCloudInit() {
     expect
     dos2unix
     net-tools
+    docker
+    docker-compose
     bash-completion
   )
-  # -----
-  variCloudInitFinished=1
-  for variEachPackage in "${variPackageList[@]}";do
-    if ! yum list installed "${variEachPackage}" >/dev/null 2>&1; then
-        variCloudInitFinished=0
-        break
-    fi
-  done
-  # -----
   local variRetry=2
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
     local variCount=0
+    variEachFinishLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
     while [ $variCount -lt $variRetry ]; do
-      if yum install -y "$variEachPackage"; then
+      grep -qF "${variEachFinishLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
+      # 安裝狀態，值：0/已安裝，1/未安裝
+      variInstalled=$?
+      if [ "${variInstalled}" == 0 ] || yum install -y "$variEachPackage"; then
+        if [ ${variInstalled} != 0 ]; then
+          echo "${variEachFinishLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+        fi
         variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         break
       else
@@ -66,9 +64,6 @@ function funcProtectedCloudInit() {
       fi
     done
   done
-  ln -sf /usr/bin/cmake3 /usr/bin/cmake
-  source /opt/rh/devtoolset-9/enable
-  package-cleanup --oldkernels --count=1 && yum -y autoremove && yum clean all && rm -rf /var/cache/yum
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -86,16 +81,16 @@ function funcProtectedCommandInit(){
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri}; then
-        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
+        # 基於當前環境的命令（即：vim /etc/profile）[START]
         pattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        if ! $(grep -qF "$pattern" /etc/bashrc); then
-          echo $pattern >> /etc/bashrc
-          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc && omni.system init' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+        if ! $(grep -qF "$pattern" /etc/profile); then
+          echo $pattern >> /etc/profile
+          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/profile' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
           variEtcBashrcReloadStatus=1
         else
-          echo "[ /etc/bashrc ] $(grep -F "$pattern" /etc/bashrc)" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+          echo "[ /etc/profile ] $(grep -F "$pattern" /etc/profile)" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
         fi
-        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
+        # 基於當前環境的命令（即：vim /etc/profile）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
         echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -196,8 +191,8 @@ function funcPublicInit(){
   local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   variRefreshCache=${1:-0}
-  echo '' > ${VARI_GLOBAL["VERSION_URI"]}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
+    echo '' > ${VARI_GLOBAL["VERSION_URI"]}
     variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
@@ -243,7 +238,7 @@ function funcPublicArchiveUnit(){
   done
   # flush the useless data[END]
   echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/profile" >> ${variArchivePath}/README.md
   echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
   echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
   tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
@@ -301,8 +296,11 @@ function funcPublicShowPort(){
   return 0
 }
 
-# 基於純淨係統構建
-function funcPublicBuildSystem(){
+# 要求：基於純淨係統（centos7.9）
+function funcPublicSystemInit(){
+  # step1：設置網絡
+  variUsername=$(funcProtectedPullEncryptEnvi "USERNAME")
+  variPassword=$(funcProtectedPullEncryptEnvi "PASSWORD")
   # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
   vim /etc/default/grub
   grub2-mkconfig -o /boot/grub2/grub.cfg
@@ -344,8 +342,12 @@ IFCFGETH0
   vi /etc/selinux/config
   source /etc/selinux/config
   reboot
-  # 查看「selinux」狀態
+  # [selinux]查看狀態
   sestatus
+cat <<FSTAB >> /etc/fstab
+//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variUsername},password=${variPassword},uid=1005,gid=1005,vers=3.0 0 0
+FSTAB
+  # TODO:echo 'set nu' >> ~/.vimrc
   return 0
 }
 # public function[END]
