@@ -83,6 +83,30 @@ function funcPublicAuto()
   fi
   return 0
 }
+
+function funcPublicAutoList(){
+  docker ps -aq | xargs -r docker inspect --format='{{.Name}}: {{.HostConfig.RestartPolicy.Name}}' | grep 'always'
+  return 0
+}
+
+function funcPublicRmAll(){
+  docker rm -f $(docker ps -aq)
+  return 0
+}
+
+function funcPublicStopAll(){
+  docker stop $(docker ps -aq)
+  return 0
+}
+
+function funcPublicExec(){
+  variParameterDescMulti=("container name" "[ command ]")
+  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variContainerName=${1}
+  variCommand=${2:-/bin/bash}
+  docker exec -it ${variContainerName} ${variCommand}
+  return 0
+}
 # public function[END]
 # ##################################################
 

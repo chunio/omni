@@ -60,7 +60,7 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
-  docker-compose up --build -d
+  docker-compose -p redis up --build -d
   docker update --restart=always redis
   docker ps -a | grep redis
   return 0

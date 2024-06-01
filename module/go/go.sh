@@ -34,25 +34,51 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 
 # ##################################################
 # public function[START]
-#function funcPublicRebuildKratosEnviImage(){
-#  # 構建鏡像[START]
-#  variParameterDescList=("image pattern（example ：chunio/kratos:1220）")
-#  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-#  variImagePattern=$1
-#  docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null
-#  # docker run -d --privileged --name php8370 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
-#  # 鏡像不存在時自動執行：docker pull $variImageName
-#  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9502:8000 centos:7.9.2009 /sbin/init
-#  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") kratosEnvironmentInit;"
-#  variContainerId=$(docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}" --format "{{.ID}}")
-#  echo "docker commit $variContainerId $variImagePattern"
-#  docker commit $variContainerId $variImagePattern
-#  docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}"
-#  docker images --filter "reference=${variImagePattern}"
-#  echo "${FUNCNAME} ${VARI_GLOBAL["SUCCESS_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-#  echo "docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-#  return 0
-#}
+function funcPublicRunNode()
+{
+  variWorkSpace="/windows/code/backend/golang"
+  mkdir -p ${variWorkSpace}/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variWorkSpace}/gopath{/bin,/pkg,/src}
+  cat <<ENV > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
+CGO_ENABLED=1
+GO111MODULE=on
+GOBIN=${variWorkSpace}/gopath/bin
+GOCACHE=${variWorkSpace}/gocache.linux
+GOMODCACHE=${variWorkSpace}/gopath/pkg/mod
+GOPATH=${variWorkSpace}/gopath
+GOPROXY=https://goproxy.cn,direct
+GOROOT=/usr/local/go
+GOSUMDB=sum.golang.google.cn
+GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
+ENV
+  cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  go:
+    image: golang:1.22.0
+    container_name: go
+    environment:
+      - GOENV=/go.env.linux
+    volumes:
+      - /windows:/windows
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
+    working_dir: ${variWorkSpace}/gopath/src
+    networks:
+      - common
+    # 啟動進程關閉時，則容器退出
+    command: /bin/bash -c "export PATH=$PATH:${variWorkSpace}/gopath/bin && tail -f /dev/null"
+networks:
+  common:
+    driver: bridge
+volumes:
+  gopath:
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p go up --build -d
+  docker update --restart=always go
+  docker ps -a | grep go
+  return 0
+}
 # public function[END]
 # ##################################################
 

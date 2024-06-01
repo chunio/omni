@@ -34,16 +34,107 @@ function funcPublicUnicorn(){
   return 0
 }
 
-function funcPublicHyperf(){
-  # cd /windows/code/backend/haohaiyou/gopath/src/hyperf
-  if ! docker ps | grep -q "hyperf"; then
-      docker run --name hyperf -v /windows/code/backend/haohaiyou/gopath/src/skeleton:/data/project -w /data/project -p 9501:9501 -it --privileged -u root --entrypoint /bin/sh hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3
-  fi
-  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash
-  # pwd && du -sh && ls -alh
-  # return 0
+function funcPublicSkeleton(){
+  # [MASTER]persistence
+  variMasterPath="/windows/code/backend/haohaiyou"
+  # [DOCKER]temporary
+  variDockerWorkSpace="/windows/code/backend/haohaiyou"
+  veriModuleName="skeleton"
+    cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+#!/bin/bash
+# 會被「docker run」中指定命令覆蓋
+return 0
+ENTRYPOINTSH
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}:
+    image: hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3
+    container_name: ${veriModuleName}
+    volumes:
+      - /windows:/windows
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    networks:
+      - common
+    ports:
+      - "9501:9501"
+    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    # 啟動進程關閉時，則容器退出
+    command: ["tail", "-f", "/dev/null"]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker update --restart=always ${veriModuleName}
+  docker ps -a | grep ${veriModuleName}
+  cd ${variMasterPath}/gopath/src/${veriModuleName}
+  docker exec -it ${veriModuleName} /bin/bash
+  return 0
 }
 
+function funcPublicUnicorn()
+{
+  # [MASTER]persistence
+  variMasterPath="/windows/code/backend/haohaiyou"
+  # [DOCKER]temporary
+  variDockerWorkSpace="/windows/code/backend/haohaiyou"
+  veriModuleName="unicorn"
+  mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
+  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+#!/bin/bash
+# 會被「docker run」中指定命令覆蓋
+return 0
+ENTRYPOINTSH
+  cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
+CGO_ENABLED=1
+GO111MODULE=on
+GOBIN=${variDockerWorkSpace}/gopath/bin
+GOCACHE=${variDockerWorkSpace}/gocache.linux
+GOMODCACHE=${variDockerWorkSpace}/gopath/pkg/mod
+GOPATH=${variDockerWorkSpace}/gopath
+GOPROXY=https://goproxy.cn,direct
+GOROOT=/usr/local/go
+GOSUMDB=sum.golang.google.cn
+GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
+GOENVLINUX
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}:
+    image: golang:1.22.0
+    container_name: ${veriModuleName}
+    environment:
+      - GOENV=/go.env.linux
+      - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+    volumes:
+      - /windows:/windows
+      # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    networks:
+      - common
+    ports:
+      - "8000:8000"
+    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    # 啟動進程關閉時，則容器退出
+    command: ["tail", "-f", "/dev/null"]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker update --restart=always ${veriModuleName}
+  docker ps -a | grep ${veriModuleName}
+  cd ${variMasterPath}/gopath/src/${veriModuleName}
+  docker exec -it ${veriModuleName} /bin/bash
+  return 0
+}
 # public function[END]
 # ##################################################
 

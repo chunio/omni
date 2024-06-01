@@ -22,7 +22,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["MONGODB_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mongodb
+VARI_GLOBAL["MONGO_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mongo
 # global variable[END]
 # ##################################################
 
@@ -35,16 +35,16 @@ VARI_GLOBAL["MONGODB_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PAT
 # ##################################################
 # public function[START]
 function funcPublicRunNode(){
-  rm -rf ${VARI_GLOBAL["MONGODB_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MONGODB_DATA_PATH"]}
+  rm -rf ${VARI_GLOBAL["MONGO_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MONGO_DATA_PATH"]}
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   mongodb7:
     image: mongo:7.0
-    container_name: mongodb
+    container_name: mongo
     ports:
       - "27017:27017"
     volumes:
-      - ${VARI_GLOBAL["MONGODB_DATA_PATH"]}:/data/db
+      - ${VARI_GLOBAL["MONGO_DATA_PATH"]}:/data/db
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=0000
@@ -56,9 +56,9 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
-  docker-compose up --build -d
-  docker update --restart=always mongodb
-  docker ps -a | grep mongodb
+  docker-compose -p mongo up --build -d
+  docker update --restart=always mongo
+  docker ps -a | grep mongo
   return 0
 }
 

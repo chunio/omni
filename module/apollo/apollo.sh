@@ -71,7 +71,7 @@ services:
   # ##################################################
   # mysql[START]
   apollo-mysql-development:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: apollo-mysql-development
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
@@ -87,7 +87,7 @@ services:
     networks:
       - common
   apollo-mysql-sandbox:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: apollo-mysql-sandbox
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
@@ -101,7 +101,7 @@ services:
     networks:
       - common
   apollo-mysql-production:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: apollo-mysql-production
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
@@ -115,7 +115,7 @@ services:
     networks:
       - common
   apollo-mysql-portal:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: apollo-mysql-portal
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
@@ -279,12 +279,12 @@ DOCKERCOMPOSEYML
   # 「docker-compose.yml」[END]
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
-  docker-compose up --build -d
-  docker ps -a | grep apollo
+  docker-compose -p apollo up --build -d
   docker update --restart=always apollo-mysql-development apollo-mysql-sandbox apollo-mysql-production apollo-mysql-portal
   docker update --restart=always apollo-config-development apollo-config-sandbox apollo-config-production
   docker update --restart=always apollo-admin-development apollo-admin-sandbox apollo-admin-production
   docker update --restart=always apollo-portal-common
+  docker ps -a | grep apollo
   return 0
 }
 

@@ -47,7 +47,7 @@ KAFKASERVERJAASCONF
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   zookeeper:
-    image: bitnami/zookeeper:latest
+    image: bitnami/zookeeper:3.7
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -85,10 +85,10 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
-  docker-compose up --build -d
+  docker-compose -p kafka up --build -d
   docker update --restart=always zookeeper
   docker update --restart=always kafka
-  docker ps -a | grep zookeeper | grep kafka
+  docker ps -a | grep -E 'zookeeper|kafka'
   return 0
 }
 
