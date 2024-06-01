@@ -409,10 +409,19 @@ function funcPublicBuildDevelopmentEnvironment(){
   return 0
 }
 
-function funcPublicVersion(){
-  cat ${VARI_GLOBAL["VERSION_URI"]} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  return 0
+function funcPublicVersion() {
+    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
+    if [ -z "$variLineNum" ]; then
+        return 1
+    else
+        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
+        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
+        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    fi
+    return 0
 }
+
+
 # public function[END]
 # ##################################################
 
