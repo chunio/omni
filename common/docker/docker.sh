@@ -107,6 +107,17 @@ function funcPublicExec(){
   docker exec -it ${variContainerName} ${variCommand}
   return 0
 }
+
+function funcPublicRebuildDevelopmentEnvironment(){
+  docker rm -f $(docker ps -aq) 2> /dev/null || true
+  docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|none|host)$' | xargs -r docker network rm
+  omni.apollo runNode
+  omni.redis runNode
+  omni.kafka runNode
+  omni.mongo runNode
+  docker ps -a
+  return 0
+}
 # public function[END]
 # ##################################################
 

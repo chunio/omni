@@ -405,10 +405,6 @@ function funcPublicShowPort(){
   return 0
 }
 
-function funcPublicBuildDevelopmentEnvironment(){
-  return 0
-}
-
 function funcPublicVersion() {
     local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
     if [ -z "$variLineNum" ]; then
