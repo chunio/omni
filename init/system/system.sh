@@ -46,23 +46,54 @@ function funcProtectedCloudInit() {
   local variRetry=2
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
-    local variCount=0
     variEachFinishLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-    while [ $variCount -lt $variRetry ]; do
-      grep -qF "${variEachFinishLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
-      # 安裝狀態，值：0/已安裝，1/未安裝
-      variInstalled=$?
-      if [ "${variInstalled}" == 0 ] || yum install -y "$variEachPackage"; then
-        if [ ${variInstalled} != 0 ]; then
-          echo "${variEachFinishLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+    grep -qF "${variEachFinishLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
+    # 安裝狀態，值：0/已安裝，1/未安裝
+    variInstalled=$?
+    case $variEachPackage in
+      "docker")
+        if command -v docker && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://docs.docker.com/engine/install/centos/
+          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
+          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce docker-ce-cli containerd.io
+          systemctl enable docker
+          systemctl restart docker
+          systemctl status docker
         fi
-        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        break
-      else
-        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
-        ((variCount++))
-      fi
-    done
+        ;;
+      "docker-compose")
+        if command -v docker-compose && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://github.com/docker/compose/releases
+          # docker-compose-linux-x86_64
+          variDockerComposeUri=$(which docker-compose)
+          [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
+          curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+        fi
+        ;;
+      *)
+        local variCount=0
+        while [ $variCount -lt $variRetry ]; do
+          if [ "${variInstalled}" == 0 ] || yum install -y "$variEachPackage"; then
+            if [ ${variInstalled} != 0 ]; then
+              echo "${variEachFinishLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+            fi
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+            break
+          else
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+            ((variCount++))
+          fi
+        done
+        ;;
+    esac
   done
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do

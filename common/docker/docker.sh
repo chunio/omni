@@ -4,6 +4,9 @@
 # datetime : 2024/05/20
 
 :<<MARK
+docker update --restart=always redis
+docker update --restart=no redis
+docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' redis
 MARK
 
 declare -A VARI_GLOBAL
@@ -16,6 +19,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # global variable[START]
 VARI_GLOBAL["DOCKER_USERNAME"]=""
 VARI_GLOBAL["DOCKER_PASSWORD"]=""
+VARI_GLOBAL["SEPARATOR_LINE"]="--------------------------------------------------"
 # global variable[END]
 # ##################################################
 
@@ -54,6 +58,10 @@ EOF
   docker push $variImagePattern
   return 0
 }
+
+
+
+
 # public function[END]
 # ##################################################
 
