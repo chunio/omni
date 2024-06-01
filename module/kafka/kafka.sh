@@ -22,7 +22,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["MONGODB_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mongodb
+
 # global variable[END]
 # ##################################################
 
@@ -34,20 +34,49 @@ VARI_GLOBAL["MONGODB_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PAT
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode(){
-  rm -rf ${VARI_GLOBAL["MONGODB_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MONGODB_DATA_PATH"]}
+function funcPublicRunNode()
+{
+  cat <<KAFKASERVERJAASCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/kafka_server_jaas.conf
+KafkaServer {
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    username="root"
+    password="0000"
+    user_root="0000";
+};
+KAFKASERVERJAASCONF
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  mongodb7:
-    image: mongo:7.0
-    container_name: mongodb
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
     ports:
-      - "27017:27017"
-    volumes:
-      - ${VARI_GLOBAL["MONGODB_DATA_PATH"]}:/data/db
+      - "2181:2181"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=0000
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
+    networks:
+      - common
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT
+      KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://192.168.255.130:9092
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_CLIENT_USERS: root
+      KAFKA_CLIENT_PASSWORDS: 0000
+      KAFKA_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/kafka_server_jaas.conf:/opt/bitnami/kafka/config/kafka_server_jaas.conf
+    depends_on:
+      - zookeeper
     networks:
       - common
 networks:
@@ -57,8 +86,9 @@ DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
   docker-compose up --build -d
-  docker update --restart=always mongodb
-  docker ps -a | grep mongodb
+  docker update --restart=always zookeeper
+  docker update --restart=always kafka
+  docker ps -a | grep zookeeper | grep kafka
   return 0
 }
 

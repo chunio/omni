@@ -2,7 +2,7 @@
 ## Installation
 ```
 [root@localhost /]# git clone https://github.com/chunio/omni.git
-[root@localhost /]# ./omni/init/system/system.sh init && source /etc/bashrc
+[root@localhost /]# ./omni/init/system/system.sh init && source /etc/profile
 [root@localhost /]# omni.system version
 ```
 ## New Unit

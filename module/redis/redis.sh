@@ -52,18 +52,20 @@ services:
     volumes:
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/redis.conf:/usr/local/etc/redis/redis.conf
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - common
+networks:
+  common:
+    driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
   docker-compose up --build -d
+  docker update --restart=always redis
   docker ps -a | grep redis
   return 0
 }
 
-function funcPublicRebuildCluster()
-{
-  return 0
-}
 # public function[END]
 # ##################################################
 

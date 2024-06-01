@@ -43,16 +43,20 @@ function funcProtectedCloudInit() {
     docker-compose
     bash-completion
   )
+  variCloudInitSucceeded=1
+  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+  [ $? -eq 0 ] && return 0
   local variRetry=2
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
-    variEachFinishLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-    grep -qF "${variEachFinishLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
+    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
     # 安裝狀態，值：0/已安裝，1/未安裝
     variInstalled=$?
     case $variEachPackage in
       "docker")
-        if command -v docker && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
+        if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         else
           # https://docs.docker.com/engine/install/centos/
@@ -63,11 +67,11 @@ function funcProtectedCloudInit() {
           yum install -y docker-ce docker-ce-cli containerd.io
           systemctl enable docker
           systemctl restart docker
-          systemctl status docker
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
         ;;
       "docker-compose")
-        if command -v docker-compose && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
+        if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         else
           # https://github.com/docker/compose/releases
@@ -76,6 +80,7 @@ function funcProtectedCloudInit() {
           [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
           curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
         ;;
       *)
@@ -83,7 +88,7 @@ function funcProtectedCloudInit() {
         while [ $variCount -lt $variRetry ]; do
           if [ "${variInstalled}" == 0 ] || yum install -y "$variEachPackage"; then
             if [ ${variInstalled} != 0 ]; then
-              echo "${variEachFinishLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+              echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
             fi
             variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
@@ -98,8 +103,9 @@ function funcProtectedCloudInit() {
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
   done
-  echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
   return 0
 }
@@ -118,13 +124,11 @@ function funcProtectedCommandInit(){
           echo $pattern >> /etc/profile
           [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/profile' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
           variEtcBashrcReloadStatus=1
-        else
-          echo "[ /etc/profile ] $(grep -F "$pattern" /etc/profile)" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
         fi
         # 基於當前環境的命令（即：vim /etc/profile）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
-        echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+        # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
         ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
     fi
@@ -146,9 +150,12 @@ function funcProtectedOptionInit(){
   done
   # remove leading and trailing whitespace/移除首末空格
   variIncludeOptionList=$(echo ${variIncludeOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
-  echo "[ ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin.sh -> ${variIncludeOptionList} ]" >> ${VARI_GLOBAL["VERSION_URI"]}
-  echo "[ ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin.sh -> ${variIncludeOptionList} ]" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   # inherit the public functions from builtin.sh[END]
+  # report1/3[START]
+  declare -A variOptionReport
+  # report1/3[END]
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename $variAbleUnitFileUri)
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
@@ -164,16 +171,31 @@ function funcProtectedOptionInit(){
     done
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    # update init.version[START]
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="master" || variEachBashEvni="slave"
-    echo "$variEachUnitCommand / ${variEachBashEvni} -> $variEachOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
-    echo "$variEachUnitCommand / ${variEachBashEvni} -> $variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    # update init.version[END]
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
     funcProtectedComplete "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+    # report2/3[START]
+    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
+      # 置頂
+      variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
+    else
+      variEachIndex=${variEachBashEvni}_1_${variEachUnitCommand}
+    fi
+    variOptionReport[${variEachIndex}]="${variEachOptionList}"
+    # report2/3[END]
   done
   # 「source /usr/share/bash-completion/bash_completion」成功返回：exit 1（待理解？）
   source /usr/share/bash-completion/bash_completion || true
   # pull public function list/自動補全選項列表[END]
+  # report3/3[START]
+  # command sort：0-9a-zA-Z
+  for variEachIndex in $(echo "${!variOptionReport[@]}" | tr ' ' '\n' | sort); do
+    IFS='_' read -r variEachBashEvni variDevNull variEachUnitCommand <<< "${variEachIndex}"
+    # option sort：0-9a-zA-Z
+    variEachOptionList=$(echo "${variOptionReport[$variEachIndex]}" | tr ' ' '\n' | sort | xargs)
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  done
+  # report3/3[END]
   return 0
 }
 
@@ -265,6 +287,12 @@ IFCFGETH0
 cat <<FSTAB >> /etc/fstab
 //192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variUsername},password=${variPassword},uid=1005,gid=1005,vers=3.0 0 0
 FSTAB
+cat <<PROFILE >> /etc/profile
+export http_proxy="http://192.168.255.1:10809"
+export https_proxy="http://192.168.255.1:10809"
+alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
+PROFILE
+  source /etc/profile
   # TODO:echo 'set nu' >> ~/.vimrc
   return 0
 }

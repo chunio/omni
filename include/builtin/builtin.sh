@@ -148,8 +148,8 @@ function funcProtectedCheckRequiredParameter() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
-  # local variParameterDescList=("parameter1 desc1" "parameter2 desc2")
-  # funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  # local variParameterDescMulti=("parameter1 desc1" "parameter2 desc2")
+  # funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   # --------------------------------------------------
   # parameter desc :
   # variParameterDescList[@] ： 數組引用
@@ -184,8 +184,8 @@ function funcProtectedCheckOptionParameter() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
-  # local variParameterDescList=("parameter1 desc1" "parameter2 desc2")
-  # funcProtectedCheckOptionParameter 2 variParameterDescList[@]
+  # local variParameterDescMulti=("parameter1 desc1" "parameter2 desc2")
+  # funcProtectedCheckOptionParameter 2 variParameterDescMulti[@]
   # --------------------------------------------------
   # parameter desc :
   # variParameterDescList[@] ： 數組引用

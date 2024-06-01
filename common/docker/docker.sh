@@ -59,9 +59,30 @@ EOF
   return 0
 }
 
-
-
-
+function funcPublicAuto()
+{
+  local variParameterDescMulti=("action，value：1/enable（as：--restart=always），0/disable（as：--restart=no）" "container name（keyword）")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variAction=${1}
+  variContainerNameKeyword=${2}
+  if [ ${variAction} -eq 1 ]; then
+    variActionStatus="always";
+    variActionLabel="enabled"
+  else
+    variActionStatus="no"
+    variActionLabel="disabled"
+  fi
+  mapfile -t variContainerNameMulti < <(docker ps -a | grep "${variContainerNameKeyword}" | awk '{print $NF}')
+  if [ -z "${variContainerNameMulti[*]}" ]; then
+    echo "no container found with ${variContainerNameKeyword}"
+  else
+    for variEachContainerName in "${variContainerNameMulti[@]}"; do
+      docker update --restart=${variActionStatus} ${variEachContainerName} > /dev/null
+      echo "${variEachContainerName} has been ${variActionLabel} restart policy"
+    done
+  fi
+  return 0
+}
 # public function[END]
 # ##################################################
 

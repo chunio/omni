@@ -44,7 +44,7 @@ VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface
 
 # ##################################################
 # public function[START]
-function funcPublicRebuild() {
+function funcPublicRunNode() {
   local variParameterDescList=("SQL version（defualt : 0 / example : 20240527010100）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   # -----
@@ -67,7 +67,6 @@ APOLLOENVPROPERTIES
   # 「apollo-env.properties」設置宿主端口（使用於客戶端拉取配置）[END]
   # 「docker-compose.yml」[START]
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-version: '3.8'
 services:
   # ##################################################
   # mysql[START]
@@ -86,7 +85,7 @@ services:
       - mysql-data-development:/var/lib/mysql
       - /windows:/windows
     networks:
-      - apollo-network
+      - common
   apollo-mysql-sandbox:
     image: mysql:5.7
     container_name: apollo-mysql-sandbox
@@ -100,7 +99,7 @@ services:
       - mysql-data-sandbox:/var/lib/mysql
       - /windows:/windows
     networks:
-      - apollo-network
+      - common
   apollo-mysql-production:
     image: mysql:5.7
     container_name: apollo-mysql-production
@@ -114,7 +113,7 @@ services:
       - mysql-data-production:/var/lib/mysql
       - /windows:/windows
     networks:
-      - apollo-network
+      - common
   apollo-mysql-portal:
     image: mysql:5.7
     container_name: apollo-mysql-portal
@@ -128,7 +127,7 @@ services:
       - mysql-data-portal:/var/lib/mysql
       - /windows:/windows
     networks:
-      - apollo-network
+      - common
   # mysql[END]
   # ##################################################
   # config[START]
@@ -144,7 +143,7 @@ services:
     ports:
       - 18080:8080
     networks:
-      - apollo-network
+      - common
   apollo-config-sandbox:
     image: apolloconfig/apollo-configservice:2.2.0
     container_name: apollo-config-sandbox
@@ -157,7 +156,7 @@ services:
     ports:
       - 18081:8080
     networks:
-      - apollo-network
+      - common
   apollo-config-production:
     image: apolloconfig/apollo-configservice:2.2.0
     container_name: apollo-config-production
@@ -170,7 +169,7 @@ services:
     ports:
       - 18082:8080
     networks:
-      - apollo-network
+      - common
   # config[END]
   # ##################################################
   # admin[START]
@@ -188,7 +187,7 @@ services:
     ports:
       - 18090:8090
     networks:
-      - apollo-network
+      - common
   apollo-admin-sandbox:
     image: apolloconfig/apollo-adminservice:2.2.0
     container_name: apollo-admin-sandbox
@@ -203,7 +202,7 @@ services:
     ports:
       - 18091:8090
     networks:
-      - apollo-network
+      - common
   apollo-admin-production:
     image: apolloconfig/apollo-adminservice:2.2.0
     container_name: apollo-admin-production
@@ -218,7 +217,7 @@ services:
     ports:
       - 18092:8090
     networks:
-      - apollo-network
+      - common
   # admin[END]
   # ##################################################
   # portal[START]
@@ -245,11 +244,11 @@ services:
     volumes:
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/apollo-env.properties:/apollo-portal/config/apollo-env.properties
     networks:
-      - apollo-network
+      - common
     # portal[END]
     # ##################################################
 networks:
-  apollo-network:
+  common:
     driver: bridge
 volumes:
   mysql-data-development:
@@ -282,6 +281,10 @@ DOCKERCOMPOSEYML
   docker-compose down -v
   docker-compose up --build -d
   docker ps -a | grep apollo
+  docker update --restart=always apollo-mysql-development apollo-mysql-sandbox apollo-mysql-production apollo-mysql-portal
+  docker update --restart=always apollo-config-development apollo-config-sandbox apollo-config-production
+  docker update --restart=always apollo-admin-development apollo-admin-sandbox apollo-admin-production
+  docker update --restart=always apollo-portal-common
   return 0
 }
 
