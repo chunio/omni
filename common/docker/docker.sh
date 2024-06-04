@@ -59,7 +59,7 @@ EOF
   return 0
 }
 
-function funcPublicAuto()
+function funcPublicSetAuto()
 {
   local variParameterDescMulti=("action，value：1/enable（as：--restart=always），0/disable（as：--restart=no）" "container name（keyword）")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -84,12 +84,12 @@ function funcPublicAuto()
   return 0
 }
 
-function funcPublicAutoList(){
+function funcPublicShowAutoList(){
   docker ps -aq | xargs -r docker inspect --format='{{.Name}}: {{.HostConfig.RestartPolicy.Name}}' | grep 'always'
   return 0
 }
 
-function funcPublicRmAll(){
+function funcPublicRemoveAll(){
   docker rm -f $(docker ps -aq)
   return 0
 }
@@ -108,13 +108,18 @@ function funcPublicExec(){
   return 0
 }
 
-function funcPublicRebuildDevelopmentEnvironment(){
+function funcPublicDevelopmentEnvironmentInit(){
+  variParameterDescMulti=("status，value：1/build，0/clean")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variStatus=${1:-1}
   docker rm -f $(docker ps -aq) 2> /dev/null || true
-  docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|none|host)$' | xargs -r docker network rm
-  omni.apollo runNode
-  omni.redis runNode
-  omni.kafka runNode
-  omni.mongo runNode
+  docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | xargs -r docker network rm
+  if [ ${variStatus} -eq 1 ]; then
+    omni.apollo runNode
+    omni.redis runNode
+    omni.kafka runNode
+    omni.mongo runNode
+  fi
   docker ps -a
   return 0
 }

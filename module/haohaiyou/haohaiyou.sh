@@ -28,11 +28,11 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 
 # ##################################################
 # public function[START]
-function funcPublicUnicorn(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-  pwd && du -sh && ls -alh
-  return 0
-}
+#function funcPublicUnicorn(){
+#  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+#  pwd && du -sh && ls -alh
+#  return 0
+#}
 
 function funcPublicSkeleton(){
   # [MASTER]persistence
@@ -40,6 +40,7 @@ function funcPublicSkeleton(){
   # [DOCKER]temporary
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   veriModuleName="skeleton"
+  variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
     cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
@@ -48,7 +49,7 @@ ENTRYPOINTSH
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   ${veriModuleName}:
-    image: hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3
+    image: ${variImagePattern}
     container_name: ${veriModuleName}
     volumes:
       - /windows:/windows

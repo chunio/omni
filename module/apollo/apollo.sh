@@ -22,9 +22,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
 # reset builtin variable[END]
 # global variable[START]
-VARI_GLOBAL["SERVICE_DOMAIN"]="http://192.168.255.104"
+VARI_GLOBAL["SERVICE_DOMAIN"]="http://192.168.255.131"
 # 端口詳情：
-# [宿主]{13306/[開發]數據庫 13307/[沙箱]數據庫 13308/[生產]數據庫} >> [容器]{3306}
+# [宿主]{13306/{[開發]數據庫/[沙箱]數據庫/[生產]數據庫}} >> [容器]{3306}
 # [宿主]{18080/[開發]配置服務 18081/[沙箱]配置服務 18082/[生產]配置服務} >> [容器]{8080}
 # [宿主]{18090/[開發]管理服務 18091/[沙箱]管理服務 18092/[生產]管理服務} >> [容器]{8090}
 # [宿主]{8070/管理服務} >> [容器]{8070}
@@ -49,12 +49,13 @@ function funcPublicRunNode() {
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   # -----
   variSQLVersion=${1:-0}
-  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-  if [ $variSQLVersion == 0 ] || [ ! -d "${variSQLPath}" ];then
-    variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
+  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
+  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
+  if [ $variSQLVersion != 0 ] && [ -d "${variSQLVersionPath}" ];then
+    variSQLPath=${variSQLVersionPath}
   fi
   # -----
-  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]}/{development,sandbox,production,portal}
+  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   # 「apollo-env.properties」設置宿主端口（使用於客戶端拉取配置）[START]
   variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
@@ -70,62 +71,25 @@ APOLLOENVPROPERTIES
 services:
   # ##################################################
   # mysql[START]
-  apollo-mysql-development:
+  # [兩個服務（即：1apollo-config，2apollo-admin）/同一環境/共享一個]ApolloConfigDB
+  # [一個服務（即：apollo-portal）/所有環境/獨享一個]ApolloPortalDB
+  apollo-mysql:
     image: mysql:8.0
-    container_name: apollo-mysql-development
+    container_name: apollo-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
-      MYSQL_DATABASE: ApolloConfigDB
+      # MYSQL_INITDB_SKIP_TZINFO: 1
     ports:
       # 宿主端口:容器端口
       - "13306:3306"
     volumes:
       # [數據目錄等於空時]自動按名稱順序執行./*.sh && *.sql
-      - ${variSQLPath}/apollo-mysql-development:/docker-entrypoint-initdb.d
-      - mysql-data-development:/var/lib/mysql
+      - ${variSQLPath}:/docker-entrypoint-initdb.d
+      - mysql-data:/var/lib/mysql
       - /windows:/windows
-    networks:
-      - common
-  apollo-mysql-sandbox:
-    image: mysql:8.0
-    container_name: apollo-mysql-sandbox
-    environment:
-      MYSQL_ROOT_PASSWORD: ${variPassword}
-      MYSQL_DATABASE: ApolloConfigDB
-    ports:
-      - "13307:3306"
-    volumes:
-      - ${variSQLPath}/apollo-mysql-sandbox:/docker-entrypoint-initdb.d
-      - mysql-data-sandbox:/var/lib/mysql
-      - /windows:/windows
-    networks:
-      - common
-  apollo-mysql-production:
-    image: mysql:8.0
-    container_name: apollo-mysql-production
-    environment:
-      MYSQL_ROOT_PASSWORD: ${variPassword}
-      MYSQL_DATABASE: ApolloConfigDB
-    ports:
-      - "13308:3306"
-    volumes:
-      - ${variSQLPath}/apollo-mysql-production:/docker-entrypoint-initdb.d
-      - mysql-data-production:/var/lib/mysql
-      - /windows:/windows
-    networks:
-      - common
-  apollo-mysql-portal:
-    image: mysql:8.0
-    container_name: apollo-mysql-portal
-    environment:
-      MYSQL_ROOT_PASSWORD: ${variPassword}
-      MYSQL_DATABASE: ApolloPortalDB
-    ports:
-      - "13309:3306"
-    volumes:
-      - ${variSQLPath}/apollo-mysql-portal:/docker-entrypoint-initdb.d
-      - mysql-data-portal:/var/lib/mysql
-      - /windows:/windows
+      # - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+      # - /etc/localtime:/etc/localtime:ro
+    command: mysqld --host_cache_size=0
     networks:
       - common
   # mysql[END]
@@ -135,9 +99,9 @@ services:
     image: apolloconfig/apollo-configservice:2.2.0
     container_name: apollo-config-development
     depends_on:
-      - apollo-mysql-development
+      - apollo-mysql
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-development:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_development?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
     ports:
@@ -148,9 +112,9 @@ services:
     image: apolloconfig/apollo-configservice:2.2.0
     container_name: apollo-config-sandbox
     depends_on:
-      - apollo-mysql-sandbox
+      - apollo-mysql
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-sandbox:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_sandbox?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
     ports:
@@ -161,9 +125,9 @@ services:
     image: apolloconfig/apollo-configservice:2.2.0
     container_name: apollo-config-production
     depends_on:
-      - apollo-mysql-production
+      - apollo-mysql
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-production:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_production?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
     ports:
@@ -177,10 +141,10 @@ services:
     image: apolloconfig/apollo-adminservice:2.2.0
     container_name: apollo-admin-development
     depends_on:
-      - apollo-mysql-development
+      - apollo-mysql
       - apollo-config-development
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-development:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_development?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
       - EUREKA_SERVICE_URL=http://apollo-config-development:8080/eureka/
@@ -192,10 +156,10 @@ services:
     image: apolloconfig/apollo-adminservice:2.2.0
     container_name: apollo-admin-sandbox
     depends_on:
-      - apollo-mysql-sandbox
+      - apollo-mysql
       - apollo-config-sandbox
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-sandbox:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_sandbox?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
       - EUREKA_SERVICE_URL=http://apollo-config-sandbox:8080/eureka/
@@ -207,10 +171,10 @@ services:
     image: apolloconfig/apollo-adminservice:2.2.0
     container_name: apollo-admin-production
     depends_on:
-      - apollo-mysql-production
+      - apollo-mysql
       - apollo-config-production
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-production:3306/ApolloConfigDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloconfigdb_production?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
       - EUREKA_SERVICE_URL=http://apollo-config-production:8080/eureka/
@@ -225,17 +189,15 @@ services:
     image: apolloconfig/apollo-portal:2.2.0
     container_name: apollo-portal-common
     depends_on:
-      - apollo-mysql-development
+      - apollo-mysql
       - apollo-config-development
       - apollo-admin-development
-      - apollo-mysql-sandbox
       - apollo-config-sandbox
       - apollo-admin-sandbox
-      - apollo-mysql-production
       - apollo-config-production
       - apollo-admin-production
     environment:
-      - DS_URL=jdbc:mysql://apollo-mysql-portal:3306/ApolloPortalDB?characterEncoding=utf8
+      - DS_URL=jdbc:mysql://apollo-mysql:3306/apolloportaldb_common?characterEncoding=utf8
       - DS_USERNAME=${variUsername}
       - DS_PASSWORD=${variPassword}
       - EUREKA_SERVICE_URL=http://apollo-config-development:8080/eureka/,http://apollo-config-sandbox:8080/eureka/,http://apollo-config-production:8080/eureka/
@@ -251,36 +213,18 @@ networks:
   common:
     driver: bridge
 volumes:
-  mysql-data-development:
+  mysql-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}/development
-  mysql-data-sandbox:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}/sandbox
-  mysql-data-production:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}/production
-  mysql-data-portal:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}/portal
+      device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
 DOCKERCOMPOSEYML
   # 「docker-compose.yml」[END]
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker-compose down -v
   docker-compose -p apollo up --build -d
-  docker update --restart=always apollo-mysql-development apollo-mysql-sandbox apollo-mysql-production apollo-mysql-portal
+  docker update --restart=always apollo-mysql # -development apollo-mysql-sandbox apollo-mysql-production apollo-mysql-portal
   docker update --restart=always apollo-config-development apollo-config-sandbox apollo-config-production
   docker update --restart=always apollo-admin-development apollo-admin-sandbox apollo-admin-production
   docker update --restart=always apollo-portal-common
@@ -289,28 +233,34 @@ DOCKERCOMPOSEYML
 }
 
 function funcPublicBackup(){
-  declare -A map=(
-    ["apollo-mysql-production"]="ApolloConfigDB"
-    ["apollo-mysql-development"]="ApolloConfigDB"
-    ["apollo-mysql-sandbox"]="ApolloConfigDB"
-    ["apollo-mysql-portal"]="ApolloPortalDB"
+  local variParameterDescMulti=("custom version（default：YYYYMMDDHHMMSS）")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+  variContainer="apollo-mysql"
+  variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  variDatabaseList=(
+    "apolloconfigdb_development"
+    "apolloconfigdb_sandbox"
+    "apolloconfigdb_production"
+    "apolloportaldb_common"
   )
-  variSQLVersion=$(date "+%Y%m%d%H%M%S")
+  variDefault=$(date "+%Y%m%d%H%M%S")
+  variSQLVersion=${1:-$variDefault}
   variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
+  mkdir -p ${variSQLVersionPath}
   echo "version ：${variSQLVersion}"
-  for variEachContainer in "${!map[@]}"; do
-    variEachDatabase=${map[${variEachContainer}]}
-    mkdir -p ${variSQLVersionPath}/${variEachContainer}
-    cat <<INITSQL > ${variSQLVersionPath}/${variEachContainer}/00init.sql
+  for variEachDatabase in "${variDatabaseList[@]}"; do
+    cat <<INITSQL >> ${variSQLVersionPath}/00init.sql
 CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
 USE ${variEachDatabase};
+SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
 INITSQL
-    variEachSQLUri="${variSQLVersionPath}/${variEachContainer}/01${variEachContainer}.sql"
-    docker exec ${variEachContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
+    variEachSQLUri="${variSQLVersionPath}/01${variEachDatabase}.sql"
+    docker exec apollo-mysql mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
     if [ $? -eq 0 ]; then
-      echo "${variEachContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
+      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
     else
-      echo "${variEachContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
+      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
     fi
   done
   return 0

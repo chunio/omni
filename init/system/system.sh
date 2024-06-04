@@ -4,7 +4,7 @@
 # datetime : 2024/05/23
 
 :<<MARK
-/etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶）
+/etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶，弊端：執行「source /etc/profile」亦無法加載最新變更至當前終端））
 /etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
 MARK
 
@@ -19,7 +19,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # ##################################################
 # global variable[START]
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
-VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
+VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template apolloFailed"
 VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
 VARI_GLOBAL["USERNAME"]=""
 VARI_GLOBAL["PASSWORD"]=""
@@ -118,14 +118,14 @@ function funcProtectedCommandInit(){
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri}; then
-        # 基於當前環境的命令（即：vim /etc/profile）[START]
+        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
         pattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        if ! $(grep -qF "$pattern" /etc/profile); then
-          echo $pattern >> /etc/profile
-          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/profile' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+        if ! $(grep -qF "$pattern" /etc/bashrc); then
+          echo $pattern >> /etc/bashrc
+          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
           variEtcBashrcReloadStatus=1
         fi
-        # 基於當前環境的命令（即：vim /etc/profile）[END]
+        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
         # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -225,13 +225,6 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
   return 0
 }
 
-function funcProtectedNetwork() {
-  echo 'export http_proxy="http://192.168.255.1:10809"
-export https_proxy="http://192.168.255.1:10809"' >> /etc/profile
-  systemctl restart network.service
-  # curl -x http://192.168.255.1:10809 https://www.google.com
-}
-
 function funcProtectedEchoGreen(){
   echo -e "\033[32m$1\033[0m"
 }
@@ -287,12 +280,12 @@ IFCFGETH0
 cat <<FSTAB >> /etc/fstab
 //192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variUsername},password=${variPassword},uid=1005,gid=1005,vers=3.0 0 0
 FSTAB
-cat <<PROFILE >> /etc/profile
-export http_proxy="http://192.168.255.1:10809"
-export https_proxy="http://192.168.255.1:10809"
+cat <<PROFILE >> /etc/bashrc
+export http_proxy="http://${variProxy}"
+export https_proxy="http://${variProxy}"
 alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
 PROFILE
-  source /etc/profile
+  source /etc/bashrc
   # TODO:echo 'set nu' >> ~/.vimrc
   return 0
 }
@@ -352,7 +345,7 @@ function funcPublicSaveUnit(){
   done
   # flush the useless data[END]
   echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/profile" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
   echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
   echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
   tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
@@ -417,7 +410,38 @@ function funcPublicVersion() {
     return 0
 }
 
-
+function funcPublicV2ray() {
+  local variParameterDescMulti=("status，value：0/stop，1/start")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variStatus=${1:-1}
+  variProxy="192.168.255.1:10809"
+  case ${variStatus} in
+    1)
+      if grep -q "export http_proxy=\"http://${variProxy}\"" /etc/bashrc; then
+          sed -i 's/export http_proxy="http:\/\/'${variProxy}'"/export http_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+          sed -i 's/export https_proxy="http:\/\/'${variProxy}'"/export https_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+      else
+          echo "export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+          echo "export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+      fi
+      ;;
+    0)
+      if grep -q "export http_proxy=\"http://${variProxy}\"" /etc/bashrc; then
+          sed -i 's/export http_proxy="http:\/\/'${variProxy}'"/# export http_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+          sed -i 's/export https_proxy="http:\/\/'${variProxy}'"/# export https_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+      else
+          echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+          echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+      fi
+      ;;
+  esac
+  # systemctl restart network.service
+  source /etc/bashrc
+  # [臨時]禁用代理
+  # env -i curl https://www.google.com
+  # [臨時]啟用代理
+  # curl -x http://192.168.255.1:10809 https://www.google.com
+}
 # public function[END]
 # ##################################################
 
