@@ -19,10 +19,10 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # ##################################################
 # global variable[START]
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
-VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template apolloFailed"
+VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
-VARI_GLOBAL["USERNAME"]=""
-VARI_GLOBAL["PASSWORD"]=""
+VARI_GLOBAL["MOUNT_USERNAME"]=""
+VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # global variable[END]
 # ##################################################
 
@@ -232,8 +232,8 @@ function funcProtectedEchoGreen(){
 # 要求：基於純淨係統（centos7.9）
 function funcProtectedSystemInitMark(){
   # step1：設置網絡
-  variUsername=$(funcProtectedPullEncryptEnvi "USERNAME")
-  variPassword=$(funcProtectedPullEncryptEnvi "PASSWORD")
+  variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
+  variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
   # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
   vim /etc/default/grub
   grub2-mkconfig -o /boot/grub2/grub.cfg
@@ -278,7 +278,7 @@ IFCFGETH0
   # [selinux]查看狀態
   sestatus
 cat <<FSTAB >> /etc/fstab
-//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variUsername},password=${variPassword},uid=1005,gid=1005,vers=3.0 0 0
+//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
 FSTAB
 cat <<PROFILE >> /etc/bashrc
 export http_proxy="http://${variProxy}"
@@ -411,28 +411,30 @@ function funcPublicVersion() {
 }
 
 function funcPublicV2ray() {
-  local variParameterDescMulti=("status，value：0/stop，1/start")
+  local variParameterDescMulti=("status，value：0/disable，1/enable（default）")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variStatus=${1:-1}
   variProxy="192.168.255.1:10809"
   case ${variStatus} in
     1)
-      if grep -q "export http_proxy=\"http://${variProxy}\"" /etc/bashrc; then
-          sed -i 's/export http_proxy="http:\/\/'${variProxy}'"/export http_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
-          sed -i 's/export https_proxy="http:\/\/'${variProxy}'"/export https_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+      if grep -q 'export http_proxy="http://'${variProxy}'"' /etc/bashrc; then
+          sed -i '/http_proxy="http:\/\/'${variProxy}'"/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+          sed -i '/https_proxy="http:\/\/'${variProxy}'"/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
       else
-          echo "export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
-          echo "export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+          echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bashrc
+          echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bashrc
       fi
       ;;
     0)
-      if grep -q "export http_proxy=\"http://${variProxy}\"" /etc/bashrc; then
-          sed -i 's/export http_proxy="http:\/\/'${variProxy}'"/# export http_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
-          sed -i 's/export https_proxy="http:\/\/'${variProxy}'"/# export https_proxy="http:\/\/'${variProxy}'"/' /etc/bashrc
+      if grep -q 'export http_proxy="http://'${variProxy}'"' /etc/bashrc; then
+          sed -i '/http_proxy="http:\/\/'${variProxy}'"/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+          sed -i '/https_proxy="http:\/\/'${variProxy}'"/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
       else
           echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
           echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
       fi
+      unset http_proxy
+      unset https_proxy
       ;;
   esac
   # systemctl restart network.service
@@ -441,6 +443,9 @@ function funcPublicV2ray() {
   # env -i curl https://www.google.com
   # [臨時]啟用代理
   # curl -x http://192.168.255.1:10809 https://www.google.com
+  echo 'http_proxy = '${http_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo 'https_proxy = '${https_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  return 0
 }
 # public function[END]
 # ##################################################
