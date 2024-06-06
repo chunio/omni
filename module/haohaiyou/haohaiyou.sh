@@ -88,7 +88,11 @@ function funcPublicUnicorn()
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
-return 0
+touch /etc/bashrc
+chmod 644 /etc/bashrc
+# /windows/code/backend/chunio/omni/init/system/system.sh init && source /etc/bashrc
+# 禁止「return」
+# return 0
 ENTRYPOINTSH
   cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
 CGO_ENABLED=1
@@ -119,10 +123,17 @@ services:
     networks:
       - common
     ports:
+      - "2345:2345"
       - "8000:8000"
     # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
     # 啟動進程關閉時，則容器退出
     command: ["tail", "-f", "/dev/null"]
+    # 解決提示：connections are not authenticated nor encrypted[START]
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    # 解決提示：connections are not authenticated nor encrypted[END]
 networks:
   common:
     driver: bridge
@@ -135,6 +146,11 @@ DOCKERCOMPOSEYML
   cd ${variMasterPath}/gopath/src/${veriModuleName}
   docker exec -it ${veriModuleName} /bin/bash
   return 0
+}
+
+function funcPublicDevel(){
+  go build -gcflags="all=-N -l" -o ./bin/unicorn ./cmd/unicorn/main.go ./cmd/unicorn/wire_gen.go
+  dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/unicorn -- -conf ./config
 }
 # public function[END]
 # ##################################################
