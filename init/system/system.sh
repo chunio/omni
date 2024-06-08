@@ -410,7 +410,7 @@ function funcPublicVersion() {
     return 0
 }
 
-function funcPublicV2ray() {
+function funcPublicProxy() {
   local variParameterDescMulti=("status，value：0/disable，1/enable（default）")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variStatus=${1:-1}

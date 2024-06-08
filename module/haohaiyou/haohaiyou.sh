@@ -150,7 +150,9 @@ DOCKERCOMPOSEYML
 
 function funcPublicDevel(){
   go build -gcflags="all=-N -l" -o ./bin/unicorn ./cmd/unicorn/main.go ./cmd/unicorn/wire_gen.go
-  dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/unicorn -- -conf ./config
+  dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/unicorn -- -conf ./
+  # -----
+  go build -gcflags="all=-N -l" -o ./bin/dspservice ./module/dsp/main/main.go ./module/dsp/main/wire_gen.go
 }
 # public function[END]
 # ##################################################

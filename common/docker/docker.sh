@@ -115,10 +115,11 @@ function funcPublicDevelopmentEnvironmentInit(){
   docker rm -f $(docker ps -aq) 2> /dev/null || true
   docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | xargs -r docker network rm
   if [ ${variStatus} -eq 1 ]; then
-    omni.apollo runNode
+    omni.mysql runNode
     omni.redis runNode
-    omni.kafka runNode
     omni.mongo runNode
+    omni.kafka runNode
+    omni.apollo runNode
   fi
   docker ps -a
   return 0

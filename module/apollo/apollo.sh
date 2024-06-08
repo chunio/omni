@@ -233,7 +233,7 @@ DOCKERCOMPOSEYML
 }
 
 function funcPublicBackup(){
-  local variParameterDescMulti=("custom version（default：YYYYMMDDHHMMSS）")
+  local variParameterDescMulti=("custom version（default：YYYYMMDD）")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   variContainer="apollo-mysql"
   variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
@@ -244,7 +244,7 @@ function funcPublicBackup(){
     "apolloconfigdb_production"
     "apolloportaldb_common"
   )
-  variDefault=$(date "+%Y%m%d%H%M%S")
+  variDefault=$(date "+%Y%m%d")
   variSQLVersion=${1:-$variDefault}
   variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
   mkdir -p ${variSQLVersionPath}
