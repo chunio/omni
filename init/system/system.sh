@@ -37,8 +37,11 @@ function funcProtectedCloudInit() {
     tree
     wget
     expect
+    telnet
     dos2unix
     net-tools
+    # 含：nslookup（用以測試域名解析等）
+    bind-utils
     docker
     docker-compose
     bash-completion
@@ -413,38 +416,56 @@ function funcPublicVersion() {
 function funcPublicProxy() {
   local variParameterDescMulti=("status，value：0/disable，1/enable（default）")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variStatus=${1:-1}
-  variProxy="192.168.255.1:10809"
-  case ${variStatus} in
-    1)
-      if grep -q 'export http_proxy="http://'${variProxy}'"' /etc/bashrc; then
-          sed -i '/http_proxy="http:\/\/'${variProxy}'"/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-          sed -i '/https_proxy="http:\/\/'${variProxy}'"/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-      else
-          echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bashrc
-          echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bashrc
-      fi
-      ;;
-    0)
-      if grep -q 'export http_proxy="http://'${variProxy}'"' /etc/bashrc; then
-          sed -i '/http_proxy="http:\/\/'${variProxy}'"/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-          sed -i '/https_proxy="http:\/\/'${variProxy}'"/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-      else
-          echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
-          echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
-      fi
-      unset http_proxy
-      unset https_proxy
-      ;;
-  esac
+  variPort=${1:-0}
+  variProxy="192.168.255.1:${variPort}"
+  if [ ${variPort} -gt 0 ]; then
+    # common proxy[START]
+    if grep -q 'export http_proxy="http' /etc/bashrc; then
+        sed -i '/http_proxy="http/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+        sed -i '/https_proxy="http/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+    else
+        echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bashrc
+        echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bashrc
+    fi
+    # common proxy[END]
+    # docker proxy[START]
+    mkdir -p /etc/systemd/system/docker.service.d
+    cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=http://${variProxy}"
+Environment="HTTPS_PROXY=http://${variProxy}"
+HTTPPROXYCONF
+    # docker proxy[END]
+  else
+    # common proxy[START]
+    if grep -q 'export http_proxy="http' /etc/bashrc; then
+        sed -i '/http_proxy="http/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+        sed -i '/https_proxy="http/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+    else
+        echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+        echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+    fi
+    unset http_proxy
+    unset https_proxy
+    # common proxy[END]
+    # docker proxy[START]
+    rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
+    # docker proxy[END]
+  fi
   # systemctl restart network.service
   source /etc/bashrc
+  systemctl daemon-reload
+  systemctl restart docker
   # [臨時]禁用代理
   # env -i curl https://www.google.com
   # [臨時]啟用代理
   # curl -x http://192.168.255.1:10809 https://www.google.com
+  # ICMP（如：ping）流量不經過HTTP/SOCKS代理
+  echo '/etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo 'http_proxy = '${http_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo 'https_proxy = '${https_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo '/etc/systemd/system/docker.service.d/http-proxy.conf' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  cat /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 # public function[END]

@@ -119,7 +119,7 @@ function funcPublicDevelopmentEnvironmentInit(){
     omni.redis runNode
     omni.mongo runNode
     omni.kafka runNode
-    omni.apollo runNode
+    omni.apollo runNode 0602
   fi
   docker ps -a
   return 0
