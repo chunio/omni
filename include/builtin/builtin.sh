@@ -41,7 +41,7 @@ VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
 # 「VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0」表示不限
 VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
-# fi
+VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]=""
 # global variable[END]
 # ##################################################
 
@@ -75,6 +75,18 @@ function funcProtectedExitRecover(){
 
 # ##################################################
 # interface function[START]
+function funcProtectedSyncQiniu() {
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
+  if [ -z "$(ls -A "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}")" ]; then
+    variCloudArchivedFilename="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}.cloud.tgz"
+    omni.qiniu download ${variCloudArchivedFilename} ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+    tar -zxf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variCloudArchivedFilename} -C ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+    mv ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cloud/* ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cloud
+  fi
+  return 0
+}
+
 function funcProtectedConstruct() {
   # 禁止：於當前環境執行（如：source interface.sh）
   if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
@@ -118,6 +130,8 @@ function funcProtectedDestruct() {
   variStartTimeFormat="$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
   variEndTimeFormat="$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
   funcProtectedTrace "${variEndTimeFormat}"
+  variUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+  echo "// ${variUnitCommand} ${VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]} ..."
   echo "--------------------------------------------------"
   echo "[ trace : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace ]"
   if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" ]]; then
@@ -283,8 +297,9 @@ function funcProtectedUpdateVariGlobalBuiltinValue() {
 function funcPublicReleaseCloud(){
   variUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
   cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}
-  tar -czf /${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz ./cloud
-  ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/common/qiniu/qiniu.sh upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
+  tar -cvzf /${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz ./cloud
+  echo "omni.qiniu upload ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
+  omni.qiniu upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
   return 0
 }
 

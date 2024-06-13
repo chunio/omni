@@ -7,7 +7,9 @@
 MARK
 
 declare -A VARI_GLOBAL
+VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.sh"
@@ -31,8 +33,8 @@ VARI_GLOBAL["TODO_UPLOAD_LIST"]=""
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-    which qshell &> /dev/null
-    if [ $? -ne 0 ];then
+    variQshellPath=$(command -v qshell) || true
+    if [ -z "${variQshellPath}" ];then
         cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
         # https://github.com/qiniu/qshell/releases
         wget https://github.com/qiniu/qshell/releases/download/v2.14.0/qshell-v2.14.0-linux-386.tar.gz
@@ -56,13 +58,23 @@ function funcPublicUpload(){
   variQiniuSecretKey=$(funcProtectedPullEncryptEnvi "QINIU_SECRET_KEY")
   variQiniuBucketName=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_NAME")
   variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
-  echo 'variQiniuBucketDirectory: ' $variQiniuBucketDirectory
   # --------------------------------------------------
-  qshell account ${variQiniuAccessKey} ${variQiniuSecretKey} ${variQiniuAccount} &> /dev/null
+  qshell account ${variQiniuAccessKey} ${variQiniuSecretKey} ${variQiniuAccount} &> /dev/null || true
   if [ -n "${variTodoUploadFileUri}" ];then
     echo "qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri"
     qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri
   fi
+  return 0
+}
+
+function funcPublicDownload(){
+  variParameterDescList=("the uri of the file to be downloaded" "save path")
+  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variCloudArchivedFilename=${1}
+  variSavePath=${2}
+  variQiniuDomainAlias=$(funcProtectedPullEncryptEnvi "QINIU_DOMAIN_ALIAS")
+  variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
+  wget ${variQiniuDomainAlias}/${variQiniuBucketDirectory}/${variCloudArchivedFilename} -O ${variSavePath}/${variCloudArchivedFilename}
   return 0
 }
 # public function[END]

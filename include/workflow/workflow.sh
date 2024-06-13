@@ -6,6 +6,8 @@
 :<<MARK
 MARK
 
+VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]=${1}
+
 # ##################################################
 if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "MASTER" ]]; then
   set +e

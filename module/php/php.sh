@@ -26,6 +26,11 @@ VARI_GLOBAL["CONTAINER_NAME"]="php8370environment"
 
 # ##################################################
 # protected function[START]
+function funcProtectedCloudInit() {
+  funcProtectedSyncQiniu
+  return 0
+}
+
 function funcProtected8370CloudInit() {
     rm -f /var/run/yum.pid
     variPackageList=(
