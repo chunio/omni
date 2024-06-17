@@ -54,7 +54,7 @@ function funcProtectedCloudInit() {
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
     variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}"
+    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
     # 安裝狀態，值：0/已安裝，1/未安裝
     variInstalled=$?
     case $variEachPackage in
