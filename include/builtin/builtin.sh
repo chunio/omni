@@ -88,6 +88,21 @@ function funcProtectedSyncQiniu() {
 }
 
 function funcProtectedConstruct() {
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  if [ -f "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" ]; then
+    cat <<ENCRYPTENVI >> ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi
+#!/bin/bash
+
+# author : zengweitao@gmail.com
+# datetime : 2024/05/20
+
+:<<MARK
+MARK
+
+declare -A VARI_ENCRYPT
+ENCRYPTENVI
+  fi
   # 禁止：於當前環境執行（如：source interface.sh）
   if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
       echo "the run mode is prohibited"
