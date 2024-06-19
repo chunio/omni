@@ -95,7 +95,7 @@ chmod 644 /etc/bashrc
 # return 0
 ENTRYPOINTSH
   cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
-CGO_ENABLED=1
+CGO_ENABLED=0
 GO111MODULE=on
 GOBIN=${variDockerWorkSpace}/gopath/bin
 GOCACHE=${variDockerWorkSpace}/gocache.linux
