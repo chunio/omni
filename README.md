@@ -1,7 +1,7 @@
 # Omni
 ## Installation
 ```
-[root@localhost /]# mkdir -p /windows/code/backend/chunio
+[root@localhost /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [root@localhost /]# git clone https://github.com/chunio/omni.git
 [root@localhost /]# cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 [root@localhost /]# omni.system version

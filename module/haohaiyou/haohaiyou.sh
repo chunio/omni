@@ -78,6 +78,21 @@ DOCKERCOMPOSEYML
 
 function funcPublicUnicorn()
 {
+  # cat /etc/os-release
+  # ##################################################
+  # PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+  # NAME="Debian GNU/Linux"
+  # VERSION_ID="12"
+  # VERSION="12 (bookworm)"
+  # VERSION_CODENAME=bookworm
+  # ID=debian
+  # HOME_URL="https://www.debian.org/"
+  # SUPPORT_URL="https://www.debian.org/support"
+  # BUG_REPORT_URL="https://bugs.debian.org/"
+  # ##################################################
+  # apt-get update
+  # apt-get install -y graphviz
+  # apt-get install -y vim
   # [MASTER]persistence
   variMasterPath="/windows/code/backend/haohaiyou"
   # [DOCKER]temporary
@@ -109,7 +124,7 @@ GOENVLINUX
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   ${veriModuleName}:
-    image: golang:1.22.0
+    image: chunio/go:1.22.4
     container_name: ${veriModuleName}
     environment:
       - GOENV=/go.env.linux
@@ -148,11 +163,106 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+function funcPublicUnicornTemp()
+{
+  # [MASTER]persistence
+  variMasterPath="/windows/code/backend/haohaiyou"
+  # [DOCKER]temporary
+  variDockerWorkSpace="/windows/code/backend/haohaiyou"
+  # local variParameterDescMulti=("module name（from:${variMasterPath}/gopath/src/*）")
+  # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variModuleName="unicorn"
+  mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${variModuleName}:
+    image: chunio/go:1220
+    container_name: ${variModuleName}
+    environment:
+      - GOENV=/windows/code/backend/golang/go.env.linux
+      - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+    volumes:
+      - /windows/code/backend/haohaiyou/go.env.linux:/windows/code/backend/golang/go.env.linux
+      - /windows/code/backend/haohaiyou:/windows/code/backend/golang
+    working_dir: /windows/code/backend/golang/gopath/src/${variModuleName}
+    networks:
+      - common
+    command: ["tail", "-f", "/dev/null"]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${variModuleName} up --build -d
+  docker update --restart=always ${variModuleName}
+  docker ps -a | grep ${variModuleName}
+  cd ${variMasterPath}/gopath/src/${variModuleName}
+  docker exec -it ${variModuleName} /bin/bash
+  return 0
+}
+
 function funcPublicDevel(){
   go build -gcflags="all=-N -l" -o ./bin/unicorn ./cmd/unicorn/main.go ./cmd/unicorn/wire_gen.go
   dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/unicorn -- -conf ./
   # -----
   go build -gcflags="all=-N -l" -o ./bin/dspservice ./module/dsp/main/main.go ./module/dsp/main/wire_gen.go
+}
+
+# 容器內部執行
+function funcPublic1220EnvironmentInit(){
+  yum install -y git
+  # wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go1.22.0.linux-amd64.tar.gz
+  tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.22.0.linux-amd64.tar.gz -C /usr/local
+  variWorkPath="/windows/code/backend"
+  mkdir -p ${variWorkPath}
+  mkdir -p ${variWorkPath}/golang/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variWorkPath}/golang/gopath{/bin,/pkg,/src}
+  cat <<GOENVLINUX > ${variWorkPath}/golang/go.env.linux
+CGO_ENABLED=0
+GO111MODULE=on
+GOBIN=${variWorkPath}/golang/gopath/bin
+GOCACHE=${variWorkPath}/golang/gocache.linux
+GOMODCACHE=${variWorkPath}/golang/gopath/pkg/mod
+GOPATH=${variWorkPath}/golang/gopath
+GOPROXY=https://goproxy.cn,direct
+GOROOT=/usr/local/go
+GOSUMDB=sum.golang.google.cn
+GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
+GOENVLINUX
+  cat <<ETCBASHRC >> /etc/bashrc
+export PATH=$PATH:/usr/local/go/bin:${variWorkPath}/golang/gopath/bin
+export GOENV=${variWorkPath}/golang/go.env.linux
+ETCBASHRC
+  #  mkdir -p ${variWorkPath}/chunio
+  #  git clone https://github.com/chunio/omni.git
+  #  cd ${variWorkPath}/chunio/omni
+  #  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+  cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bin/* ${variWorkPath}/golang/gopath/bin/
+  ulimit -n 102400
+  return 0
+}
+
+function funcPublicRebuildImage(){
+  # 構建鏡像[START]
+  variParameterDescList=("image pattern（example ：chunio/go:1220）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variImagePattern=${1-"chunio/go:1220"}
+  variContainerName="go1220Environment"
+  docker rm -f ${variContainerName} 2> /dev/null
+  docker rmi -f $variImagePattern 2> /dev/null
+  # 鏡像不存在時自動執行：docker pull $variImageName
+  docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9.2009 /sbin/init
+  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1220EnvironmentInit;"
+  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
+  echo "docker commit $variContainerId $variImagePattern"
+  docker commit $variContainerId $variImagePattern
+  docker ps --filter "name=${variContainerName}"
+  docker images --filter "reference=${variImagePattern}"
+  echo "${FUNCNAME} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "docker exec -it ${variContainerName} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  return 0
 }
 # public function[END]
 # ##################################################
