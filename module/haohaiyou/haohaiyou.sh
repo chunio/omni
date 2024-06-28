@@ -22,7 +22,30 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # protected function[START]
-
+function funcProtectedCicdAdminEnvironmentInit(){
+    tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+    mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+    echo "StrictHostKeyChecking no" > ~/.ssh/config
+    chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+    yum install -y git
+    mkdir -p /windows/runtime
+    mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+    git clone https://github.com/chunio/omni.git
+    cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+    omni.system version
+    mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+    git clone git@github.com:chunio/skeleton.git
+    expect <<EOF
+spawn omni.haohaiyou skeleton chunio/php:8370
+expect "skeleton"
+send "composer install\r"
+expect "skeleton"
+send "nohup php bin/hyperf.php start > /windows/runtime/hyperf.log 2>&1 &\r"
+expect "skeleton"
+send "exit\r"
+expect eof
+EOF
+}
 # protected function[END]
 # ##################################################
 
@@ -264,7 +287,80 @@ function funcPublicRebuildImage(){
   echo "docker exec -it ${variContainerName} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
+
+# 重建環境
+# code ci/cd（代碼/配置文件）
+# 直連觀察
+function funcPublicJumper(){
+    # singapore/2vcpu/4gb/amd
+    variAdminServer=(
+        128.199.173.27
+    )
+    variCodeServer=(
+        # SINGAPORE
+        152.42.251.176
+        152.42.193.254
+        # NEW YORK
+        157.230.10.50
+        147.182.128.14
+    )
+    ssh root@152.42.190.75
+    ssh root@152.42.222.142
+    ssh root@143.198.166.88
+    return 0
+}
+
+# about : funcProtectedCicdAdminEnvironmentInit
+function funcPublicCicdAdminEnvironmentInit() {
+    variIpList=(
+        # SINGAPORE
+        128.199.173.27
+    )
+    # [相對路徑]歸檔/解壓[START]
+    cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/ssh ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+    tar -czvf ${variUnitCommand}.cloud.ssh.tgz ssh
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh
+    cd -
+    # [相對路徑]歸檔/解壓[START]
+    for variEachIp in "${variIpList[@]}"; do
+        scp ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.ssh.tgz "root@${variEachIp}:/"
+        echo "connecting to $variEachIp"
+        ssh -t root@"$variEachIp" 'bash -s' <<EOF
+$(typeset -f funcProtectedCicdAdminEnvironmentInit)
+funcProtectedCicdAdminEnvironmentInit
+exec \$SHELL
+EOF
+    done
+}
+
+function funcPublicCicdRebuildCodeEnvironment()
+{
+    ip=(
+        # SINGAPORE
+        152.42.251.176
+        152.42.193.254
+        # NEW YORK
+        157.230.10.50
+        147.182.128.14
+    )
+    # 1安裝omni
+    # 2後台執行
+}
+
+function funcPublicMongo(){
+#     db.bid_stream_20240626.count({ bid_response_status: 1 })
+#     db.bid_stream_20240626.find({ bid_response_status:1 })
+#     db.bid_stream_20240626.find({ auction_price: { $ne: null } })
+#     db.getCollection("bid_stream_20240626").find({
+#       creative_snapshot_json: {
+#         $regex: "\\[\\s*{\\s*\"creative_id\"\\s*:\\s*\"1528\""
+#       }
+#     })
+    return 0
+}
 # public function[END]
+
 # ##################################################
 
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/workflow/workflow.sh"
