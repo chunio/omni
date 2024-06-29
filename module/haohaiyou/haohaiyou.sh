@@ -22,7 +22,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # protected function[START]
-function funcProtectedCicdAdminEnvironmentInit(){
+# trigger : funcPublicDigitalOceanAdminInit
+function funcProtectedDigitalOceanAdminInit(){
+    # --------------------------------------------------
     tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
     mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
     echo "StrictHostKeyChecking no" > ~/.ssh/config
@@ -34,17 +36,49 @@ function funcProtectedCicdAdminEnvironmentInit(){
     cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
     omni.system version
     mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+    # --------------------------------------------------
     git clone git@github.com:chunio/skeleton.git
-    expect <<EOF
-spawn omni.haohaiyou skeleton chunio/php:8370
-expect "skeleton"
-send "composer install\r"
-expect "skeleton"
-send "nohup php bin/hyperf.php start > /windows/runtime/hyperf.log 2>&1 &\r"
-expect "skeleton"
-send "exit\r"
-expect eof
-EOF
+    expect -c '
+    set timeout -1
+    spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
+    expect "skeleton"
+    send "composer install\r"
+    expect "skeleton"
+    send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+    expect "skeleton"
+    send "exit\r"
+    expect eof
+    '
+    return 0
+}
+
+# trigger : funcPublicDigitalOceanCodeInit
+function funcProtectedDigitalOceanCodeInit(){
+    # --------------------------------------------------
+    tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+    mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+    echo "StrictHostKeyChecking no" > ~/.ssh/config
+    chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+    yum install -y git
+    mkdir -p /windows/runtime
+    mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+    git clone https://github.com/chunio/omni.git
+    cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+    omni.system version
+    mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+    # --------------------------------------------------
+    git clone git@github.com:MHapdream/adexchange.git
+    mv adexchange unicorn
+    expect -c '
+    set timeout -1
+    spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
+    expect "unicorn"
+    send "nohup ./bin/unicorn_bid_exec -conf ./envi/file/production > /windows/runtime/unicorn.log 2>&1 &\r"
+    expect "unicorn"
+    send "exit\r"
+    expect eof
+    '
+    return 0
 }
 # protected function[END]
 # ##################################################
@@ -310,43 +344,152 @@ function funcPublicJumper(){
     return 0
 }
 
-# about : funcProtectedCicdAdminEnvironmentInit
-function funcPublicCicdAdminEnvironmentInit() {
-    variIpList=(
-        # SINGAPORE
-        128.199.173.27
+# about : funcProtectedDigitalOceanAdminInit
+function funcPublicDigitalOceanJumpInitOld() {
+    tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+    scp ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz "root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]}:/"
+    echo "initiate connection : $variEachIp"
+    # 將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
+    ssh -t root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]} 'bash -s' <<JUMPEOF
+$(typeset -f funcProtectedDigitalOceanAdminInit)
+funcProtectedDigitalOceanAdminInit
+exec \$SHELL
+JUMPEOF
+}
+
+function funcPublicDigitalOceanAdminInit() {
+    VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]="146.190.4.224"
+    tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+    rm -rf /root/.ssh/known_hosts
+    scp -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]}:/
+    echo "initiate connection : $variEachIp"
+    # 將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
+    # ssh root@138.197.61.74
+    ssh -o StrictHostKeyChecking=no -t root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]} 'bash -s' <<JUMPEOF
+      # omni.system init[START]
+      tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+      mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+      echo "StrictHostKeyChecking no" > ~/.ssh/config
+      chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+      yum install -y git
+      mkdir -p /windows/runtime
+      mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+      git clone https://github.com/chunio/omni.git
+      cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+      # omni.system version
+      # omni.system init[END]
+      # skeleton[START]
+      mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+      git clone git@github.com:chunio/skeleton.git && cd skeleton && /usr/bin/cp -rf .env.production .env
+      expect -c '
+      set timeout -1
+      spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
+      expect "skeleton"
+      send "composer install\r"
+      expect "skeleton"
+      send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+      expect "skeleton"
+      send "exit\r"
+      expect eof
+      '
+      # skeleton[END]
+JUMPEOF
+}
+
+# about : funcProtectedDigitalOceanCodeInit
+function funcPublicDigitalOceanCodeInit()
+{
+    variDigitalOceanUnicornIpList=(
+        # SINGAPORE[START]
+        # notice
+        139.59.118.35
+        139.59.126.8
+        # bid
+        68.183.233.239
+        68.183.233.198
+        # SINGAPORE[END]
+        # NEW YORK[START]
+        # bid
+        45.55.68.157
+        45.55.68.174
+        # NEW YORK[END]
     )
     # [相對路徑]歸檔/解壓[START]
-    cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/ssh ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh
-    cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-    tar -czvf ${variUnitCommand}.cloud.ssh.tgz ssh
-    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh
+    cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/ssh ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh && cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+    tar -czvf omni.haohaiyou.cloud.ssh.tgz && rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/ssh
     cd -
-    # [相對路徑]歸檔/解壓[START]
-    for variEachIp in "${variIpList[@]}"; do
-        scp ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.ssh.tgz "root@${variEachIp}:/"
-        echo "connecting to $variEachIp"
+    # [相對路徑]歸檔/解壓[END]
+    for variEachIp in "${variDigitalOceanCodeServerIpList[@]}"; do
+        scp ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz "root@${variEachIp}:/"
+        echo "initiate connection : $variEachIp"
+        # 將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
         ssh -t root@"$variEachIp" 'bash -s' <<EOF
-$(typeset -f funcProtectedCicdAdminEnvironmentInit)
-funcProtectedCicdAdminEnvironmentInit
-exec \$SHELL
+    $(typeset -f funcProtectedDigitalOceanCodeInit)
+    funcProtectedDigitalOceanCodeInit
+    exec \$SHELL
 EOF
     done
 }
 
-function funcPublicCicdRebuildCodeEnvironment()
-{
-    ip=(
-        # SINGAPORE
-        152.42.251.176
-        152.42.193.254
-        # NEW YORK
-        157.230.10.50
-        147.182.128.14
-    )
-    # 1安裝omni
-    # 2後台執行
+function funcPublicDigitalOceanSkeletonCicd(){
+      echo "initiate connection : ${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]}"
+      rm -rf /root/.ssh/known_hosts
+      ssh -o StrictHostKeyChecking=no -t root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]} <<'JUMPCOMMANDEOF'
+        docker rm -f skeleton
+        cd /windows/code/backend/haohaiyou/gopath/src/skeleton
+        echo "git pull ..."
+        variOutput=$(git pull)
+        if echo "$variOutput" | grep -q "composer.lock"; then
+            echo "composer.lock has been updated >> composer install ..."
+            composer install
+        else
+            echo "composer.lock has not been updated"
+        fi
+        /usr/bin/cp -rf .env.production .env
+        expect -c '
+        set timeout -1
+        spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
+        expect "skeleton"
+        send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+        expect "skeleton"
+        send "exit\r"
+        expect eof
+        '
+        exec $SHELL
+JUMPCOMMANDEOF
+    return 0
 }
+
+function funcPublicDigitalOceanUnicornCicd(){
+    for variEachValue in "${variDigitalOceanUnicornIpList[@]}"; do
+      echo "initiate connection : ${variEachValue}"
+      ssh -t root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]} <<JUMPCOMMANDEOF
+        # //TODO：send SHUTDOWN/signal to redis pub/sub
+        ssh -t root@${variEachValue} 'bash -s' <<'REMOTSERVEREOF'
+          # remote server[START]
+          docker rm -f unicorn
+          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+          echo "git pull ..."
+          git pull
+          expect -c '
+          set timeout -1
+          spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
+          expect "unicorn"
+          send "nohup ./bin/unicorn_bid_exec -conf ./envi/file/production > /windows/runtime/unicorn.log 2>&1 &\r"
+          expect "unicorn"
+          send "exit\r"
+          expect eof
+          '
+          # remote server[END]
+          exec \$SHELL
+REMOTSERVEREOF
+JUMPCOMMANDEOF
+    done
+    return 0
+}
+
+# TODO:連接終端，ip池，顯示終端
+
 
 function funcPublicMongo(){
 #     db.bid_stream_20240626.count({ bid_response_status: 1 })
