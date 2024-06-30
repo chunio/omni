@@ -101,7 +101,6 @@ DOCKERCOMPOSEYML
 
 function funcPublicUnicorn()
 {
-  echo '${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]} >> '${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]} 
   # cat /etc/os-release
   # ##################################################
   # PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
@@ -124,6 +123,7 @@ function funcPublicUnicorn()
   veriModuleName="unicorn"
   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
@@ -133,6 +133,7 @@ chmod 644 /etc/bashrc
 # 禁止「return」
 # return 0
 ENTRYPOINTSH
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
   cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
 CGO_ENABLED=0
 GO111MODULE=on
@@ -486,7 +487,7 @@ function funcPublicDigitalOceanCodeInit() {
     fi
   done
   echo -n "enter the [number]index ( 空格間隔 ) : "
-  read -a machineIndex
+  read -a variInputIndexList
   variMasterKeyword="ADMIN"
   for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
@@ -495,10 +496,10 @@ function funcPublicDigitalOceanCodeInit() {
       variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
       variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
-      for index in "${machineIndex[@]}"; do
+      for variEachInputIndex in "${variInputIndexList[@]}"; do
         for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
-          if [[ $variEachIndex == $index ]]; then
+          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
             variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
             variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $3}')
             variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
@@ -512,22 +513,41 @@ function funcPublicDigitalOceanCodeInit() {
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                # omni.system init[START]
+                # ssh init[START]
                 tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
                 mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
                 echo "StrictHostKeyChecking no" > ~/.ssh/config
                 chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+                # ssh init[END]
+                # omni.system init[START]
                 yum install -y git
                 mkdir -p /windows/runtime
-                mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio && rm -rf omni
-                git clone https://github.com/chunio/omni.git
-                cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                if [ -d "/windows/code/backend/chunio/omni" ]; then
+                  cd /windows/code/backend/chunio/omni
+                  echo "git fetch origin ..."
+                  git fetch origin
+                  echo "git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                else
+                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+                  git clone https://github.com/chunio/omni.git
+                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                fi
                 # omni.system init[END]
                 docker rm -f unicorn
-                mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-                rm -rf unicorn
-                git clone git@github.com:chunio/unicorn.git
-                chmod 777 -R unicorn && cd unicorn
+                if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
+                  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+                  echo "git fetch origin ..."
+                  git fetch origin
+                  echo "git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  chmod 777 -R .
+                else
+                  mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+                  git clone git@github.com:chunio/unicorn.git
+                  chmod 777 -R unicorn && cd unicorn
+                fi
                 expect -c '
                 set timeout -1
                 spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
@@ -538,7 +558,6 @@ function funcPublicDigitalOceanCodeInit() {
                 expect eof
                 '
                 # remote server[END]
-                exec $SHELL
 SLAVEEOF
 MASTEREOF
           fi
