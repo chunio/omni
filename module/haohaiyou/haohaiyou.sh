@@ -51,12 +51,6 @@ VARI_DIGITAL_OCEAN=(
 
 # ##################################################
 # public function[START]
-#function funcPublicUnicorn(){
-#  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-#  pwd && du -sh && ls -alh
-#  return 0
-#}
-
 function funcPublicSkeleton(){
   # [MASTER]persistence
   variMasterPath="/windows/code/backend/haohaiyou"
@@ -98,6 +92,46 @@ DOCKERCOMPOSEYML
   docker exec -it ${veriModuleName} /bin/bash
   return 0
 }
+
+# function funcPublicUnicorn()
+# {
+#   # [MASTER]persistence
+#   variMasterPath="/windows/code/backend/haohaiyou"
+#   # [DOCKER]temporary
+#   variDockerWorkSpace="/windows/code/backend/haohaiyou"
+#   # local variParameterDescMulti=("module name（from:${variMasterPath}/gopath/src/*）")
+#   # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+#   variModuleName="unicorn"
+#   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
+#   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
+#   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+# services:
+#   ${variModuleName}:
+#     image: golang:1.22.4
+#     container_name: ${variModuleName}
+#     environment:
+#       - GOENV=/windows/code/backend/golang/go.env.linux
+#       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+#     volumes:
+#       - /windows/code/backend/haohaiyou/go.env.linux:/windows/code/backend/golang/go.env.linux
+#       - /windows/code/backend/haohaiyou:/windows/code/backend/golang
+#     working_dir: /windows/code/backend/golang/gopath/src/${variModuleName}
+#     networks:
+#       - common
+#     command: ["tail", "-f", "/dev/null"]
+# networks:
+#   common:
+#     driver: bridge
+# DOCKERCOMPOSEYML
+#   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+#   docker-compose down -v
+#   docker-compose -p ${variModuleName} up --build -d
+#   docker update --restart=always ${variModuleName}
+#   docker ps -a | grep ${variModuleName}
+#   cd ${variMasterPath}/gopath/src/${variModuleName}
+#   docker exec -it ${variModuleName} /bin/bash
+#   return 0
+# }
 
 function funcPublicUnicorn()
 {
@@ -188,46 +222,6 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-# function funcPublicUnicornTemp()
-# {
-#   # [MASTER]persistence
-#   variMasterPath="/windows/code/backend/haohaiyou"
-#   # [DOCKER]temporary
-#   variDockerWorkSpace="/windows/code/backend/haohaiyou"
-#   # local variParameterDescMulti=("module name（from:${variMasterPath}/gopath/src/*）")
-#   # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-#   variModuleName="unicorn"
-#   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
-#   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
-#   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-# services:
-#   ${variModuleName}:
-#     image: chunio/go:1224
-#     container_name: ${variModuleName}
-#     environment:
-#       - GOENV=/windows/code/backend/golang/go.env.linux
-#       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
-#     volumes:
-#       - /windows/code/backend/haohaiyou/go.env.linux:/windows/code/backend/golang/go.env.linux
-#       - /windows/code/backend/haohaiyou:/windows/code/backend/golang
-#     working_dir: /windows/code/backend/golang/gopath/src/${variModuleName}
-#     networks:
-#       - common
-#     command: ["tail", "-f", "/dev/null"]
-# networks:
-#   common:
-#     driver: bridge
-# DOCKERCOMPOSEYML
-#   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-#   docker-compose down -v
-#   docker-compose -p ${variModuleName} up --build -d
-#   docker update --restart=always ${variModuleName}
-#   docker ps -a | grep ${variModuleName}
-#   cd ${variMasterPath}/gopath/src/${variModuleName}
-#   docker exec -it ${variModuleName} /bin/bash
-#   return 0
-# }
-
 # from : funcPublicRebuildImage()
 function funcPublic1224EnvironmentInit(){
   yum install -y git
@@ -283,24 +277,6 @@ function funcPublicRebuildImage(){
   return 0
 }
 
-# VARI_DIGITAL_OCEAN=(
-#   "0 bwh81 98.142.138.87 29396 --"
-#   # SINGAPORE[START]
-#   # admin
-#   "1 admin 146.190.4.224 22 SINGAPORE"
-#   # notice
-#   "2 notice 139.59.118.35 22 SINGAPORE"
-#   "3 notice 139.59.126.8 22 SINGAPORE"
-#   # bid
-#   "4 bid 68.183.233.239 22 SINGAPORE"
-#   "5 bid 68.183.233.198 22 SINGAPORE"
-#   # SINGAPORE[END]
-#   # NEW YORK[START]
-#   # bid
-#   "6 bid 45.55.68.157 22 NEWYORK"
-#   "7 bid 45.55.68.174 22 NEWYORK"
-#   # NEW YORK[END]
-# )
 function funcPublicDigitalOceanIndex(){
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
@@ -343,7 +319,6 @@ function funcPublicDigitalOceanIndex(){
   echo "error : invalid index ($variInput)"
   return 1
 }
-
 
 function funcPublicDigitalOceanAdminInit() {
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
@@ -393,66 +368,38 @@ EOF
   return 0
 }
 
-# ≈
-function funcPublicDigitalOceanCodeInitOld() {
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $4}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $5}')
+function funcPublicDigitalOceanSkeletonCicd(){
+  variLabel="admin"
+  for variValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+    if [[ $variValue == *" ${variLabel} "* ]]; then
+      variEachIP=$(echo $variValue | awk '{print $3}')
+      variEachPort=$(echo $variValue | awk '{print $4}')
       # --------------------------------------------------
-      variSlaveKeyword="CODE"
-      for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-        if [[ $variSlaveValue == *" ${variSlaveKeyword}"* ]]; then
-          variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
-          variEachSlaveIP=$(echo $variSlaveValue | awk '{print $3}')
-          variEachSlavePort=$(echo $variSlaveValue | awk '{print $4}')
-          variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $5}')
-          echo "initiate connection : [${variEachMasterLabel} / ${variEachMastrRegion}]${variEachMasterIP}:${variEachMastrPort} ..."
-          rm -rf /root/.ssh/known_hosts
-          ssh -o StrictHostKeyChecking=no -p ${variEachMastrPort} -t root@${variEachMasterIP} <<MASTEREOF
-            # //TODO：send SHUTDOWN/signal to redis pub/sub
-            echo "initiate connection : [${variEachSlaveLabel} / ${variEachSlaveRegion}]${variEachSlaveIP}:${variEachSlavePort} ..."
-            rm -rf /root/.ssh/known_hosts
-            scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-            ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-              # omni.system init[START]
-              tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-              mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-              echo "StrictHostKeyChecking no" > ~/.ssh/config
-              chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-              yum install -y git
-              mkdir -p /windows/runtime
-              mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-              git clone https://github.com/chunio/omni.git
-              cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-              # omni.system init[END]
-              mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-              git clone git@github.com:chunio/unicorn.git
-              chmod 777 -R unicorn && cd unicorn
-              expect -c '
-              set timeout -1
-              spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
-              expect "unicorn"
-              send {echo "export NODE_LABEL='${variEachSlaveLabel}'" >> /etc/bashrc\r}
-              expect "unicorn"
-              send {echo "export NODE_REGION='${variEachSlaveRegion}'" >> /etc/bashrc\r}
-              expect "unicorn"
-              send "source /etc/bashrc\r"
-              send "nohup ./bin/unicorn_exec -ENVI_LABEL production -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &\r"
-              expect "unicorn"
-              send "exit\r"
-              expect eof
-              '
-              # remote server[END]
-              exec \$SHELL
-SLAVEEOF
-MASTEREOF
+      echo "initiate connection : ${variEachIP}:${variEachPort}"
+      rm -rf /root/.ssh/known_hosts
+      ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIP} <<'EOF'
+        docker rm -f skeleton
+        cd /windows/code/backend/haohaiyou/gopath/src/skeleton
+        echo "git pull ..."
+        variOutput=$(git pull)
+        if echo "$variOutput" | grep -q "composer.lock"; then
+            echo "composer.lock has been updated >> composer install ..."
+            composer install
+        else
+            echo "composer.lock has not been updated"
         fi
-      done
+        /usr/bin/cp -rf .env.production .env
+        expect -c '
+        set timeout -1
+        spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
+        expect "skeleton"
+        send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+        expect "skeleton"
+        send "exit\r"
+        expect eof
+        '
+        exec $SHELL
+EOF
       # --------------------------------------------------
     fi
   done
@@ -568,59 +515,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicDigitalOceanCodeCicdOld() {
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $4}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $5}')
-      # --------------------------------------------------
-      echo -n "enter the slave keyword（enum:CODE | CODE/BID | CODE/NOTICE）:"
-      read variSlaveKeyword
-      for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-        if [[ $variSlaveValue == *" ${variSlaveKeyword}"* ]]; then
-          variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
-          variEachSlaveIP=$(echo $variSlaveValue | awk '{print $3}')
-          variEachSlavePort=$(echo $variSlaveValue | awk '{print $4}')
-          variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $5}')
-          echo "initiate connection : [${variEachMasterLabel} / ${variEachMastrRegion}]${variEachMasterIP}:${variEachMastrPort} ..."
-          rm -rf /root/.ssh/known_hosts
-          ssh -o StrictHostKeyChecking=no -p ${variEachMastrPort} -t root@${variEachMasterIP} <<MASTEREOF
-            # //TODO：send SHUTDOWN/signal to redis pub/sub
-            echo "initiate connection : [${variEachSlaveLabel} / ${variEachSlaveRegion}]${variEachSlaveIP}:${variEachSlavePort} ..."
-            rm -rf /root/.ssh/known_hosts
-            scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-            ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-            docker rm -f unicorn
-            cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-            echo "git fetch origin ..."
-            git fetch origin
-            echo "git reset --hard origin/main ..."
-            git reset --hard origin/main
-            chmod 777 -R .
-            expect -c '
-            set timeout -1
-            spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
-            expect "unicorn"
-            send "nohup ./bin/unicorn_exec -ENVI_LABEL production -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &\r"
-            expect "unicorn"
-            send "exit\r"
-            expect eof
-            '
-            exec $SHELL
-SLAVEEOF
-MASTEREOF
-        fi
-      done
-      # --------------------------------------------------
-    fi
-  done
-  return 0
-}
-
-function funcPublicDigitalOceanCodeCicd() {
+function funcPublicDigitalOceanUnicornCicd() {
   # --------------------------------------------------
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
@@ -705,77 +600,6 @@ MASTEREOF
   done
   return 0
 }
-
-
-
-function funcPublicDigitalOceanSkeletonCicd(){
-  variLabel="admin"
-  for variValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-    if [[ $variValue == *" ${variLabel} "* ]]; then
-      variEachIP=$(echo $variValue | awk '{print $3}')
-      variEachPort=$(echo $variValue | awk '{print $4}')
-      # --------------------------------------------------
-      echo "initiate connection : ${variEachIP}:${variEachPort}"
-      rm -rf /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIP} <<'EOF'
-        docker rm -f skeleton
-        cd /windows/code/backend/haohaiyou/gopath/src/skeleton
-        echo "git pull ..."
-        variOutput=$(git pull)
-        if echo "$variOutput" | grep -q "composer.lock"; then
-            echo "composer.lock has been updated >> composer install ..."
-            composer install
-        else
-            echo "composer.lock has not been updated"
-        fi
-        /usr/bin/cp -rf .env.production .env
-        expect -c '
-        set timeout -1
-        spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
-        expect "skeleton"
-        send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
-        expect "skeleton"
-        send "exit\r"
-        expect eof
-        '
-        exec $SHELL
-EOF
-      # --------------------------------------------------
-    fi
-  done
-  return 0
-}
-
-function funcPublicDigitalOceanUnicornCicd(){
-    for variEachValue in "${variDigitalOceanUnicornIpList[@]}"; do
-      echo "initiate connection : ${variEachValue}"
-      ssh -t root@${VARI_GLOBAL["DIGITAL_OCEAN_ADMIN_IP"]} <<JUMPCOMMANDEOF
-        # //TODO：send SHUTDOWN/signal to redis pub/sub
-        ssh -t root@${variEachValue} 'bash -s' <<'REMOTSERVEREOF'
-          # remote server[START]
-          docker rm -f unicorn
-          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-          echo "git pull ..."
-          git pull
-          expect -c '
-          set timeout -1
-          spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
-          expect "unicorn"
-          send "nohup ./bin/unicorn_bid_exec -conf ./envi/file/production > /windows/runtime/unicorn.log 2>&1 &\r"
-          expect "unicorn"
-          send "exit\r"
-          expect eof
-          '
-          # remote server[END]
-          exec \$SHELL
-REMOTSERVEREOF
-JUMPCOMMANDEOF
-    done
-    return 0
-}
-
-# TODO:連接終端，ip池，顯示終端
-
 
 function funcPublicMongo(){
 #     db.bid_stream_20240626.count({ bid_response_status: 1 })
