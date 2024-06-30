@@ -101,6 +101,7 @@ DOCKERCOMPOSEYML
 
 function funcPublicUnicorn()
 {
+  echo '${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]} >> '${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]} 
   # cat /etc/os-release
   # ##################################################
   # PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
@@ -518,8 +519,7 @@ function funcPublicDigitalOceanCodeInit() {
                 chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
                 yum install -y git
                 mkdir -p /windows/runtime
-                mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                rm -rf omni
+                mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio && rm -rf omni
                 git clone https://github.com/chunio/omni.git
                 cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 # omni.system init[END]
