@@ -199,6 +199,7 @@ services:
       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
     volumes:
       - /windows:/windows
+      - /mnt:/mnt
       # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
