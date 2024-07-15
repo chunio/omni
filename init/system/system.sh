@@ -57,7 +57,6 @@ function funcProtectedCloudInit() {
     grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
     # 安裝狀態，值：0/已安裝，1/未安裝
     variInstalled=$?
-    echo '${variEachPackage} >>>> '${variEachPackage}
     case ${variEachPackage} in
       "docker")
         if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
