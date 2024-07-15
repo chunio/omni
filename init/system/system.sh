@@ -57,7 +57,7 @@ function funcProtectedCloudInit() {
     grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
     # 安裝狀態，值：0/已安裝，1/未安裝
     variInstalled=$?
-    case $variEachPackage in
+    case ${variEachPackage} in
       "docker")
         if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
@@ -89,7 +89,7 @@ function funcProtectedCloudInit() {
       *)
         local variCount=0
         while [ $variCount -lt $variRetry ]; do
-          if [ "${variInstalled}" == 0 ] || yum install -y "$variEachPackage"; then
+          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
             if [ ${variInstalled} != 0 ]; then
               echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
             fi

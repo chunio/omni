@@ -78,7 +78,7 @@ function funcProtected8370CloudInit() {
     for variEachPackage in "${variPackageList[@]}"; do
       local variCount=0
       while [ $variCount -lt $variRetry ]; do
-        if yum install -y "$variEachPackage"; then
+        if yum install -y "${variEachPackage}"; then
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
           break
         else
