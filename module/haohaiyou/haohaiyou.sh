@@ -28,28 +28,39 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # global variable[END]
 # local variable[START]
-VARI_DIGITAL_OCEAN=(
-  "00 ADMIN bwh81 -01 98.142.138.87 29396"
-  # "00 ADMIN TORONTO -01 159.89.116.79 22"
-  "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
-  "02 CODE/BI NEWYORK -01 45.55.134.33 22"
+# VARI_CLOUD=(
+#   "00 ADMIN bwh81 -01 98.142.138.87 29396"
+#   # "00 ADMIN TORONTO -01 159.89.116.79 22"
+#   "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
+#   "02 CODE/BI NEWYORK -01 45.55.134.33 22"
+#   # -----
+#   "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
+#   "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
+#   "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
+#   # -----
+#   "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
+#   "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
+#   # -----
+#   "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
+#   "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
+#   "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
+#   "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
+#   # -----
+#   "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
+#   "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
+#   "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
+# )
+VARI_CLOUD=(
+  "01 INDEX SINGAPORE -01 43.134.168.137 22"
   # -----
-  "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
-  "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
-  "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
+  "11 CODE/BID01 SINGAPORE -01 43.133.61.186 22"
+  "12 CODE/BID02 SINGAPORE -02 -- 22"
   # -----
-  "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
-  "07 CODE/BID05 NEWYORK -02 138.197.90.246 22"
+  "21 CODE/BID01 NEWYORK -01 -- 22"
+  "22 CODE/BID02 NEWYORK -02 -- 22"
   # -----
-  "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
-  "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
-  "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
-  "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
-  # -----
-  "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
-  "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
-  "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
-
+  "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
+  "32 CODE/NOTICE01 NEWYORK -02 -- 22"
 )
 # local variable[END]
 # ##################################################
@@ -291,9 +302,9 @@ function funcPublicRebuildImage(){
   return 0
 }
 
-function funcPublicDigitalOceanIndex(){
+function funcPublicCloudIndex(){
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
     variEachRegion=$(echo $variEachValue | awk '{print $3}')
@@ -307,8 +318,8 @@ function funcPublicDigitalOceanIndex(){
     echo "error : expect a [number]index"
     return 1
   fi
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
@@ -316,7 +327,7 @@ function funcPublicDigitalOceanIndex(){
       break
     fi
   done
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     variSlaveIndex=$(echo $variEachValue | awk '{print $1}')
     variSlaveLabel=$(echo $variEachValue | awk '{print $2}')
     variSlaveRegion=$(echo $variEachValue | awk '{print $3}')
@@ -334,10 +345,10 @@ function funcPublicDigitalOceanIndex(){
   return 1
 }
 
-function funcPublicDigitalOceanSkeletonInit() {
+function funcPublicCloudSkeletonInit() {
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
     variEachRegion=$(echo $variEachValue | awk '{print $3}')
@@ -350,7 +361,7 @@ function funcPublicDigitalOceanSkeletonInit() {
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *" ${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
       variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -363,8 +374,8 @@ function funcPublicDigitalOceanSkeletonInit() {
   done
   echo -n "enter the [number]index ( 空格間隔 ) : "
   read -a variInputIndexList
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
       variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
@@ -372,7 +383,7 @@ function funcPublicDigitalOceanSkeletonInit() {
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
       variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
       for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+        for variSlaveValue in "${VARI_CLOUD[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
           if [[ $variEachIndex == ${variEachInputIndex} ]]; then
             variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
@@ -455,9 +466,9 @@ MASTEREOF
 # chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
 # jump server init[END]
 
-function funcPublicDigitalOceanAdminInit() {
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+function funcPublicCloudIndexInit() {
+  variMasterKeyword="Index"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
@@ -466,11 +477,10 @@ function funcPublicDigitalOceanAdminInit() {
     fi
   done
   scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz ${variMasterAccount}@${variEachMasterIP}:/
-
   return 0
 }
 
-function funcPublicDigitalOceanUnicornInit() {
+function funcPublicCloudUnicornInit() {
   # local variParameterDescMulti=("envi local/development/production（default）")
   # funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   local variParameterDescMulti=("scp value : 0/no，1/yes（default）" "envi local/development/production（default）")
@@ -481,7 +491,7 @@ function funcPublicDigitalOceanUnicornInit() {
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
     variEachRegion=$(echo $variEachValue | awk '{print $3}')
@@ -494,7 +504,7 @@ function funcPublicDigitalOceanUnicornInit() {
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
       variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -507,8 +517,8 @@ function funcPublicDigitalOceanUnicornInit() {
   done
   echo -n "enter the [number]index ( 空格間隔 ) : "
   read -a variInputIndexList
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
       variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
@@ -516,7 +526,7 @@ function funcPublicDigitalOceanUnicornInit() {
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
       variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
       for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+        for variSlaveValue in "${VARI_CLOUD[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
           if [[ $variEachIndex == ${variEachInputIndex} ]]; then
             variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
@@ -619,7 +629,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicDigitalOceanUnicornCheck() {
+function funcPublicCloudUnicornCheck() {
   # local variParameterDescMulti=("envi local/development/production（default）")
   # funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   local variParameterDescMulti=("scp value : 0/no，1/yes（default）" "envi local/development/production（default）")
@@ -630,7 +640,7 @@ function funcPublicDigitalOceanUnicornCheck() {
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
     variEachRegion=$(echo $variEachValue | awk '{print $3}')
@@ -643,7 +653,7 @@ function funcPublicDigitalOceanUnicornCheck() {
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
       variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -656,8 +666,8 @@ function funcPublicDigitalOceanUnicornCheck() {
   done
   echo -n "enter the [number]index ( 空格間隔 ) : "
   read -a variInputIndexList
-  variMasterKeyword="ADMIN"
-  for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
       variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
@@ -665,7 +675,7 @@ function funcPublicDigitalOceanUnicornCheck() {
       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
       variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
       for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
+        for variSlaveValue in "${VARI_CLOUD[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
           if [[ $variEachIndex == ${variEachInputIndex} ]]; then
             variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
@@ -689,91 +699,6 @@ MASTEREOF
   done
   return 0
 }
-
-# function funcPublicDigitalOceanUnicornCicd() {
-#   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-#   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-#   for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-#     variEachIndex=$(echo $variEachValue | awk '{print $1}')
-#     variEachLabel=$(echo $variEachValue | awk '{print $2}')
-#     variEachRegion=$(echo $variEachValue | awk '{print $3}')
-#     variEachMemo=$(echo $variEachValue | awk '{print $4}')
-#     variEachIp=$(echo $variEachValue | awk '{print $5}')
-#     variEachPort=$(echo $variEachValue | awk '{print $6}')
-#     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-#   done
-#   echo -n "enter the 「NODE_LABEL」 keyword to match : "
-#   read variSlaveKeyword
-#   echo "Matched (${variSlaveKeyword}):"
-#   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-#   for variEachValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-#     if [[ $variEachValue == *" ${variSlaveKeyword}"* ]]; then
-#       variEachIndex=$(echo $variEachValue | awk '{print $1}')
-#       variEachLabel=$(echo $variEachValue | awk '{print $2}')
-#       variEachRegion=$(echo $variEachValue | awk '{print $3}')
-#       variEachMemo=$(echo $variEachValue | awk '{print $4}')
-#       variEachIp=$(echo $variEachValue | awk '{print $5}')
-#       variEachPort=$(echo $variEachValue | awk '{print $6}')
-#       printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-#     fi
-#   done
-#   echo -n "enter the [number]index ( 空格間隔 ) : "
-#   read -a variInputIndexList
-#   variMasterKeyword="ADMIN"
-#   for variMasterValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-#     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-#       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-#       variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
-#       variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
-#       variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-#       variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
-#       for variEachInputIndex in "${variInputIndexList[@]}"; do
-#         for variSlaveValue in "${VARI_DIGITAL_OCEAN[@]}"; do
-#           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
-#           if [[ $variEachIndex == "${variEachInputIndex}" ]]; then
-#             variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
-#             variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $3}')
-#             variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
-#             variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
-#             variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
-#             echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
-#             rm -rf /root/.ssh/known_hosts
-#             ssh -o StrictHostKeyChecking=no -p ${variEachMastrPort} -t root@${variEachMasterIP} <<MASTEREOF
-#               # //TODO：send SHUTDOWN/signal to redis pub/sub
-#               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
-#               rm -rf /root/.ssh/known_hosts
-#               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-#                 ulimit -n 65536
-#                 docker rm -f unicorn
-#                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
-#                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
-#                 cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-#                 echo "git fetch origin ..."
-#                 git fetch origin
-#                 echo "git reset --hard origin/main ..."
-#                 git reset --hard origin/main
-#                 chmod 777 -R .
-#                 nohup ./bin/unicorn_exec -ENVI_LABEL development -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &
-#                 cat /windows/runtime/unicorn.log
-#                 echo "nohup ./bin/unicorn_exec -ENVI_LABEL development -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 & [finished]"
-#                 # expect -c '
-#                 # set timeout -1
-#                 # spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
-#                 # expect "unicorn"
-#                 # send "nohup ./bin/unicorn_exec -ENVI_LABEL production -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &\r"
-#                 # expect "unicorn"
-#                 # send "exit\r"
-#                 # expect eofom  
-#                 # '
-# SLAVEEOF
-# MASTEREOF
-#           fi
-#         done
-#       done
-#     fi
-#   done
-#   return 0
-# }
 
 function funcPublicMongo(){
 #     db.bid_stream_20240626.count({ bid_response_status: 1 })
