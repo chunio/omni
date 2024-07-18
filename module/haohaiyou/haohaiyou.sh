@@ -28,40 +28,40 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # global variable[END]
 # local variable[START]
-# VARI_CLOUD=(
-#   "00 ADMIN bwh81 -01 98.142.138.87 29396"
-#   # "00 ADMIN TORONTO -01 159.89.116.79 22"
-#   "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
-#   "02 CODE/BI NEWYORK -01 45.55.134.33 22"
-#   # -----
-#   "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
-#   "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
-#   "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
-#   # -----
-#   "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
-#   "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
-#   # -----
-#   "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
-#   "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
-#   "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
-#   "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
-#   # -----
-#   "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
-#   "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
-#   "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
-# )
 VARI_CLOUD=(
-  "01 INDEX SINGAPORE -01 43.134.168.137 22"
+  "00 INDEX bwh81 -01 98.142.138.87 29396"
+  # "00 ADMIN TORONTO -01 159.89.116.79 22"
+  "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
+  "02 CODE/BI NEWYORK -01 45.55.134.33 22"
   # -----
-  "11 CODE/BID01 SINGAPORE -01 43.133.61.186 22"
-  "12 CODE/BID02 SINGAPORE -02 -- 22"
+  "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
+  "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
+  "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
   # -----
-  "21 CODE/BID01 NEWYORK -01 -- 22"
-  "22 CODE/BID02 NEWYORK -02 -- 22"
+  "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
+  "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
   # -----
-  "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
-  "32 CODE/NOTICE01 NEWYORK -02 -- 22"
+  "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
+  "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
+  "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
+  "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
+  # -----
+  "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
+  "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
+  "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
 )
+# VARI_CLOUD=(
+#   "01 INDEX SINGAPORE -01 119.28.55.124 22"
+#   # -----
+#   "11 CODE/BID01 SINGAPORE -01 43.133.61.186 22"
+#   "12 CODE/BID02 SINGAPORE -02 -- 22"
+#   # -----
+#   "21 CODE/BID01 NEWYORK -01 -- 22"
+#   "22 CODE/BID02 NEWYORK -02 -- 22"
+#   # -----
+#   "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
+#   "32 CODE/NOTICE01 NEWYORK -02 -- 22"
+# )
 # local variable[END]
 # ##################################################
 
@@ -467,7 +467,7 @@ MASTEREOF
 # jump server init[END]
 
 function funcPublicCloudIndexInit() {
-  variMasterKeyword="Index"
+  variMasterKeyword="INDEX"
   for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
@@ -476,7 +476,16 @@ function funcPublicCloudIndexInit() {
       break
     fi
   done
+  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz ${variMasterAccount}@${variEachMasterIP}:/
+:<<MARK
+# [manual]ssh init[START]
+tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+echo "StrictHostKeyChecking no" > ~/.ssh/config
+chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+# [manual]ssh init[END]
+MARK
   return 0
 }
 
@@ -487,7 +496,6 @@ function funcPublicCloudUnicornInit() {
   funcProtectedCheckOptionParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variScp=${1:-"1"}
   variEnvi=${2:-"production"}
-  # variMasterAccount="ec2-user"
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
