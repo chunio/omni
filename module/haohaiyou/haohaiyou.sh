@@ -13,6 +13,8 @@ funcProtectedTemplate
 exec \$SHELL
 EOF
 }
+
+
 MARK
 
 declare -A VARI_GLOBAL
@@ -28,40 +30,41 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # global variable[END]
 # local variable[START]
-VARI_CLOUD=(
-  "00 INDEX bwh81 -01 98.142.138.87 29396"
-  # "00 ADMIN TORONTO -01 159.89.116.79 22"
-  "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
-  "02 CODE/BI NEWYORK -01 45.55.134.33 22"
-  # -----
-  "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
-  "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
-  "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
-  # -----
-  "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
-  "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
-  # -----
-  "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
-  "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
-  "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
-  "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
-  # -----
-  "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
-  "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
-  "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
-)
 # VARI_CLOUD=(
-#   "01 INDEX SINGAPORE -01 119.28.55.124 22"
+#   "00 INDEX bwh81 -01 98.142.138.87 29396"
+#   # "00 ADMIN TORONTO -01 159.89.116.79 22"
+#   "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
+#   "02 CODE/BI NEWYORK -01 45.55.134.33 22"
 #   # -----
-#   "11 CODE/BID01 SINGAPORE -01 43.133.61.186 22"
-#   "12 CODE/BID02 SINGAPORE -02 -- 22"
+#   "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
+#   "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
+#   "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
 #   # -----
-#   "21 CODE/BID01 NEWYORK -01 -- 22"
-#   "22 CODE/BID02 NEWYORK -02 -- 22"
+#   "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
+#   "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
 #   # -----
-#   "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
-#   "32 CODE/NOTICE01 NEWYORK -02 -- 22"
+#   "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
+#   "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
+#   "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
+#   "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
+#   # -----
+#   "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
+#   "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
+#   "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
 # )
+VARI_CLOUD=(
+  "01 INDEX HONGKONG -01 119.28.55.124 22"
+  # -----
+  "10 CODE/COMMON SINGAPORE -00 43.133.61.186 22"
+  "11 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
+  "12 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
+  # -----
+  "21 CODE/BID01 NEWYORK -01 -- 22"
+  "22 CODE/BID02 NEWYORK -02 -- 22"
+  # -----
+  "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
+  "32 CODE/NOTICE01 NEWYORK -02 -- 22"
+)
 # local variable[END]
 # ##################################################
 
@@ -337,7 +340,9 @@ function funcPublicCloudIndex(){
     if [[ 10#$variSlaveIndex -eq 10#$variInput ]]; then
       echo "initiate connection: [${variSlaveLabel} / ${variSlaveRegion} / ${variSlaveMemo}]${variSlaveIp}:${variSlavePort} ..."
       rm -rf /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variEachMasterPort} root@${variEachMasterIP}" root@${variSlaveIp} -p ${variSlavePort}
+      echo "ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}"
+      # ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variEachMasterPort} root@${variEachMasterIP}" root@${variSlaveIp} -p ${variSlavePort}
+      ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
       return 0
     fi
   done
@@ -547,14 +552,14 @@ function funcPublicCloudUnicornInit() {
             if [[ ${variScp} -eq 1 ]]; then
               scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_exec ${variMasterAccount}@${variEachMasterIP}:/
             fi
-            ssh -o StrictHostKeyChecking=no -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
+            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
               if [[ ${variScp} -eq 1 ]]; then
                 scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /unicorn_exec root@${variEachSlaveIP}:/
                 scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               fi
-              ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
+              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
                 # --------------------------------------------------
                 # ssh init[START]
                 tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
