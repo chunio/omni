@@ -9,7 +9,7 @@
 ## New Unit
 ```
 [root@localhost /]# omni.system newUnit example
-[root@localhost /]# # [unit]公共函數僅適用於外部調用，並且禁止內部調用
+[root@localhost /]# # [unit]funcPublicXXXX is only for external call and internal call are prohibited
 ```
 
 ## Directory Structure
