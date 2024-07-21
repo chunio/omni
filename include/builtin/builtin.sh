@@ -90,7 +90,7 @@ function funcProtectedSyncQiniu() {
 function funcProtectedConstruct() {
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  if [ -f "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" ]; then
+  if ! [ -f "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" ]; then
     cat <<ENCRYPTENVI >> ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi
 #!/bin/bash
 

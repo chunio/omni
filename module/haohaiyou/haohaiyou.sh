@@ -14,7 +14,9 @@ exec \$SHELL
 EOF
 }
 
-
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
+iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
 MARK
 
 declare -A VARI_GLOBAL
@@ -53,17 +55,19 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 #   "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
 # )
 VARI_CLOUD=(
-  "01 INDEX HONGKONG -01 119.28.55.124 22"
+  "00 INDEX HONGKONG -01 119.28.55.124 22"
   # -----
-  "10 CODE/COMMON SINGAPORE -00 43.133.61.186 22"
-  "11 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
-  "12 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
+  "01 CODE/COMMON SINGAPORE -00 43.133.61.186 22"
+  "02 CODE/COMMON NEWYORK -01 43.130.116.28 22"
+  "08 CODE/COMMON NEWYORK -01 43.130.91.178 22"
   # -----
-  "21 CODE/BID01 NEWYORK -01 -- 22"
-  "22 CODE/BID02 NEWYORK -02 -- 22"
+  "03 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
+  "04 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   # -----
-  "31 CODE/NOTICE01 SINGAPORE -02 -- 22"
-  "32 CODE/NOTICE01 NEWYORK -02 -- 22"
+  "05 CODE/BID01 NEWYORK -02 43.130.79.155 22"
+  # -----
+  "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
+  "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
 )
 # local variable[END]
 # ##################################################
@@ -341,8 +345,10 @@ function funcPublicCloudIndex(){
       echo "initiate connection: [${variSlaveLabel} / ${variSlaveRegion} / ${variSlaveMemo}]${variSlaveIp}:${variSlavePort} ..."
       rm -rf /root/.ssh/known_hosts
       echo "ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}"
-      # ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variEachMasterPort} root@${variEachMasterIP}" root@${variSlaveIp} -p ${variSlavePort}
-      ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
+      # 配置一層[SSH]秘鑰
+      # ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
+      # 配置二層[SSH]秘鑰
+      ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variEachMasterPort} root@${variEachMasterIP}" root@${variSlaveIp} -p ${variSlavePort}
       return 0
     fi
   done
@@ -599,8 +605,8 @@ function funcPublicCloudUnicornInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git reset --hard origin/main ..."
-                  git reset --hard origin/feature/zengweitao/data
                   # git reset --hard origin/main
+                  git reset --hard origin/feature/zengweitao/data
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
