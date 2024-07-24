@@ -17,6 +17,13 @@ EOF
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
 iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
+
+[ext4]
+lsblk
+yum install -y cloud-utils-growpart
+growpart /dev/vda 1
+resize2fs /dev/vda1
+df -h /dev/vda1
 MARK
 
 declare -A VARI_GLOBAL
@@ -57,17 +64,16 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 VARI_CLOUD=(
   "00 INDEX HONGKONG -01 119.28.55.124 22"
   # -----
-  "01 CODE/COMMON SINGAPORE -00 43.133.61.186 22"
+  "01 CODE/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 CODE/COMMON NEWYORK -01 43.130.116.28 22"
-  "08 CODE/COMMON NEWYORK -01 43.130.91.178 22"
   # -----
   "03 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
   "04 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   # -----
-  "05 CODE/BID01 NEWYORK -02 43.130.79.155 22"
+  "05 CODE/BID01 NEWYORK -01 43.130.79.155 22"
   # -----
-  "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
-  "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
+  # "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
+  # "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
 )
 # local variable[END]
 # ##################################################
@@ -163,6 +169,96 @@ DOCKERCOMPOSEYML
 #   docker exec -it ${variModuleName} /bin/bash
 #   return 0
 # }
+
+function funcPublicAdx()
+{
+  # cat /etc/os-release
+  # ##################################################
+  # PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+  # NAME="Debian GNU/Linux"
+  # VERSION_ID="12"
+  # VERSION="12 (bookworm)"
+  # VERSION_CODENAME=bookworm
+  # ID=debian
+  # HOME_URL="https://www.debian.org/"
+  # SUPPORT_URL="https://www.debian.org/support"
+  # BUG_REPORT_URL="https://bugs.debian.org/"
+  # ##################################################
+  # apt-get update
+  # apt-get install -y graphviz
+  # apt-get install -y vim
+  # [MASTER]persistence
+  variMasterPath="/windows/code/backend/haohaiyou"
+  # [DOCKER]temporary
+  variDockerWorkSpace="/windows/code/backend/haohaiyou"
+  veriModuleName="adx"
+  mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+#!/bin/bash
+# 會被「docker run」中指定命令覆蓋
+touch /etc/bashrc
+chmod 644 /etc/bashrc
+# /windows/code/backend/chunio/omni/init/system/system.sh init && source /etc/bashrc
+# 禁止「return」
+# return 0
+ENTRYPOINTSH
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
+  cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
+CGO_ENABLED=0
+GO111MODULE=on
+GOBIN=${variDockerWorkSpace}/gopath/bin
+GOCACHE=${variDockerWorkSpace}/gocache.linux
+GOMODCACHE=${variDockerWorkSpace}/gopath/pkg/mod
+GOPATH=${variDockerWorkSpace}/gopath
+GOPROXY=https://goproxy.cn,direct
+GOROOT=/usr/local/go
+GOSUMDB=sum.golang.google.cn
+GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
+GOENVLINUX
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}:
+    image: chunio/go:1.22.4
+    container_name: ${veriModuleName}
+    environment:
+      - GOENV=/go.env.linux
+      - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+    volumes:
+      - /windows:/windows
+      - /mnt:/mnt
+      # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    networks:
+      - common
+    ports:
+      - "2345:2345"
+      - "8000:8000"
+    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    # 啟動進程關閉時，則容器退出
+    command: ["tail", "-f", "/dev/null"]
+    # 解決提示：connections are not authenticated nor encrypted[START]
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    # 解決提示：connections are not authenticated nor encrypted[END]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker update --restart=always ${veriModuleName}
+  docker ps -a | grep ${veriModuleName}
+  cd ${variMasterPath}/gopath/src/${veriModuleName}
+  docker exec -it ${veriModuleName} /bin/bash
+  return 0
+}
 
 function funcPublicUnicorn()
 {
@@ -605,8 +701,7 @@ function funcPublicCloudUnicornInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git reset --hard origin/main ..."
-                  # git reset --hard origin/main
-                  git reset --hard origin/feature/zengweitao/data
+                  git reset --hard origin/main
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn

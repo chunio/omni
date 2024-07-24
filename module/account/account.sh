@@ -50,6 +50,7 @@ function funcPublicStart(){
   # [DOCKER]temporary
   variDockerWorkSpace="/windows/code/backend/chunio"
   veriModuleName="account"
+  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
@@ -73,7 +74,7 @@ services:
     image: mysql:8.0
     container_name: ${veriModuleName}-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: X0000$
+      MYSQL_ROOT_PASSWORD: ${variPassword}
       # MYSQL_INITDB_SKIP_TZINFO: 1
     ports:
       # 宿主端口:容器端口

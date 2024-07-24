@@ -52,9 +52,9 @@ function funcPublicRunNode(){
   fi
   # -----
   rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  chmod 777 -R /linux
   # variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
-  echo ${variPassword}
 #  cat <<MYCNF > ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/my.cnf
 #[mysqld]
 #bind-address = 0.0.0.0
@@ -101,36 +101,36 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-function funcPublicBackup(){
-  local variParameterDescMulti=("custom version（default：YYYYMMDD）")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variContainer="mysql"
-  variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
-  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
-  variDatabaseList=(
-    "account"
-  )
-  variDefault=$(date "+%Y%m%d")
-  variSQLVersion=${1:-$variDefault}
-  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-  mkdir -p ${variSQLVersionPath}
-  echo "version ：${variSQLVersion}"
-  for variEachDatabase in "${variDatabaseList[@]}"; do
-    cat <<INITSQL >> ${variSQLVersionPath}/00init.sql
-CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
-USE ${variEachDatabase};
-SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
-INITSQL
-    variEachSQLUri="${variSQLVersionPath}/01${variEachDatabase}.sql"
-    docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
-    if [ $? -eq 0 ]; then
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
-    else
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
-    fi
-  done
-  return 0
-}
+# function funcPublicBackup(){
+#   local variParameterDescMulti=("custom version（default：YYYYMMDD）")
+#   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+#   variContainer="mysql"
+#   variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+#   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+#   variDatabaseList=(
+#     "account"
+#   )
+#   variDefault=$(date "+%Y%m%d")
+#   variSQLVersion=${1:-$variDefault}
+#   variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
+#   mkdir -p ${variSQLVersionPath}
+#   echo "version ：${variSQLVersion}"
+#   for variEachDatabase in "${variDatabaseList[@]}"; do
+#     cat <<INITSQL >> ${variSQLVersionPath}/00init.sql
+# CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
+# USE ${variEachDatabase};
+# SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
+# INITSQL
+#     variEachSQLUri="${variSQLVersionPath}/01${variEachDatabase}.sql"
+#     docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
+#     if [ $? -eq 0 ]; then
+#       echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
+#     else
+#       echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
+#     fi
+#   done
+#   return 0
+# }
 # public function[END]
 # ##################################################
 
