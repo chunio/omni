@@ -71,6 +71,7 @@ VARI_CLOUD=(
   "04 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   # -----
   "05 CODE/BID01 NEWYORK -01 43.130.79.155 22"
+  "06 CODE/BID02 NEWYORK -02 43.130.150.103 22"
   # -----
   # "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
   # "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
@@ -692,7 +693,7 @@ function funcPublicCloudUnicornInit() {
                 # --------------------------------------------------
                 # --------------------------------------------------
                 # unicorn[START]
-                ulimit -n 65536
+                ulimit -n 655360
                 docker rm -f unicorn 2> /dev/null
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
@@ -825,6 +826,46 @@ function funcPublicMongo(){
 #     })
     return 0
 }
+
+function funcPublic9501280(){
+  veriModuleName="skeleton"
+  variCurrentIP=$(hostname -I | awk '{print $1}')
+  cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
+server {
+    listen 80;
+    server_name _;
+    location /report/adx {
+        proxy_pass http://${variCurrentIP}:9501/report/adx;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+LOCALSKELETONCONF
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}-nginx:
+    image: nginx:1.27.0
+    container_name: ${veriModuleName}-nginx
+    volumes:
+      - /windows:/windows
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+      - common
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker ps -a | grep ${veriModuleName}
+  return 0
+}
+
 # public function[END]
 
 # ##################################################

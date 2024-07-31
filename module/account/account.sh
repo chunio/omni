@@ -39,7 +39,7 @@ VARI_GLOBAL["REDIS_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"
 
 # ##################################################
 # public function[START]
-function funcPublicStart(){
+function funcPublicRestart(){
   echo "[MYSQL]LATEST VERSION : $(cat ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version)"
   rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]} 
   rm -rf ${VARI_GLOBAL["REDIS_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["REDIS_DATA_PATH"]} 
