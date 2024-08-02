@@ -708,6 +708,7 @@ function funcPublicCloudUnicornInit() {
                     if grep -q "9000" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
                       echo "nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
+                      echo "nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
                       break
                     elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
@@ -903,13 +904,18 @@ function funcPublicUnicornSentry(){
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-    echo "[${variCurrentDate}]health check succeeded，${variHost}:${variPort} is reachable" >> /windows/runtime/sentry.log
-    return 0
+    echo "[ ${variCurrentDate} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/sentry.log
   else
-    echo "[${variCurrentDate}]health check failed，${variHost}:${variPort} is unreachable" >> /windows/runtime/sentry.log
-    return 1
+    echo "[ ${variCurrentDate} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/sentry.log
+    # supervisor[START]
+    /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
+    /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+    eval "$(cat /windows/runtime/command.variable)"
+    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/sentry.log
+    # supervisor[END]
   fi
   # check heartbeat[END]
+  return 0
 }
 
 # public function[END]
