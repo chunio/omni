@@ -14,6 +14,12 @@ exec \$SHELL
 EOF
 }
 
+# singapore
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 172.22.0.13:6379
+iptables -t nat -A POSTROUTING -d 172.22.0.13 -p tcp --dport 6379 -j MASQUERADE
+
+# virginia
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
 iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
@@ -39,39 +45,20 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # global variable[END]
 # local variable[START]
-# VARI_CLOUD=(
-#   "00 INDEX bwh81 -01 98.142.138.87 29396"
-#   # "00 ADMIN TORONTO -01 159.89.116.79 22"
-#   "01 CODE/BI SINGAPORE -01 152.42.200.117 22"
-#   "02 CODE/BI NEWYORK -01 45.55.134.33 22"
-#   # -----
-#   "03 CODE/BID01 SINGAPORE -01 139.59.255.135 22"
-#   "04 CODE/BID02 SINGAPORE -02 152.42.196.117 22"
-#   "05 CODE/BID03 SINGAPORE -03 146.190.93.91 22"
-#   # -----
-#   "06 CODE/BID04 NEWYORK -01 138.197.74.229 22"
-#   "07 CODE/BID05 NEWYORK -02 174.138.78.11 22"
-#   # -----
-#   "08 CODE/NOTICE06 SINGAPORE -01 174.138.20.208 22"
-#   "09 CODE/NOTICE07 SINGAPORE -02 174.138.28.254 22"
-#   "10 CODE/NOTICE08 NEWYORK -01 159.203.76.109 22"
-#   "11 CODE/NOTICE09 NEWYORK -02 159.203.88.75 22"
-#   # -----
-#   "12 CODE/MOCK SINGAPORE -01 157.245.147.213 22"
-#   "13 CODE/MOCK SINGAPORE -02 206.189.81.28 22"
-#   "14 CODE/CHECK SINGAPORE -02 152.42.204.116 22"
-# )
 VARI_CLOUD=(
   "00 INDEX HONGKONG -01 119.28.55.124 22"
   # -----
   "01 CODE/COMMON SINGAPORE -01 43.133.61.186 22"
-  "02 CODE/COMMON NEWYORK -01 43.130.116.28 22"
+  "02 CODE/NOTICE SINGAPORE -01 43.134.68.173 22"
+  "03 CODE/COMMON NEWYORK -01 43.130.116.28 22"
   # -----
-  "03 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
-  "04 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
+  "04 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
+  "05 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
+  "06 CODE/BID03 SINGAPORE -03 43.128.108.79 22"
+  "07 CODE/BID04 SINGAPORE -04 43.156.33.106 22"
   # -----
-  "05 CODE/BID01 NEWYORK -01 43.130.79.155 22"
-  "06 CODE/BID02 NEWYORK -02 43.130.150.103 22"
+  "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
+  "09 CODE/BID02 NEWYORK -02 43.130.150.103 22"
   # -----
   # "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
   # "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
@@ -701,8 +688,10 @@ function funcPublicCloudUnicornInit() {
                   cd /windows/code/backend/haohaiyou/gopath/src/unicorn
                   echo "git fetch origin ..."
                   git fetch origin
+                  echo "git fetch origin finished"
                   echo "git reset --hard origin/main ..."
                   git reset --hard origin/main
+                  echo "git reset --hard origin/main finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
@@ -724,6 +713,16 @@ function funcPublicCloudUnicornInit() {
                   done
                 ) &
                 # unicorn[END]
+                # sentry[START]
+                variCurrentCrontab=$(crontab -l 2>/dev/null)
+                variNewCrontab="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornSentry"
+                if echo "${variCurrentCrontab}" | grep -Fq "${variNewCrontab}"; then
+                    echo "cronjob already active"
+                else
+                    (echo "${variCurrentCrontab}"; echo "${variNewCrontab}") | crontab -
+                    echo "cronjob added successfully"
+                fi
+                # sentry[END]
                 # --------------------------------------------------
                 # expect -c '
                 # set timeout -1
@@ -864,6 +863,60 @@ DOCKERCOMPOSEYML
   docker-compose -p ${veriModuleName} up --build -d
   docker ps -a | grep ${veriModuleName}
   return 0
+}
+
+# example: funcPublicUnicornRestart "production" "CODE/BID01" "SINGAPORE"
+function funcPublicUnicornRestart(){
+  variEnviLabel=${1}
+  variNodeLabel=${2}
+  variNodeRegion=${3}
+  /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm &&
+  /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm && 
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn &&
+  nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnviLabel} -NODE_LABEL ${variNodeLabel} -NODE_REGION ${variNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
+  # supervisor[START]
+  yum install -y epel-release
+  yum install -y supervisor
+  cat <<UNICORNSUPERVISORCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/unicorn_supervisor.conf
+[program:unicorn_supervisor]
+command=/bin/bash -c '/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornRestart "${variEnviLabel}" "${variNodeLabel}" "${variNodeRegion}"'
+directory=/windows/code/backend/chunio/omni
+user=root
+autostart=true
+autorestart=true
+startretries=10
+exitcodes=0
+stopsignal=TERM
+stopwaitsecs=10
+redirect_stderr=true
+stdout_logfile=/windows/runtime/unicorn_supervisor_stdout.log
+stderr_logfile=/windows/runtime/unicorn_supervisor_stderr.log
+stdout_logfile_maxbytes=1024MB
+stdout_logfile_backups=10
+stderr_logfile_maxbytes=1024MB
+stderr_logfile_backups=10
+UNICORNSUPERVISORCONF
+  # supervisor[END]
+  return 0
+}
+
+# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornSentry") | crontab -
+# 更新腳本時無需重啟「crontab」
+function funcPublicUnicornSentry(){
+  echo "funcPublicUnicornSentry come in"
+  variHost="localhost"
+  variPort=8000
+  timeout=${timeout:-1}
+  variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
+  # check heartbeat[START]
+  if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
+    echo "[${variCurrentDate}]health check succeeded，${variHost}:${variPort} is reachable" >> /windows/runtime/sentry.log
+    return 0
+  else
+    echo "[${variCurrentDate}]health check failed，${variHost}:${variPort} is unreachable" >> /windows/runtime/sentry.log
+    return 1
+  fi
+  # check heartbeat[END]
 }
 
 # public function[END]
