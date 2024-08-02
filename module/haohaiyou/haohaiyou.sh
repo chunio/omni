@@ -642,6 +642,10 @@ function funcPublicCloudUnicornInit() {
             if [[ ${variScp} -eq 1 ]]; then
               scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_exec ${variMasterAccount}@${variEachMasterIP}:/
             fi
+            # slave variable[START]
+            variCrontabFile="/var/spool/cron/root"
+            variCrontabCommand="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornSentry"
+            # slave variable[END]
             ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
@@ -714,25 +718,14 @@ function funcPublicCloudUnicornInit() {
                 ) &
                 # unicorn[END]
                 # sentry[START]
-                variCurrentCrontab=$(crontab -l 2>/dev/null)
-                variNewCrontab="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornSentry"
-                if echo "${variCurrentCrontab}" | grep -Fq "${variNewCrontab}"; then
-                    echo "cronjob already active"
+                if grep -Fq "${variCrontabCommand}" "${variCrontabFile}"; then
+                  echo "cronjob already active"
                 else
-                    (echo "${variCurrentCrontab}"; echo "${variNewCrontab}") | crontab -
-                    echo "cronjob added successfully"
+                  echo "${variCrontabCommand}" >> "${variCrontabFile}"
+                  echo "cronjob added successfully"
                 fi
+                systemctl reload crond
                 # sentry[END]
-                # --------------------------------------------------
-                # expect -c '
-                # set timeout -1
-                # spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicorn
-                # expect "unicorn"
-                # send "nohup ./bin/unicorn_exec -ENVI_LABEL production -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &\r"
-                # expect "unicorn"
-                # send "exit\r"
-                # expect eof
-                # '
 SLAVEEOF
 MASTEREOF
           fi
