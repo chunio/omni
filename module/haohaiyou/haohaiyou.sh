@@ -686,8 +686,6 @@ function funcPublicCloudUnicornInit() {
                 # unicorn[START]
                 ulimit -n 655360
                 docker rm -f unicorn 2> /dev/null
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
                 if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
                   cd /windows/code/backend/haohaiyou/gopath/src/unicorn
                   echo "git fetch origin ..."
@@ -700,6 +698,8 @@ function funcPublicCloudUnicornInit() {
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
                 fi
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
                 chmod 777 -R .
                 /usr/bin/cp -rf /unicorn_exec ./bin/unicorn_exec 
                 nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &
@@ -910,6 +910,7 @@ function funcPublicUnicornSentry(){
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/command.variable)"
     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/sentry.log
     # supervisor[END]
