@@ -29,7 +29,6 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-  return 0
   rm -f /var/run/yum.pid
   variPackageList=(
     epel-release

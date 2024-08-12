@@ -14,15 +14,47 @@ exec \$SHELL
 EOF
 }
 
-# singapore
+# [批量]模糊删除
+EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*ArchiveId00DeviceId*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
+
+# 重啟失效[START]
+# singapore/redis
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 172.22.0.13:6379
 iptables -t nat -A POSTROUTING -d 172.22.0.13 -p tcp --dport 6379 -j MASQUERADE
+# singapore/mongo
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.4:27017
+iptables -t nat -A POSTROUTING -d 192.168.0.4 -p tcp --dport 27017 -j MASQUERADE
+# singapore/clickhouse/http
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 8123 -j DNAT --to-destination 172.22.0.7:8123
+iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 8123 -j MASQUERADE
+# singapore/clickhouse/tcp
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 9000 -j DNAT --to-destination 172.22.0.7:9000
+iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 9000 -j MASQUERADE
+# singapore/clickhouse/mysql
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 9004 -j DNAT --to-destination 172.22.0.7:9004
+iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 9004 -j MASQUERADE
 
-# virginia
+# 查看規則
+# iptables -t nat -L -n -v 
+# 刪除規則[START]
+# iptables -t nat -D PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.10:27017
+# iptables -t nat -D POSTROUTING -d 192.168.0.10 -p tcp --dport 27017 -j MASQUERADE
+# 刪除規則[END]
+
+# virginia/redis
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
 iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
+# virginia/mongo
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 10.0.0.14:27017
+iptables -t nat -A POSTROUTING -d 10.0.0.14 -p tcp --dport 27017 -j MASQUERADE
+# 重啟失效[END]
 
 [ext4]
 lsblk
@@ -59,6 +91,7 @@ VARI_CLOUD=(
   # -----
   "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
   "09 CODE/BID02 NEWYORK -02 43.130.150.103 22"
+  "10 CODE/COMMON NEWYORK -03 43.130.99.103 22"
   # -----
   # "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
   # "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
@@ -508,6 +541,7 @@ function funcPublicCloudSkeletonInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git reset --hard origin/main ..."
+                  # DEBUG_LABEL
                   git reset --hard origin/main
                   chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 else
@@ -523,7 +557,9 @@ function funcPublicCloudSkeletonInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git reset --hard origin/main ..."
-                  git reset --hard origin/main
+                  # DEBUG_LABEL
+                  # git reset --hard origin/main
+                  git reset --hard origin/feature/zengweitao/clickhouse
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/skeleton.git && cd skeleton
@@ -692,7 +728,8 @@ function funcPublicCloudUnicornInit() {
                   git fetch origin
                   echo "git fetch origin finished"
                   echo "git reset --hard origin/main ..."
-                  git reset --hard origin/main
+                  # git reset --hard origin/main
+                  git reset --hard origin/feature/zengweitao/mongo
                   echo "git reset --hard origin/main finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src

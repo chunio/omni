@@ -52,7 +52,7 @@ function funcPublicAb(){
   variRequestTotal=${1}
   variConcurrencyUnit=${2}
   variApi=${3}
-  echo "ab -n ${variRequestTotal} -c ${variConcurrencyUnit} -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/post.txt -T 'application/json' ${variApi}"
+  echo "ab -n ${variRequestTotal} -c ${variConcurrencyUnit} -l -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/post.txt -T 'application/json' ${variApi}"
   ab -n ${variRequestTotal} -c ${variConcurrencyUnit} -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/post.txt -T 'application/json' "${variApi}"
   return 0
 }
