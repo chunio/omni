@@ -405,6 +405,7 @@ function funcPublicMatchKill() {
     local variParameterDescList=("keyword")
     funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
     local variKeyword=$1
+    ps aux | grep "${variKeyword}"
     local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
     if [ -z "${variPidList}" ]; then
         echo "no process found with keyword : ${variKeyword}"

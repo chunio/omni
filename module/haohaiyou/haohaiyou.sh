@@ -731,18 +731,19 @@ function funcPublicCloudUnicornInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git fetch origin finished"
-                  echo "git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "git reset --hard origin/main finished"
-                  # echo "git reset --hard origin/feature/zengweitao/mongo"
-                  # git reset --hard origin/feature/zengweitao/mongo
-                  # echo "git reset --hard origin/feature/zengweitao/mongo finished"
+                  # echo "git reset --hard origin/main ..."
+                  # git reset --hard origin/main
+                  # echo "git reset --hard origin/main finished"
+                  echo "git reset --hard origin/feature/zengweitao/mongo"
+                  git reset --hard origin/feature/zengweitao/mongo
+                  echo "git reset --hard origin/feature/zengweitao/mongo finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
                 fi
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
                 chmod 777 -R .
                 /usr/bin/cp -rf /unicorn_exec ./bin/unicorn_exec 
                 nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &
