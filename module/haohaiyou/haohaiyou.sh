@@ -79,22 +79,24 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # local variable[START]
 VARI_CLOUD=(
   "00 INDEX HONGKONG -01 119.28.55.124 22"
-  # -----
+  # notice[START]
   "01 CODE/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 CODE/NOTICE SINGAPORE -01 43.134.68.173 22"
   "03 CODE/COMMON NEWYORK -01 43.130.116.28 22"
-  # -----
+  # notice[END]
+  # bid[START]
   "04 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
   "05 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   "06 CODE/BID03 SINGAPORE -03 43.128.108.79 22"
   "07 CODE/BID04 SINGAPORE -04 43.156.33.106 22"
-  # -----
   "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
   "09 CODE/BID02 NEWYORK -02 43.130.150.103 22"
-  "10 CODE/COMMON NEWYORK -03 43.130.99.103 22"
-  # -----
-  # "06 CODE/NOTICE01 SINGAPORE -02 43.134.226.231 22"
-  # "07 CODE/NOTICE01 NEWYORK -02 43.130.69.78 22"
+  # bid[END]
+  # gray[START]
+  "10 CODE/COMMON SINGAPORE -01 43.156.106.65 22"
+  "11 CODE/COMMON NEWYORK -01 43.130.99.103 22"
+  # gray[END]
+  
 )
 # local variable[END]
 # ##################################################
@@ -556,15 +558,17 @@ function funcPublicCloudSkeletonInit() {
                   cd /windows/code/backend/haohaiyou/gopath/src/skeleton
                   echo "git fetch origin ..."
                   git fetch origin
-                  echo "git reset --hard origin/main ..."
                   # DEBUG_LABEL
-                  # git reset --hard origin/main
-                  git reset --hard origin/feature/zengweitao/clickhouse
+                  echo "git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  # echo "git reset --hard origin/feature/zengweitao/clickhouse"
+                  # git reset --hard origin/feature/zengweitao/clickhouse
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/skeleton.git && cd skeleton
                 fi
                 chmod 777 -R .
+                echo "/usr/bin/cp -rf .env.production.${variEachSlaveRegion} .env"
                 /usr/bin/cp -rf .env.production.${variEachSlaveRegion} .env
                 expect -c '
                 set timeout -1
@@ -728,9 +732,11 @@ function funcPublicCloudUnicornInit() {
                   git fetch origin
                   echo "git fetch origin finished"
                   echo "git reset --hard origin/main ..."
-                  # git reset --hard origin/main
-                  git reset --hard origin/feature/zengweitao/mongo
+                  git reset --hard origin/main
                   echo "git reset --hard origin/main finished"
+                  # echo "git reset --hard origin/feature/zengweitao/mongo"
+                  # git reset --hard origin/feature/zengweitao/mongo
+                  # echo "git reset --hard origin/feature/zengweitao/mongo finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn

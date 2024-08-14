@@ -401,6 +401,31 @@ function funcPublicShowPort(){
   return 0
 }
 
+function funcPublicMatchKill() {
+    local variParameterDescList=("keyword")
+    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+    local variKeyword=$1
+    local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
+    if [ -z "${variPidList}" ]; then
+        echo "no process found with keyword : ${variKeyword}"
+        return 1
+    fi
+    for variEachPid in ${variPidList}; do
+        echo "killing process with pid : ${variEachPid}"
+        kill ${variEachPid}
+        sleep 1
+        if ps -p ${variEachPid} > /dev/null; then
+            echo "process ${variEachPid} did not terminate, force killing ..."
+            kill -9 ${variEachPid}
+        else
+            echo "process ${variEachPid} terminated"
+        fi
+    done
+    echo "all processes with keyword '${variKeyword}' have been killed"
+    return 0
+}
+
+
 function funcPublicVersion() {
     local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
     if [ -z "$variLineNum" ]; then
