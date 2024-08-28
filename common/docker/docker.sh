@@ -118,6 +118,7 @@ function funcPublicDevelopmentEnvironmentInit(){
     omni.mysql runNode
     omni.redis runNode
     omni.mongo runNode
+    omni.clickhouse runNode 
     omni.kafka runNode
     omni.apollo runNode 0602
   fi

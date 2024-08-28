@@ -15,13 +15,21 @@ EOF
 }
 
 # [批量]模糊删除
-EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*ArchiveId00DeviceId*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
+EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*unicorn:HASH:StatIdDeviceIdDistinct{HSETNX_HINCRBY_HDEL}:2024-08-19:*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
 
 # 重啟失效[START]
-# singapore/redis
+# singapore/redis-common
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 172.22.0.13:6379
 iptables -t nat -A POSTROUTING -d 172.22.0.13 -p tcp --dport 6379 -j MASQUERADE
+# singapore/redis-clickhouse
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 7379 -j DNAT --to-destination 172.22.0.48:7379
+iptables -t nat -A POSTROUTING -d 172.22.0.48 -p tcp --dport 7379 -j MASQUERADE
+# singapore/redis-cluster
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 16379 -j DNAT --to-destination 172.22.0.26:16379
+iptables -t nat -A POSTROUTING -d 172.22.0.26 -p tcp --dport 16379 -j MASQUERADE
 # singapore/mongo
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.4:27017
@@ -50,6 +58,10 @@ iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 9004 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
 iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
+# virginia/redis-cluster
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 16379 -j DNAT --to-destination 10.0.0.7:16379
+iptables -t nat -A POSTROUTING -d 10.0.0.7 -p tcp --dport 16379 -j MASQUERADE
 # virginia/mongo
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 10.0.0.14:27017
@@ -89,12 +101,16 @@ VARI_CLOUD=(
   "05 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   "06 CODE/BID03 SINGAPORE -03 43.128.108.79 22"
   "07 CODE/BID04 SINGAPORE -04 43.156.33.106 22"
-  "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
-  "09 CODE/BID02 NEWYORK -02 43.130.150.103 22"
+  "08 CODE/BID05 SINGAPORE -05 43.159.34.17 22"
+  # "09 CODE/BID06 SINGAPORE -06 129.226.91.110 22"
+  # "10 CODE/BID07 SINGAPORE -07 43.156.37.179 22"
+  # "09 CODE/BID06 SINGAPORE -06 43.134.173.6 22"
+  "09 CODE/BID01 NEWYORK -01 43.130.79.155 22"
+  "10 CODE/BID02 NEWYORK -02 43.130.150.103 22"
   # bid[END]
   # gray[START]
-  "10 CODE/COMMON SINGAPORE -01 43.156.106.65 22"
-  "11 CODE/COMMON NEWYORK -01 43.130.99.103 22"
+  "21 CODE/IPTABLE SINGAPORE -01 43.156.106.65 22"
+  "22 CODE/IPTABLE NEWYORK -01 43.130.99.103 22"
   # gray[END]
   
 )
@@ -543,7 +559,6 @@ function funcPublicCloudSkeletonInit() {
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git reset --hard origin/main ..."
-                  # DEBUG_LABEL
                   git reset --hard origin/main
                   chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 else
@@ -558,11 +573,12 @@ function funcPublicCloudSkeletonInit() {
                   cd /windows/code/backend/haohaiyou/gopath/src/skeleton
                   echo "git fetch origin ..."
                   git fetch origin
-                  # DEBUG_LABEL
                   echo "git reset --hard origin/main ..."
                   git reset --hard origin/main
-                  # echo "git reset --hard origin/feature/zengweitao/clickhouse"
-                  # git reset --hard origin/feature/zengweitao/clickhouse
+                  # -----
+                  # echo "git reset --hard origin/feature/zengweitao/temp"
+                  # git reset --hard origin/feature/zengweitao/temp
+                  # -----
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/skeleton.git && cd skeleton
@@ -728,15 +744,26 @@ function funcPublicCloudUnicornInit() {
                 docker rm -f unicorn 2> /dev/null
                 if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
                   cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+                  # ----
                   echo "git fetch origin ..."
                   git fetch origin
                   echo "git fetch origin finished"
-                  # echo "git reset --hard origin/main ..."
-                  # git reset --hard origin/main
-                  # echo "git reset --hard origin/main finished"
-                  echo "git reset --hard origin/feature/zengweitao/mongo"
-                  git reset --hard origin/feature/zengweitao/mongo
-                  echo "git reset --hard origin/feature/zengweitao/mongo finished"
+                  # -----
+                  echo "git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  echo "git reset --hard origin/main finished"
+                  # -----
+                  # echo "git reset --hard origin/feature/zengweitao/mongo"
+                  # git reset --hard origin/feature/zengweitao/mongo
+                  # echo "git reset --hard origin/feature/zengweitao/mongo finished"
+                  # -----
+                  # echo "git reset --hard origin/feature/zengweitao/redis-cluster"
+                  # git reset --hard origin/feature/zengweitao/redis-cluster
+                  # echo "git reset --hard origin/feature/zengweitao/redis-cluster finished"
+                  # -----
+                  # echo "git reset --hard origin/feature/zengweitao/video"
+                  # git reset --hard origin/feature/zengweitao/video
+                  # echo "git reset --hard origin/feature/zengweitao/video finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
