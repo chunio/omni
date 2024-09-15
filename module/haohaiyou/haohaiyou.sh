@@ -618,6 +618,9 @@ function funcPublicCloudIndex(){
 }
 
 function funcPublicCloudSkeletonInit() {
+  local variParameterDescMulti=("branch name : main（default），feature/zengweitao/xxxx")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+  variBranchName=${1:-"main"}
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
@@ -671,46 +674,51 @@ function funcPublicCloudSkeletonInit() {
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                # ssh init[START]
+                # --------------------------------------------------
+                # （1）ssh init[START]
                 tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
                 mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
                 echo "StrictHostKeyChecking no" > ~/.ssh/config
                 chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # ssh init[END]
-                # omni.system init[START]
-                yum install -y git
+                # （1）ssh init[END]
+                # --------------------------------------------------
+                # （2）omni.system init[START]
+                if ! command -v git &> /dev/null; then
+                    yum install -y git
+                fi
                 mkdir -p /windows/runtime
                 if [ -d "/windows/code/backend/chunio/omni" ]; then
                   cd /windows/code/backend/chunio/omni
-                  echo "git fetch origin ..."
+                  echo "[ omni ] git fetch origin ..."
                   git fetch origin
-                  echo "git reset --hard origin/main ..."
+                  echo "[ omni ] git fetch origin finished"
+                  echo "[ omni ] git reset --hard origin/main ..."
                   git reset --hard origin/main
+                  echo "[ omni ] git reset --hard origin/main finished"
                   chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 else
                   mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
                   git clone https://github.com/chunio/omni.git
                   cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 fi
-                # omni.system init[END]
-                # skeleton[START]
+                #（2）omni.system init[END]
+                # --------------------------------------------------
+                #（3）slave main[START]
                 docker rm -f skeleton 2> /dev/null
                 if [ -d "/windows/code/backend/haohaiyou/gopath/src/skeleton" ]; then
                   cd /windows/code/backend/haohaiyou/gopath/src/skeleton
-                  echo "git fetch origin ..."
+                  echo "[ skeleton ] git fetch origin ..."
                   git fetch origin
+                  echo "[ skeleton ] git fetch origin finished"
                   # -----
-                  echo "git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "git reset --hard origin/main finished"
-                  # -----
-                  # echo "git reset --hard origin/feature/zengweitao/distinct ..."
-                  # git reset --hard origin/feature/zengweitao/distinct
-                  # echo "git reset --hard origin/feature/zengweitao/distinct finished"
+                  echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
+                  git reset --hard origin/${variBranchName}
+                  echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
                   # -----
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/skeleton.git && cd skeleton
+                  git checkout ${variBranchName}
                 fi
                 chmod 777 -R .
                 echo "/usr/bin/cp -rf .env.production.${variEachSlaveRegion} .env"
@@ -726,7 +734,8 @@ function funcPublicCloudSkeletonInit() {
                 send "exit\r"
                 expect eof
                 '
-                # skeleton[END]
+                #（3）slave main[END]
+                # --------------------------------------------------
 SLAVEEOF
 MASTEREOF
           fi
@@ -937,7 +946,7 @@ function funcPublicCloudUnicornModuleInit() {
   variBranchName=$2
   variEnvi="production"
   variBinName="unicorn_${variModuleName}"
-  variScpStatus="1"
+  variScpStatus=1
   variMasterAccount="root"
   # slave variable[START]
   variSlaveCrontabUri="/var/spool/cron/root"
@@ -991,7 +1000,7 @@ function funcPublicCloudUnicornModuleInit() {
             echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
             rm -rf /root/.ssh/known_hosts
             if [[ ${variScpStatus} -eq 1 ]]; then
-              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variFileName} ${variMasterAccount}@${variEachMasterIP}:/
+              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
             fi
             ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
               echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
@@ -1008,7 +1017,6 @@ function funcPublicCloudUnicornModuleInit() {
                 echo "StrictHostKeyChecking no" > ~/.ssh/config
                 chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
                 # （1）ssh init[END]
-                # --------------------------------------------------
                 # --------------------------------------------------
                 # （2）omni.system init[START]
                 if ! command -v git &> /dev/null; then
@@ -1030,7 +1038,6 @@ function funcPublicCloudUnicornModuleInit() {
                   cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
                 fi
                 #（2）omni.system init[END]
-                # --------------------------------------------------
                 # --------------------------------------------------
                 # （3）slave main[START]
                 ulimit -n 655360
@@ -1059,7 +1066,7 @@ function funcPublicCloudUnicornModuleInit() {
                 nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
                 (
                   while true; do
-                    if grep -q "9000" /windows/runtime/unicorn.log; then
+                    if grep -q "8000" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
@@ -1082,6 +1089,7 @@ function funcPublicCloudUnicornModuleInit() {
                 systemctl reload crond
                 # sentry[END]
                 # （3）slave main[END]
+                # --------------------------------------------------
 SLAVEEOF
 MASTEREOF
           fi
