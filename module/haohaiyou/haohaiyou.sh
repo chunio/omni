@@ -106,7 +106,6 @@ VARI_CLOUD=(
   # ipteable[START]
   "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
   "11 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
-  "12 CODE/IPTABLE SINGAPORE -02 43.133.41.45 22"
   # ipteable[END]
 )
 # local variable[END]
@@ -937,35 +936,35 @@ function funcPublicCloudIptableReinit(){
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<'SLAVEEOF'
-                # # --------------------------------------------------
-                # # （1）ssh init[START]
-                # tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                # mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                # echo "StrictHostKeyChecking no" > ~/.ssh/config
-                # chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # # （1）ssh init[END]
-                # # --------------------------------------------------
-                # # （2）omni.system init[START]
-                # if ! command -v git &> /dev/null; then
-                #     yum install -y git
-                # fi
-                # mkdir -p /windows/runtime
-                # if [ -d "/windows/code/backend/chunio/omni" ]; then
-                #   cd /windows/code/backend/chunio/omni
-                #   echo "[ omni ] git fetch origin ..."
-                #   git fetch origin
-                #   echo "[ omni ] git fetch origin finished"
-                #   echo "[ omni ] git reset --hard origin/main ..."
-                #   git reset --hard origin/main
-                #   echo "[ omni ] git reset --hard origin/main finished"
-                #   chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                # else
-                #   mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                #   git clone https://github.com/chunio/omni.git
-                #   cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                # fi
-                # #（2）omni.system init[END]
-                # # --------------------------------------------------
+                # --------------------------------------------------
+                # （1）ssh init[START]
+                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+                echo "StrictHostKeyChecking no" > ~/.ssh/config
+                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+                # （1）ssh init[END]
+                # --------------------------------------------------
+                # （2）omni.system init[START]
+                if ! command -v git &> /dev/null; then
+                    yum install -y git
+                fi
+                mkdir -p /windows/runtime
+                if [ -d "/windows/code/backend/chunio/omni" ]; then
+                  cd /windows/code/backend/chunio/omni
+                  echo "[ omni ] git fetch origin ..."
+                  git fetch origin
+                  echo "[ omni ] git fetch origin finished"
+                  echo "[ omni ] git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  echo "[ omni ] git reset --hard origin/main finished"
+                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                else
+                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+                  git clone https://github.com/chunio/omni.git
+                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                fi
+                #（2）omni.system init[END]
+                # --------------------------------------------------
                 # （3）slave main[START]
                 case ${variEachNodeRegion} in
                   "SINGAPORE")
@@ -979,17 +978,22 @@ function funcPublicCloudIptableReinit(){
                     )
                     ;;
                   "NEWYORK")
-                    variLanSlice=()
+                    variLanSlice=(
+                      "redis/common 10.0.0.10 6379"
+                      "redis/table 10.0.0.4 7379"
+                    )
                     ;;
                   *)
                     echo "error : lan not found"
                     exit 1
                     ;;
                 esac
+                # declare -p variLanSlice
                 # 清空規則
                 iptables -t nat -F
+                iptables -F FORWARD
+                iptables -P FORWARD ACCEPT
                 # 追加規則
-                # declare -p variLanSlice
                 for variEachLan in "\${variLanSlice[@]}"; do
                   read -r variEachLabel variEachIP variEachPort <<< "\${variEachLan}"
                   echo 1 > /proc/sys/net/ipv4/ip_forward
