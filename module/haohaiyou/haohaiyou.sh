@@ -35,10 +35,6 @@ iptables -t nat -A POSTROUTING -d 172.22.0.13 -p tcp --dport 6379 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 7379 -j DNAT --to-destination 172.22.0.48:7379
 iptables -t nat -A POSTROUTING -d 172.22.0.48 -p tcp --dport 7379 -j MASQUERADE
-# singapore/redis-queue
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 8379 -j DNAT --to-destination 172.22.0.39:8379
-iptables -t nat -A POSTROUTING -d 172.22.0.39 -p tcp --dport 8379 -j MASQUERADE
 # singapore/clickhouse/http
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 8123 -j DNAT --to-destination 172.22.0.7:8123
@@ -64,22 +60,6 @@ iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 7379 -j DNAT --to-destination 10.0.0.4:7379
 iptables -t nat -A POSTROUTING -d 10.0.0.4 -p tcp --dport 7379 -j MASQUERADE
-# singapore/redis-queue
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 8379 -j DNAT --to-destination 10.0.0.6:8379
-iptables -t nat -A POSTROUTING -d 10.0.0.6 -p tcp --dport 8379 -j MASQUERADE
-# singapore/clickhouse/http
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 8123 -j DNAT --to-destination 10.0.240.8:8123
-iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 8123 -j MASQUERADE
-# singapore/clickhouse/tcp
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 9000 -j DNAT --to-destination 10.0.240.8:9000
-iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 9000 -j MASQUERADE
-# singapore/clickhouse/mysql
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 9004 -j DNAT --to-destination 10.0.240.8:9004
-iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 9004 -j MASQUERADE
 # --------------------------------------------------
 # 重啟失效[END]
 
@@ -126,6 +106,7 @@ VARI_CLOUD=(
   # ipteable[START]
   "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
   "11 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
+  "12 CODE/IPTABLE SINGAPORE -02 43.128.112.94 22"
   # ipteable[END]
 )
 # local variable[END]
@@ -415,6 +396,39 @@ function funcPublicCloudIndex(){
   return 1
 }
 
+
+# jump server init[START]
+# scp /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz root@159.89.116.79:/
+# ssh root@159.89.116.79
+# tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+# mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+# echo "StrictHostKeyChecking no" > ~/.ssh/config
+# chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+# jump server init[END]
+
+function funcPublicCloudIndexInit() {
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
+    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
+      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
+      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
+      variEachMasterPort=$(echo $variMasterValue | awk '{print $6}')
+      break
+    fi
+  done
+  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+  scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz ${variMasterAccount}@${variEachMasterIP}:/
+:<<MARK
+# [manual]ssh init[START]
+tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+echo "StrictHostKeyChecking no" > ~/.ssh/config
+chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+# [manual]ssh init[END]
+MARK
+  return 0
+}
+
 function funcPublicCloudSkeletonInit() {
   local variParameterDescMulti=("branch name : main（default），feature/zengweitao/xxxx")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
@@ -541,38 +555,6 @@ MASTEREOF
       done
     fi
   done
-  return 0
-}
-
-# jump server init[START]
-# scp /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz root@159.89.116.79:/
-# ssh root@159.89.116.79
-# tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-# mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-# echo "StrictHostKeyChecking no" > ~/.ssh/config
-# chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-# jump server init[END]
-
-function funcPublicCloudIndexInit() {
-  variMasterKeyword="INDEX"
-  for variMasterValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-      variEachMasterPort=$(echo $variMasterValue | awk '{print $6}')
-      break
-    fi
-  done
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz ${variMasterAccount}@${variEachMasterIP}:/
-:<<MARK
-# [manual]ssh init[START]
-tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-echo "StrictHostKeyChecking no" > ~/.ssh/config
-chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-# [manual]ssh init[END]
-MARK
   return 0
 }
 
@@ -886,6 +868,138 @@ function funcPublicCloudUnicornModuleInit() {
                 fi
                 systemctl reload crond
                 # sentry[END]
+                # （3）slave main[END]
+                # --------------------------------------------------
+SLAVEEOF
+MASTEREOF
+          fi
+        done
+      done
+    fi
+  done
+  return 0
+}
+
+function funcPublicCloudIptableInit(){
+  local variParameterDescMulti=("event : singapore，virginia")
+  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variEvent=$1
+  case ${variEvent} in
+    "singapore")
+      variLan=(
+        "redis/common 172.22.0.13 6379"
+        "redis/table 172.22.0.48 7379"
+        "clickhouse/http 172.22.0.7 8123"
+        "clickhouse/tcp 172.22.0.7 9000"
+        "clickhouse/mysql 172.22.0.7 9004"
+        "kafka/common 172.22.0.50 9092"
+      )
+      ;;
+    "virginia")
+      variLan=(
+        "redis/common 10.0.0.10 6379"
+        "redis/table 10.0.0.4 7379"
+      )
+      ;;
+    *)
+      echo "error : lan not found"
+      return ${VARI_GLOBAL["BUILTIN_ERROR_CODE"]}
+      ;;
+  esac
+  variMasterAccount="root"
+  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  for variEachValue in "${VARI_CLOUD[@]}"; do
+    variEachIndex=$(echo $variEachValue | awk '{print $1}')
+    variEachLabel=$(echo $variEachValue | awk '{print $2}')
+    variEachRegion=$(echo $variEachValue | awk '{print $3}')
+    variEachMemo=$(echo $variEachValue | awk '{print $4}')
+    variEachIp=$(echo $variEachValue | awk '{print $5}')
+    variEachPort=$(echo $variEachValue | awk '{print $6}')
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+  done
+  echo -n "enter the 「NODE_LABEL」 keyword to match : "
+  read variSlaveKeyword
+  echo "matched (${variSlaveKeyword}) : "
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  for variEachValue in "${VARI_CLOUD[@]}"; do
+    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
+      variEachIndex=$(echo $variEachValue | awk '{print $1}')
+      variEachLabel=$(echo $variEachValue | awk '{print $2}')
+      variEachRegion=$(echo $variEachValue | awk '{print $3}')
+      variEachMemo=$(echo $variEachValue | awk '{print $4}')
+      variEachIp=$(echo $variEachValue | awk '{print $5}')
+      variEachPort=$(echo $variEachValue | awk '{print $6}')
+      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+    fi
+  done
+  echo -n "enter the [number]index ( 空格間隔 ) : "
+  read -a variInputIndexList
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
+    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
+      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
+      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
+      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
+      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
+      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
+      for variEachInputIndex in "${variInputIndexList[@]}"; do
+        for variSlaveValue in "${VARI_CLOUD[@]}"; do
+          variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
+          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
+            variEachNodeLabel=$(echo $variSlaveValue | awk '{print $2}')
+            variEachNodeRegion=$(echo $variSlaveValue | awk '{print $3}')
+            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
+            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
+            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
+            echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
+            rm -rf /root/.ssh/known_hosts
+            if [[ ${variScpStatus} -eq 1 ]]; then
+              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
+            fi
+            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
+              echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
+              rm -rf /root/.ssh/known_hosts
+              scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
+              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
+                # --------------------------------------------------
+                # （1）ssh init[START]
+                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+                echo "StrictHostKeyChecking no" > ~/.ssh/config
+                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+                # （1）ssh init[END]
+                # --------------------------------------------------
+                # （2）omni.system init[START]
+                if ! command -v git &> /dev/null; then
+                    yum install -y git
+                fi
+                mkdir -p /windows/runtime
+                if [ -d "/windows/code/backend/chunio/omni" ]; then
+                  cd /windows/code/backend/chunio/omni
+                  echo "[ omni ] git fetch origin ..."
+                  git fetch origin
+                  echo "[ omni ] git fetch origin finished"
+                  echo "[ omni ] git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  echo "[ omni ] git reset --hard origin/main finished"
+                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                else
+                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+                  git clone https://github.com/chunio/omni.git
+                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                fi
+                #（2）omni.system init[END]
+                # --------------------------------------------------
+                # （3）slave main[START]
+                # 清除「iptables / nat」所有規則
+                iptables -t nat -F
+                for variEachValue in "${variLan[@]}"; do
+                  variEachIp=$(echo $variEachValue | awk '{print $5}')
+                  variEachPort=$(echo $variEachValue | awk '{print $6}')
+                  iptables -t nat -A PREROUTING -p tcp --dport ${variEachPort} -j DNAT --to-destination ${variEachIp}:${variEachPort}
+                  iptables -t nat -A POSTROUTING -d ${variEachIp} -p tcp --dport ${variEachPort} -j MASQUERADE
+                done
                 # （3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF
