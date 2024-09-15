@@ -133,119 +133,7 @@ VARI_CLOUD=(
 
 # ##################################################
 # protected function[START]
-function funcProtectedCloudJump(){
-  local variParameterDescMulti=("master event : UNICORN_ADX，UNICORN_DSP" "slave main（function name）")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variMasterEvent=${1}
-  variSlaveMain=${2}
-  variMasterAccount="root"
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_CLOUD[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachLabel=$(echo $variEachValue | awk '{print $2}')
-    variEachRegion=$(echo $variEachValue | awk '{print $3}')
-    variEachMemo=$(echo $variEachValue | awk '{print $4}')
-    variEachIp=$(echo $variEachValue | awk '{print $5}')
-    variEachPort=$(echo $variEachValue | awk '{print $6}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-  done
-  echo -n "enter the「NODE_LABEL」keyword to match : "
-  read variSlaveKeyword
-  echo "matched (${variSlaveKeyword}) : "
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachLabel=$(echo $variEachValue | awk '{print $2}')
-      variEachRegion=$(echo $variEachValue | awk '{print $3}')
-      variEachMemo=$(echo $variEachValue | awk '{print $4}')
-      variEachIp=$(echo $variEachValue | awk '{print $5}')
-      variEachPort=$(echo $variEachValue | awk '{print $6}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-    fi
-  done
-  echo -n "enter the number index ( 空格間隔 ) : "
-  read -a variInputIndexList
-  variMasterKeyword="INDEX"
-  for variMasterValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
-      for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_CLOUD[@]}"; do
-          variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
-          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
-            variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
-            variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $3}')
-            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
-            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
-            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
-            echo "initiate connection : [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
-            rm -rf /root/.ssh/known_hosts
-            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
-              echo "initiate connection : [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
-              rm -rf /root/.ssh/known_hosts
-              # event[START]
-              case ${variMasterEvent} in
-                  UNICORN_ADX)
-                      scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_adx ${variMasterAccount}@${variEachMasterIP}:/
-                      ;;
-                  UNICORN_DSP)
-                      scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_dsp ${variMasterAccount}@${variEachMasterIP}:/
-                      ;;
-                  *)
-                      echo "..."
-                      ;;
-              esac
-              # event[END]
-              scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                # --------------------------------------------------
-                # ssh init[START]
-                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                echo "StrictHostKeyChecking no" > ~/.ssh/config
-                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # ssh init[END]
-                # --------------------------------------------------
-                # --------------------------------------------------
-                # omni.system init[START]
-                if ! command -v git &> /dev/null; then
-                    yum install -y git
-                fi
-                mkdir -p /windows/runtime
-                if [ -d "/windows/code/backend/chunio/omni" ]; then
-                  cd /windows/code/backend/chunio/omni
-                  echo "[ omni ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ omni ] git fetch origin finished"
-                  echo "[ omni ] git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "[ omni ] git reset --hard origin/main finished"
-                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                else
-                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                  git clone https://github.com/chunio/omni.git
-                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                fi
-                # omni.system init[END]
-                # --------------------------------------------------
-                ulimit -n 655360
-                /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh ${variSlaveMain}
-                # --------------------------------------------------
-SLAVEEOF
-MASTEREOF
-          fi
-        done
-      done
-    fi
-  done
-  return 0
-}
+
 # protected function[END]
 # ##################################################
 
@@ -334,96 +222,6 @@ DOCKERCOMPOSEYML
 #   docker exec -it ${variModuleName} /bin/bash
 #   return 0
 # }
-
-function funcPublicAdx()
-{
-  # cat /etc/os-release
-  # ##################################################
-  # PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
-  # NAME="Debian GNU/Linux"
-  # VERSION_ID="12"
-  # VERSION="12 (bookworm)"
-  # VERSION_CODENAME=bookworm
-  # ID=debian
-  # HOME_URL="https://www.debian.org/"
-  # SUPPORT_URL="https://www.debian.org/support"
-  # BUG_REPORT_URL="https://bugs.debian.org/"
-  # ##################################################
-  # apt-get update
-  # apt-get install -y graphviz
-  # apt-get install -y vim
-  # [MASTER]persistence
-  variMasterPath="/windows/code/backend/haohaiyou"
-  # [DOCKER]temporary
-  variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  veriModuleName="adx"
-  mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
-  mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
-  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
-# 會被「docker run」中指定命令覆蓋
-touch /etc/bashrc
-chmod 644 /etc/bashrc
-# /windows/code/backend/chunio/omni/init/system/system.sh init && source /etc/bashrc
-# 禁止「return」
-# return 0
-ENTRYPOINTSH
-  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
-  cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
-CGO_ENABLED=0
-GO111MODULE=on
-GOBIN=${variDockerWorkSpace}/gopath/bin
-GOCACHE=${variDockerWorkSpace}/gocache.linux
-GOMODCACHE=${variDockerWorkSpace}/gopath/pkg/mod
-GOPATH=${variDockerWorkSpace}/gopath
-GOPROXY=https://goproxy.cn,direct
-GOROOT=/usr/local/go
-GOSUMDB=sum.golang.google.cn
-GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
-GOENVLINUX
-  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-services:
-  ${veriModuleName}:
-    image: chunio/go:1.22.4
-    container_name: ${veriModuleName}
-    environment:
-      - GOENV=/go.env.linux
-      - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
-    volumes:
-      - /windows:/windows
-      - /mnt:/mnt
-      # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
-    networks:
-      - common
-    ports:
-      - "2345:2345"
-      - "8000:8000"
-    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
-    # 啟動進程關閉時，則容器退出
-    command: ["tail", "-f", "/dev/null"]
-    # 解決提示：connections are not authenticated nor encrypted[START]
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - seccomp=unconfined
-    # 解決提示：connections are not authenticated nor encrypted[END]
-networks:
-  common:
-    driver: bridge
-DOCKERCOMPOSEYML
-  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
-  docker update --restart=always ${veriModuleName}
-  docker ps -a | grep ${veriModuleName}
-  cd ${variMasterPath}/gopath/src/${veriModuleName}
-  docker exec -it ${veriModuleName} /bin/bash
-  return 0
-}
 
 function funcPublicUnicorn()
 {
@@ -1183,7 +981,8 @@ function funcPublicMongo(){
     return 0
 }
 
-function funcPublic9501280(){
+# 將「80」端口轉發至「9501」端口
+function funcPublic80(){
   veriModuleName="skeleton"
   variCurrentIP=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
