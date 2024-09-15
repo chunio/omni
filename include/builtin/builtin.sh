@@ -40,7 +40,7 @@ VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
 VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
 # 「VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0」表示不限
-VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
+VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=10
 VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]=""
 # global variable[END]
 # ##################################################
@@ -111,7 +111,8 @@ ENCRYPTENVI
   fi
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
   if [ ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} != 0 ] && [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} ]; then
-    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.todo
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.trace
     #  variKeepList=("$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]})" "$(basename ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]})")
     #  for variTempFile in ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*; do
     #    if [[ ! " ${variKeepList[*]} " =~ " $variTempFile " ]]; then
