@@ -106,7 +106,7 @@ VARI_CLOUD=(
   # ipteable[START]
   "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
   "11 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
-  "12 CODE/IPTABLE SINGAPORE -02 43.128.112.94 22"
+  "12 CODE/IPTABLE SINGAPORE -02 43.133.41.45 22"
   # ipteable[END]
 )
 # local variable[END]
@@ -429,7 +429,7 @@ MARK
   return 0
 }
 
-function funcPublicCloudSkeletonInit() {
+function funcPublicCloudSkeletonRinit() {
   local variParameterDescMulti=("branch name : main（default），feature/zengweitao/xxxx")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   variBranchName=${1:-"main"}
@@ -558,7 +558,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicCloudUnicornInit() {
+function funcPublicCloudUnicornReinit() {
   # local variParameterDescMulti=("envi local/development/production（default）")
   # funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   local variParameterDescMulti=("scp value : 0/no，1/yes（default）" "envi local/development/production（default）")
@@ -719,7 +719,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicCloudUnicornModuleInit() {
+function funcPublicCloudUnicornModuleReinit() {
   local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variModuleName=$1
@@ -880,32 +880,10 @@ MASTEREOF
   return 0
 }
 
-function funcPublicCloudIptableInit(){
-  local variParameterDescMulti=("event : singapore，virginia")
-  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variEvent=$1
-  case ${variEvent} in
-    "singapore")
-      variLan=(
-        "redis/common 172.22.0.13 6379"
-        "redis/table 172.22.0.48 7379"
-        "clickhouse/http 172.22.0.7 8123"
-        "clickhouse/tcp 172.22.0.7 9000"
-        "clickhouse/mysql 172.22.0.7 9004"
-        "kafka/common 172.22.0.50 9092"
-      )
-      ;;
-    "virginia")
-      variLan=(
-        "redis/common 10.0.0.10 6379"
-        "redis/table 10.0.0.4 7379"
-      )
-      ;;
-    *)
-      echo "error : lan not found"
-      return ${VARI_GLOBAL["BUILTIN_ERROR_CODE"]}
-      ;;
-  esac
+function funcPublicCloudIptableReinit(){
+  # local variParameterDescMulti=("event : singapore，virginia")
+  # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  # variEvent=$1
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
@@ -954,52 +932,72 @@ function funcPublicCloudIptableInit(){
             variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
             echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
             rm -rf /root/.ssh/known_hosts
-            if [[ ${variScpStatus} -eq 1 ]]; then
-              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
-            fi
             ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
               echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                # --------------------------------------------------
-                # （1）ssh init[START]
-                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                echo "StrictHostKeyChecking no" > ~/.ssh/config
-                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # （1）ssh init[END]
-                # --------------------------------------------------
-                # （2）omni.system init[START]
-                if ! command -v git &> /dev/null; then
-                    yum install -y git
-                fi
-                mkdir -p /windows/runtime
-                if [ -d "/windows/code/backend/chunio/omni" ]; then
-                  cd /windows/code/backend/chunio/omni
-                  echo "[ omni ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ omni ] git fetch origin finished"
-                  echo "[ omni ] git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "[ omni ] git reset --hard origin/main finished"
-                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                else
-                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                  git clone https://github.com/chunio/omni.git
-                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                fi
-                #（2）omni.system init[END]
-                # --------------------------------------------------
+              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<'SLAVEEOF'
+                # # --------------------------------------------------
+                # # （1）ssh init[START]
+                # tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+                # mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+                # echo "StrictHostKeyChecking no" > ~/.ssh/config
+                # chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+                # # （1）ssh init[END]
+                # # --------------------------------------------------
+                # # （2）omni.system init[START]
+                # if ! command -v git &> /dev/null; then
+                #     yum install -y git
+                # fi
+                # mkdir -p /windows/runtime
+                # if [ -d "/windows/code/backend/chunio/omni" ]; then
+                #   cd /windows/code/backend/chunio/omni
+                #   echo "[ omni ] git fetch origin ..."
+                #   git fetch origin
+                #   echo "[ omni ] git fetch origin finished"
+                #   echo "[ omni ] git reset --hard origin/main ..."
+                #   git reset --hard origin/main
+                #   echo "[ omni ] git reset --hard origin/main finished"
+                #   chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                # else
+                #   mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+                #   git clone https://github.com/chunio/omni.git
+                #   cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                # fi
+                # #（2）omni.system init[END]
+                # # --------------------------------------------------
                 # （3）slave main[START]
-                # 清除「iptables / nat」所有規則
+                case ${variEachNodeRegion} in
+                  "SINGAPORE")
+                    variLanSlice=(
+                      "redis/common 172.22.0.13 6379"
+                      "redis/table 172.22.0.48 7379"
+                      "clickhouse/http 172.22.0.7 8123"
+                      "clickhouse/tcp 172.22.0.7 9000"
+                      "clickhouse/mysql 172.22.0.7 9004"
+                      "kafka/common 172.22.0.50 9092"
+                    )
+                    ;;
+                  "NEWYORK")
+                    variLanSlice=()
+                    ;;
+                  *)
+                    echo "error : lan not found"
+                    exit 1
+                    ;;
+                esac
+                # 清空規則
                 iptables -t nat -F
-                for variEachValue in "${variLan[@]}"; do
-                  variEachIp=$(echo $variEachValue | awk '{print $5}')
-                  variEachPort=$(echo $variEachValue | awk '{print $6}')
-                  iptables -t nat -A PREROUTING -p tcp --dport ${variEachPort} -j DNAT --to-destination ${variEachIp}:${variEachPort}
-                  iptables -t nat -A POSTROUTING -d ${variEachIp} -p tcp --dport ${variEachPort} -j MASQUERADE
+                # 追加規則
+                # declare -p variLanSlice
+                for variEachLan in "\${variLanSlice[@]}"; do
+                  read -r variEachLabel variEachIP variEachPort <<< "\${variEachLan}"
+                  echo 1 > /proc/sys/net/ipv4/ip_forward
+                  iptables -t nat -A PREROUTING -p tcp --dport \${variEachPort} -j DNAT --to-destination \${variEachIP}:\${variEachPort}
+                  iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j MASQUERADE
                 done
+                # 查看規則
+                iptables -t nat -L -n -v
                 # （3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF
