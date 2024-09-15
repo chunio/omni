@@ -87,6 +87,7 @@ CONFIGXML
             <max_memory_usage>10000000000</max_memory_usage>
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>random</load_balancing>
+            <max_query_size>10485760</max_query_size>
         </default>
     </profiles>
     <quotas>
@@ -144,12 +145,12 @@ DOCKERCOMPOSEYML
   docker ps -a | grep clickhouse
   echo "username : ${variUsername}"
   echo "password : ${variPassword}"
-  for variIndex in {1..30}; do
+  for variIndex in {1..120}; do
     if docker exec clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} -q "SELECT 1" &>/dev/null; then
         echo "clickhouse is active"
         break
     fi
-    echo "$variIndex/30 ..."
+    echo "$variIndex/120 ..."
     sleep 1
   done
   for variEachSQL in ${variSQLPath}/*.sql; do

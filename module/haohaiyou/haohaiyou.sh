@@ -15,25 +15,30 @@ EOF
 }
 
 # [批量]模糊删除
-EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*unicorn:HASH:StatIdDeviceIdDistinct{HSETNX_HINCRBY_HDEL}:2024-08-19:*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
+EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*TableBidStatDeviceIdNumHsetnx:2024-09-05*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
+
+# 查看規則
+iptables -t nat -L -n -v 
+
+# 刪除規則[START]
+iptables -t nat -D PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.10:27017
+iptables -t nat -D POSTROUTING -d 192.168.0.10 -p tcp --dport 27017 -j MASQUERADE
+# 刪除規則[END]
 
 # 重啟失效[START]
+# --------------------------------------------------
 # singapore/redis-common
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 172.22.0.13:6379
 iptables -t nat -A POSTROUTING -d 172.22.0.13 -p tcp --dport 6379 -j MASQUERADE
-# singapore/redis-clickhouse
+# singapore/redis-table
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 7379 -j DNAT --to-destination 172.22.0.48:7379
 iptables -t nat -A POSTROUTING -d 172.22.0.48 -p tcp --dport 7379 -j MASQUERADE
-# singapore/redis-cluster
+# singapore/redis-queue
 echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 16379 -j DNAT --to-destination 172.22.0.26:16379
-iptables -t nat -A POSTROUTING -d 172.22.0.26 -p tcp --dport 16379 -j MASQUERADE
-# singapore/mongo
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.4:27017
-iptables -t nat -A POSTROUTING -d 192.168.0.4 -p tcp --dport 27017 -j MASQUERADE
+iptables -t nat -A PREROUTING -p tcp --dport 8379 -j DNAT --to-destination 172.22.0.39:8379
+iptables -t nat -A POSTROUTING -d 172.22.0.39 -p tcp --dport 8379 -j MASQUERADE
 # singapore/clickhouse/http
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 8123 -j DNAT --to-destination 172.22.0.7:8123
@@ -46,26 +51,36 @@ iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 9000 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 9004 -j DNAT --to-destination 172.22.0.7:9004
 iptables -t nat -A POSTROUTING -d 172.22.0.7 -p tcp --dport 9004 -j MASQUERADE
-
-# 查看規則
-# iptables -t nat -L -n -v 
-# 刪除規則[START]
-# iptables -t nat -D PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 192.168.0.10:27017
-# iptables -t nat -D POSTROUTING -d 192.168.0.10 -p tcp --dport 27017 -j MASQUERADE
-# 刪除規則[END]
-
-# virginia/redis
+# singapore/kafka
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 9092 -j DNAT --to-destination 172.22.0.50:9092
+iptables -t nat -A POSTROUTING -d 172.22.0.50 -p tcp --dport 9092 -j MASQUERADE
+# --------------------------------------------------
+# virginia/redis-common
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A PREROUTING -p tcp --dport 6379 -j DNAT --to-destination 10.0.0.10:6379
 iptables -t nat -A POSTROUTING -d 10.0.0.10 -p tcp --dport 6379 -j MASQUERADE
-# virginia/redis-cluster
+# singapore/redis-table
 echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 16379 -j DNAT --to-destination 10.0.0.7:16379
-iptables -t nat -A POSTROUTING -d 10.0.0.7 -p tcp --dport 16379 -j MASQUERADE
-# virginia/mongo
+iptables -t nat -A PREROUTING -p tcp --dport 7379 -j DNAT --to-destination 10.0.0.4:7379
+iptables -t nat -A POSTROUTING -d 10.0.0.4 -p tcp --dport 7379 -j MASQUERADE
+# singapore/redis-queue
 echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A PREROUTING -p tcp --dport 27017 -j DNAT --to-destination 10.0.0.14:27017
-iptables -t nat -A POSTROUTING -d 10.0.0.14 -p tcp --dport 27017 -j MASQUERADE
+iptables -t nat -A PREROUTING -p tcp --dport 8379 -j DNAT --to-destination 10.0.0.6:8379
+iptables -t nat -A POSTROUTING -d 10.0.0.6 -p tcp --dport 8379 -j MASQUERADE
+# singapore/clickhouse/http
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 8123 -j DNAT --to-destination 10.0.240.8:8123
+iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 8123 -j MASQUERADE
+# singapore/clickhouse/tcp
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 9000 -j DNAT --to-destination 10.0.240.8:9000
+iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 9000 -j MASQUERADE
+# singapore/clickhouse/mysql
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A PREROUTING -p tcp --dport 9004 -j DNAT --to-destination 10.0.240.8:9004
+iptables -t nat -A POSTROUTING -d 10.0.240.8 -p tcp --dport 9004 -j MASQUERADE
+# --------------------------------------------------
 # 重啟失效[END]
 
 [ext4]
@@ -94,6 +109,7 @@ VARI_CLOUD=(
   # notice[START]
   "01 CODE/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 CODE/NOTICE SINGAPORE -01 43.134.68.173 22"
+  # -----
   "03 CODE/COMMON NEWYORK -01 43.130.116.28 22"
   # notice[END]
   # bid[START]
@@ -101,18 +117,12 @@ VARI_CLOUD=(
   "05 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
   "06 CODE/BID03 SINGAPORE -03 43.128.108.79 22"
   "07 CODE/BID04 SINGAPORE -04 43.156.33.106 22"
-  "08 CODE/BID05 SINGAPORE -05 43.159.34.17 22"
-  # "09 CODE/BID06 SINGAPORE -06 129.226.91.110 22"
-  # "10 CODE/BID07 SINGAPORE -07 43.156.37.179 22"
-  # "09 CODE/BID06 SINGAPORE -06 43.134.173.6 22"
-  "09 CODE/BID01 NEWYORK -01 43.130.79.155 22"
-  "10 CODE/BID02 NEWYORK -02 43.130.150.103 22"
+  # -----
+  "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
+  "09 CODE/BID02 NEWYORK -02 43.130.150.103 22" 
   # bid[END]
-  # gray[START]
-  "21 CODE/IPTABLE SINGAPORE -01 43.156.106.65 22"
-  "22 CODE/IPTABLE NEWYORK -01 43.130.99.103 22"
-  # gray[END]
-  
+  "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
+  "11 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
 )
 # local variable[END]
 # ##################################################
@@ -573,11 +583,14 @@ function funcPublicCloudSkeletonInit() {
                   cd /windows/code/backend/haohaiyou/gopath/src/skeleton
                   echo "git fetch origin ..."
                   git fetch origin
+                  # -----
                   echo "git reset --hard origin/main ..."
                   git reset --hard origin/main
+                  echo "git reset --hard origin/main finished"
                   # -----
-                  # echo "git reset --hard origin/feature/zengweitao/temp"
-                  # git reset --hard origin/feature/zengweitao/temp
+                  # echo "git reset --hard origin/feature/zengweitao/distinct ..."
+                  # git reset --hard origin/feature/zengweitao/distinct
+                  # echo "git reset --hard origin/feature/zengweitao/distinct finished"
                   # -----
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
@@ -659,7 +672,7 @@ function funcPublicCloudUnicornInit() {
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "Enter the 「NODE_LABEL」 keyword to match: "
+  echo -n "enter the 「NODE_LABEL」 keyword to match: "
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
@@ -749,21 +762,14 @@ function funcPublicCloudUnicornInit() {
                   git fetch origin
                   echo "git fetch origin finished"
                   # -----
-                  echo "git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "git reset --hard origin/main finished"
+                  # echo "git reset --hard origin/main ..."
+                  # git reset --hard origin/main
+                  # echo "git reset --hard origin/main finished"
                   # -----
-                  # echo "git reset --hard origin/feature/zengweitao/mongo"
-                  # git reset --hard origin/feature/zengweitao/mongo
-                  # echo "git reset --hard origin/feature/zengweitao/mongo finished"
+                  echo "git reset --hard origin/feature/zengweitao/clickhouse"
+                  git reset --hard origin/feature/zengweitao/clickhouse
+                  echo "git reset --hard origin/feature/zengweitao/clickhouse finished"
                   # -----
-                  # echo "git reset --hard origin/feature/zengweitao/redis-cluster"
-                  # git reset --hard origin/feature/zengweitao/redis-cluster
-                  # echo "git reset --hard origin/feature/zengweitao/redis-cluster finished"
-                  # -----
-                  # echo "git reset --hard origin/feature/zengweitao/video"
-                  # git reset --hard origin/feature/zengweitao/video
-                  # echo "git reset --hard origin/feature/zengweitao/video finished"
                 else
                   mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
@@ -795,6 +801,165 @@ function funcPublicCloudUnicornInit() {
                 else
                   echo "${variCrontabCommand}" >> "${variCrontabFile}"
                   echo "cronjob added successfully"
+                fi
+                systemctl reload crond
+                # sentry[END]
+SLAVEEOF
+MASTEREOF
+          fi
+        done
+      done
+    fi
+  done
+  return 0
+}
+
+function funcPublicCloudUnicornModuleInit() {
+  local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variModuleName=$1
+  variBranchName=$2
+  variScp="1"
+  variEnvi="production"
+  variMasterAccount="root"
+  variFileName="unicorn_${variModuleName}"
+  # slave variable[START]
+  variCrontabUri="/var/spool/cron/root"
+  variCrontabCommand="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornSentry"
+  # slave variable[END]
+  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  for variEachValue in "${VARI_CLOUD[@]}"; do
+    variEachIndex=$(echo $variEachValue | awk '{print $1}')
+    variEachLabel=$(echo $variEachValue | awk '{print $2}')
+    variEachRegion=$(echo $variEachValue | awk '{print $3}')
+    variEachMemo=$(echo $variEachValue | awk '{print $4}')
+    variEachIp=$(echo $variEachValue | awk '{print $5}')
+    variEachPort=$(echo $variEachValue | awk '{print $6}')
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+  done
+  echo -n "enter the 「NODE_LABEL」 keyword to match: "
+  read variSlaveKeyword
+  echo "Matched (${variSlaveKeyword}):"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  for variEachValue in "${VARI_CLOUD[@]}"; do
+    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
+      variEachIndex=$(echo $variEachValue | awk '{print $1}')
+      variEachLabel=$(echo $variEachValue | awk '{print $2}')
+      variEachRegion=$(echo $variEachValue | awk '{print $3}')
+      variEachMemo=$(echo $variEachValue | awk '{print $4}')
+      variEachIp=$(echo $variEachValue | awk '{print $5}')
+      variEachPort=$(echo $variEachValue | awk '{print $6}')
+      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+    fi
+  done
+  echo -n "enter the [number]index ( 空格間隔 ) : "
+  read -a variInputIndexList
+  variMasterKeyword="INDEX"
+  for variMasterValue in "${VARI_CLOUD[@]}"; do
+    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
+      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
+      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
+      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
+      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
+      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
+      for variEachInputIndex in "${variInputIndexList[@]}"; do
+        for variSlaveValue in "${VARI_CLOUD[@]}"; do
+          variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
+          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
+            variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
+            variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $3}')
+            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
+            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
+            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
+            echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
+            rm -rf /root/.ssh/known_hosts
+            if [[ ${variScp} -eq 1 ]]; then
+              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variFileName} ${variMasterAccount}@${variEachMasterIP}:/
+            fi
+            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
+              echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
+              rm -rf /root/.ssh/known_hosts
+              if [[ ${variScp} -eq 1 ]]; then
+                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /${variFileName} root@${variEachSlaveIP}:/
+                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
+              fi
+              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
+                # --------------------------------------------------
+                # ssh init[START]
+                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+                echo "StrictHostKeyChecking no" > ~/.ssh/config
+                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+                # ssh init[END]
+                # --------------------------------------------------
+                # --------------------------------------------------
+                # omni.system init[START]
+                if ! command -v git &> /dev/null; then
+                    yum install -y git
+                fi
+                mkdir -p /windows/runtime
+                if [ -d "/windows/code/backend/chunio/omni" ]; then
+                  cd /windows/code/backend/chunio/omni
+                  echo "git fetch origin ..."
+                  git fetch origin
+                  echo "git reset --hard origin/main ..."
+                  git reset --hard origin/main
+                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                else
+                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+                  git clone https://github.com/chunio/omni.git
+                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+                fi
+                # omni.system init[END]
+                # --------------------------------------------------
+                # --------------------------------------------------
+                # unicorn[START]
+                ulimit -n 655360
+                docker rm -f unicorn 2> /dev/null
+                if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
+                  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+                  # ----
+                  echo "git fetch origin ..."
+                  git fetch origin
+                  echo "git fetch origin finished"
+                  # -----
+                  echo "git reset --hard origin/${variBranchName} ..."
+                  git reset --hard origin/${variBranchName}
+                  echo "git reset --hard origin/${variBranchName} finished"
+                  # -----
+                else
+                  mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+                  git clone git@github.com:chunio/unicorn.git && cd unicorn
+                  git checkout ${variBranchName}
+                fi
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+                chmod 777 -R .
+                /usr/bin/cp -rf /${variFileName} ./bin/${variFileName} 
+                nohup ./bin/${variFileName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &
+                (
+                  while true; do
+                    if grep -q "9000" /windows/runtime/unicorn.log; then
+                      cat /windows/runtime/unicorn.log
+                      echo "nohup ./bin/${variFileName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
+                      echo "nohup ./bin/${variFileName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachSlaveLabel} -NODE_REGION ${variEachSlaveRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
+                      break
+                    elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
+                      cat /windows/runtime/unicorn.log
+                      break
+                    fi
+                    sleep 1
+                  done
+                ) &
+                # unicorn[END]
+                # sentry[START]
+                if grep -Fq "${variCrontabCommand}" "${variCrontabUri}"; then
+                  echo "[sentry]corntab is active"
+                else
+                  echo "${variCrontabCommand}" >> "${variCrontabUri}"
+                  echo "[sentry]corntab init succeeded"
                 fi
                 systemctl reload crond
                 # sentry[END]
@@ -989,9 +1154,7 @@ function funcPublicUnicornSentry(){
   # check heartbeat[END]
   return 0
 }
-
 # public function[END]
-
 # ##################################################
 
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/workflow/workflow.sh"
