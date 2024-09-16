@@ -359,7 +359,7 @@ function funcPublicCloudIndex(){
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort" 
   done
-  read -p "enter the [number]index to connect: " variInput
+  read -p "enter the [number]index to connect : " variInput
   if [[ ! $variInput =~ ^[0-9]+$ ]]; then
     echo "error : expect a [number]index"
     return 1
@@ -1034,9 +1034,9 @@ function funcPublicCloudUnicornCheck() {
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "Enter the 「NODE_LABEL」 keyword to match: "
+  echo -n "enter the 「NODE_LABEL」 keyword to match : "
   read variSlaveKeyword
-  echo "Matched (${variSlaveKeyword}):"
+  echo "matched (${variSlaveKeyword}) :"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
@@ -1083,18 +1083,6 @@ MASTEREOF
     fi
   done
   return 0
-}
-
-function funcPublicMongo(){
-#     db.bid_stream_20240626.count({ bid_response_status: 1 })
-#     db.bid_stream_20240626.find({ bid_response_status:1 })
-#     db.bid_stream_20240626.find({ auction_price: { $ne: null } })
-#     db.getCollection("bid_stream_20240626").find({
-#       creative_snapshot_json: {
-#         $regex: "\\[\\s*{\\s*\"creative_id\"\\s*:\\s*\"1528\""
-#       }
-#     })
-    return 0
 }
 
 # 將「80」端口轉發至「9501」端口
