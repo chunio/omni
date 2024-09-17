@@ -818,7 +818,7 @@ function funcPublicCloudUnicornModuleReinit() {
                 fi
                 #（2）omni.system init[END]
                 # --------------------------------------------------
-                # （3）slave main[START]
+                #（3）slave main[START]
                 ulimit -n 655360
                 docker rm -f unicorn 2> /dev/null
                 if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
@@ -867,7 +867,7 @@ function funcPublicCloudUnicornModuleReinit() {
                 fi
                 systemctl reload crond
                 # sentry[END]
-                # （3）slave main[END]
+                #（3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF
 MASTEREOF
@@ -1074,7 +1074,7 @@ function funcPublicCloudUnicornCheck() {
               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                tail -n 50 /windows/runtime/unicorn.log
+                tail -n 100 /windows/runtime/unicorn.log
 SLAVEEOF
 MASTEREOF
           fi

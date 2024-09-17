@@ -148,6 +148,7 @@ DOCKERCOMPOSEYML
   for variIndex in {1..120}; do
     if docker exec clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} -q "SELECT 1" &>/dev/null; then
         echo "clickhouse is active"
+        sleep 1
         break
     fi
     echo "$variIndex/120 ..."
@@ -156,7 +157,13 @@ DOCKERCOMPOSEYML
   for variEachSQL in ${variSQLPath}/*.sql; do
     if [ -f "$variEachSQL" ]; then
         echo "import : $variEachSQL"
-        docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"
+        echo "docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < ${variEachSQL}"
+        # docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"
+        if docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"; then
+          echo "successfully imported ${variEachSQL}"
+        else
+          echo "failed to import ${variEachSQL}"
+        fi
     fi
   done
   return 0

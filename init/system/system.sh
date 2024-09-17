@@ -441,8 +441,8 @@ function funcPublicVersion() {
 
 # v2rayn:10809
 function funcPublicProxy() {
-  local variParameterDescMulti=("status，value：0/disable，1/enable（default）")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variParameterDescMulti=("port")
+  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variPort=${1:-0}
   variProxy="192.168.255.1:${variPort}"
   if [ ${variPort} -gt 0 ]; then
