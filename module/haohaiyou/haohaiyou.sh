@@ -840,6 +840,7 @@ function funcPublicCloudUnicornModuleReinit() {
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+                mkdir -p ./bin
                 chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
                 nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
