@@ -718,6 +718,7 @@ MASTEREOF
   return 0
 }
 
+# 手動清理歷史任務：/var/spool/cron/root
 function funcPublicCloudUnicornModuleReinit() {
   local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -840,13 +841,13 @@ function funcPublicCloudUnicornModuleReinit() {
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
-                mkdir -p ./bin
-                chmod 777 -R .
+                mkdir -p ./bin && chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
+                echo "" > /windows/runtime/command.variable
                 nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
                 (
                   while true; do
-                    if grep -q "8000" /windows/runtime/unicorn.log; then
+                    if grep -q "9000" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
@@ -861,10 +862,10 @@ function funcPublicCloudUnicornModuleReinit() {
                 # unicorn[END]
                 # sentry[START]
                 if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
-                  echo "[sentry]corntab is active"
+                  echo "[ sentry ] corntab is active"
                 else
                   echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-                  echo "[sentry]corntab init succeeded"
+                  echo "[ sentry ] corntab init succeeded"
                 fi
                 systemctl reload crond
                 # sentry[END]
@@ -1176,6 +1177,7 @@ function funcPublicCloudUnicornSupervisor(){
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+    /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/command.variable)"
     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
