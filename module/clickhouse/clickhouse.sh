@@ -145,25 +145,32 @@ DOCKERCOMPOSEYML
   docker ps -a | grep clickhouse
   echo "username : ${variUsername}"
   echo "password : ${variPassword}"
-  for variIndex in {1..120}; do
+  for variRetryIndex in {1..120}; do
     if docker exec clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} -q "SELECT 1" &>/dev/null; then
         echo "clickhouse is active"
-        sleep 1
         break
     fi
-    echo "$variIndex/120 ..."
+    echo "[ check ] attempt : ${variRetryIndex}/120 ..."
     sleep 1
   done
+  variRetryNum=120
   for variEachSQL in ${variSQLPath}/*.sql; do
     if [ -f "$variEachSQL" ]; then
-        echo "import : $variEachSQL"
-        echo "docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < ${variEachSQL}"
+      for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+        echo "[ import ] attempt : ${variRetryIndex}/${variRetryNum} ..."
         # docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"
         if docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"; then
+          echo "import : $variEachSQL"
+          echo "docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < ${variEachSQL}"
           echo "successfully imported ${variEachSQL}"
+          break
         else
-          echo "failed to import ${variEachSQL}"
+          if [ $variRetryIndex -eq $variRetryNum ]; then
+            echo "failed to import ${variEachSQL}"
+          fi
+          sleep 1
         fi
+      done
     fi
   done
   return 0

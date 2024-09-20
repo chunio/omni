@@ -91,17 +91,17 @@ VARI_CLOUD=(
   "00 INDEX HONGKONG -01 119.28.55.124 22"
   # jump[END]
   # notice[START]
-  "01 CODE/COMMON SINGAPORE -01 43.133.61.186 22"
-  "02 CODE/NOTICE SINGAPORE -01 43.134.68.173 22"
-  "03 CODE/COMMON NEWYORK -01 43.130.116.28 22"
+  "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
+  "02 DSP/NOTICE SINGAPORE -01 43.134.68.173 22"
+  "03 DSP/COMMON NEWYORK -01 43.130.116.28 22"
   # notice[END]
   # bid[START]
-  "04 CODE/BID01 SINGAPORE -01 124.156.196.133 22"
-  "05 CODE/BID02 SINGAPORE -02 119.28.115.210 22"
-  "06 CODE/BID03 SINGAPORE -03 43.128.108.79 22"
-  "07 CODE/BID04 SINGAPORE -04 43.156.33.106 22"
-  "08 CODE/BID01 NEWYORK -01 43.130.79.155 22"
-  "09 CODE/BID02 NEWYORK -02 43.130.150.103 22" 
+  "04 DSP/BID01 SINGAPORE -01 124.156.196.133 22"
+  "05 DSP/BID02 SINGAPORE -02 119.28.115.210 22"
+  "06 DSP/BID03 SINGAPORE -03 43.128.108.79 22"
+  "07 DSP/BID04 SINGAPORE -04 43.156.33.106 22"
+  "08 DSP/BID01 NEWYORK -01 43.130.79.155 22"
+  "09 DSP/BID02 NEWYORK -02 43.130.150.103 22" 
   # bid[END]
   # ipteable[START]
   "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
@@ -847,7 +847,7 @@ function funcPublicCloudUnicornModuleReinit() {
                 nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
                 (
                   while true; do
-                    if grep -q "9000" /windows/runtime/unicorn.log; then
+                    if grep -q ":8000" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
                       echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
@@ -858,17 +858,18 @@ function funcPublicCloudUnicornModuleReinit() {
                     fi
                     sleep 1
                   done
-                ) &
+                ) # &
                 # unicorn[END]
-                # sentry[START]
+                # supervisor[START]
                 if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
-                  echo "[ sentry ] corntab is active"
+                  echo "[ virtual/supervisor ] crontab is active"
                 else
                   echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-                  echo "[ sentry ] corntab init succeeded"
+                  echo "[ virtual/supervisor ] crontab init succeeded"
                 fi
+                cat "${variSlaveCrontabUri}"
                 systemctl reload crond
-                # sentry[END]
+                # supervisor[END]
                 #（3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF

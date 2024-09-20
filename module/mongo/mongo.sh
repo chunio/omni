@@ -20,7 +20,9 @@ VARI_GLOBAL["MONGO_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"
 
 function funcPublicRunNode(){
     variCurrentIP=$(hostname -I | awk '{print $1}')
-    rm -rf ${VARI_GLOBAL["MONGO_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MONGO_DATA_PATH"]}
+    rm -rf ${VARI_GLOBAL["MONGO_DATA_PATH"]}
+    mkdir -p ${VARI_GLOBAL["MONGO_DATA_PATH"]}
+    chmod -R 777 ${VARI_GLOBAL["MONGO_DATA_PATH"]}
     cat <<EOF > ${VARI_GLOBAL["MONGO_DATA_PATH"]}/mongod.conf
 storage:
   dbPath: /data/db
@@ -56,24 +58,24 @@ DOCKERCOMPOSEYML
     docker-compose down -v
     docker-compose -p mongo up --build -d
     # check status[START]
-    for i in {1..30}; do
+    for i in {1..120}; do
         if docker ps | grep -q mongo; then
-            echo "mongo is active && db.adminCommand('ping') ..."
+            echo "[ check ] attempt : ${i}/120 / mongo is active && db.adminCommand('ping') ..."
             if docker exec mongo mongosh --eval "db.adminCommand('ping')" --quiet; then
                 echo "mongo is active"
                 break
             fi
         else
-            echo "mongo is inactive && docker logs mongo ..."
+            echo "[ check ] attempt : ${i}/120 / mongo is inactive && docker logs mongo ..."
             docker logs mongo
-            return 1
+            sleep 1
+            continue
         fi
-        if [ $i -eq 30 ]; then
+        if [ $i -eq 120 ]; then
             echo "mongo start failed && docker logs mongo ..."
             docker logs mongo
             return 1
         fi
-        sleep 1
     done
     # check status[END]
     docker exec mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '${variCurrentIP}:27017'}]})"
