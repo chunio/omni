@@ -5,6 +5,10 @@
 
 :<<MARK
 include : clickhouse-client --host=192.168.255.131 --port=9000 --user=default --password=0000
+最小內存：2G
+ * Linux transparent hugepages are set to "always". Check /sys/kernel/mm/transparent_hugepage/enabled
+ * Linux threads max count is too low. Check /proc/sys/kernel/threads-max
+ * Available memory at server startup is too low (2GiB).
 MARK
 
 declare -A VARI_GLOBAL
@@ -58,6 +62,7 @@ function funcPublicRunNode(){
     <path>/var/lib/clickhouse/</path>
     <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
     <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
+    <format_schema_path>/var/lib/clickhouse/format_schemas/</format_schema_path>
     <users_config>users.xml</users_config>
     <default_profile>default</default_profile>
     <default_database>default</default_database>
@@ -83,15 +88,14 @@ CONFIGXML
         </${variUsername}>
     </users>
     <profiles>
-        <default>
+        <${variUsername}>
             <max_memory_usage>10000000000</max_memory_usage>
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>random</load_balancing>
-            <max_query_size>10485760</max_query_size>
-        </default>
+        </${variUsername}>
     </profiles>
     <quotas>
-        <default>
+        <${variUsername}>
             <interval>
                 <duration>3600</duration>
                 <queries>0</queries>
@@ -100,7 +104,7 @@ CONFIGXML
                 <read_rows>0</read_rows>
                 <execution_time>0</execution_time>
             </interval>
-        </default>
+        </${variUsername}>
     </quotas>
 </yandex>
 USERSXML
