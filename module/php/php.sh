@@ -277,8 +277,8 @@ function funcProtected8312Main(){
         --enable-inline-optimization \
         --disable-fileinfo \
         --with-libzip=/usr/local/libzip/lib64
-        # LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib" # DEBUG_LABEL
         # 嘗試注釋此行代碼：LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
+        # LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib" # DEBUG_LABEL
         make -j8 && make install
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
         chown -R www:www /usr/local/${VARI_GLOBAL["BIN_NAME"]}
