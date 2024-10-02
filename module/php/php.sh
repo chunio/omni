@@ -110,6 +110,7 @@ function funcProtected8312CloudInit() {
             # 更新官方倉庫(2)[END]
           fi
           # -----
+          # use : swoole-5.1.4[START]
 #           if [ "${variEachPackage}" = "glibc-devel" ]; then
 #         cat <<'LIBRTPC' > /usr/lib64/pkgconfig/librt.pc
 # prefix=/usr
@@ -123,6 +124,7 @@ function funcProtected8312CloudInit() {
 # Cflags: -I${includedir}
 # LIBRTPC
 #           fi
+          # use : swoole-5.1.4[END]
           # -----
           # 特殊處理[END]
           # --------------------------------------------------
@@ -166,15 +168,11 @@ function funcProtected8312LocalInit(){
     ./config --prefix=/usr/local/openssl
     make -j8 && make install
     ln -sf /usr/local/openssl/bin/openssl /usr/bin/openssl
-    # DEBUG_LABEL[START]
-    # DEBUG_LABEL[END]
-    echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
     openssl version && pkg-config --modversion openssl
     ldd /usr/local/openssl/bin/openssl
-    echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
     # updeate openssl[END]
     # libssh2[START]
-    # base ：openssl 1.1.1）
+    # base ：openssl 1.1.1
     rm -rf /usr/local/src/libssh2-1.10.0
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libssh2-1.10.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/libssh2-1.10.0
     ./configure --prefix=/usr/local/libssh2 --with-openssl --with-libssl-prefix=/usr/local/openssl
@@ -188,7 +186,7 @@ function funcProtected8312LocalInit(){
     make -j8 && make install
     # liburl[END]
     # brotli[START]
-    # use : swoole 5.1.4
+    # use : swoole-5.1.4
     # {
     #   rm -rf /usr/local/src/brotli-1.1.0
     #   cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
@@ -224,8 +222,8 @@ LDSOCONF
 function funcProtected8312Main(){
     local variPart1Button=true
     local variPart2Button=true
-    source /etc/bashrc # DEBUG_LABEL
-    source /opt/rh/devtoolset-9/enable # DEBUG_LABEL
+    source /etc/bashrc 
+    source /opt/rh/devtoolset-9/enable 
     if [ "${variPart1Button}" = true ]; then
       {
         # 查看編譯安裝時參數：${VARI_GLOBAL["BIN_NAME"]} -i | grep configure
@@ -279,7 +277,7 @@ function funcProtected8312Main(){
         --enable-inline-optimization \
         --disable-fileinfo \
         --with-libzip=/usr/local/libzip/lib64
-        LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
+        # LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib" # DEBUG_LABEL
         # 嘗試注釋此行代碼：LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
         make -j8 && make install
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
@@ -665,8 +663,9 @@ SYSTEMCTLPHPFPM8312SERVICE
                 --enable-openssl  \
                 --enable-mysqlnd  \
                 --enable-sockets
-                # use : 5.1.4
+                # use : 5.1.4[START]
                 # --with-brotli-dir=/usr/local/brotli 
+                # use : 5.1.4[END]
                 make -j8 && make install
                 echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             }
@@ -734,7 +733,7 @@ SYSTEMCTLPHPFPM8312SERVICE
                 json
                 pcntl
                 redis
-                # swoole >= 5.0 && echo "swoole.use_shortname = 'Off'" >> php.ini
+                # swoole >= 5.0 && echo「swoole.use_shortname = 'Off'」 >> php.ini
                 swoole
                 openssl
                 protobuf
@@ -744,7 +743,7 @@ SYSTEMCTLPHPFPM8312SERVICE
                 psr
                 uopz
                 trace
-                # 雖然官網顯示只要滿足「PHP >= 8.1 && swoole >= 5.0.2」即支持，但實際依然報錯：WARNING Server::check_worker_exit_status(): worker(pid=35270, id=4) abnormal exit, status=0, signal=11
+                # [hyperf]官網顯僅需滿足「PHP >= 8.1 && swoole >= 5.0.2」即支持[xdebug]，但實際依然報錯:「WARNING Server::check_worker_exit_status(): worker(pid=35270, id=4) abnormal exit, status=0, signal=11」
                 xdebug
                 xhprof
                 blackfire
