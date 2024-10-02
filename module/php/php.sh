@@ -18,9 +18,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["BIN_NAME"]="php8370"
-VARI_GLOBAL["SERVICE_NAME"]="php8370"
-VARI_GLOBAL["CONTAINER_NAME"]="php8370environment"
+VARI_GLOBAL["BIN_NAME"]="php8312"
+VARI_GLOBAL["SERVICE_NAME"]="php8312"
+VARI_GLOBAL["CONTAINER_NAME"]="php8312environment"
 # global variable[END]
 # ##################################################
 
@@ -31,7 +31,13 @@ function funcProtectedCloudInit() {
   return 0
 }
 
-function funcProtected8370CloudInit() {
+function funcProtected8312CloudInit() {
+    # 更新官方倉庫(1)[START]
+    # 截止2024/06/30，centos7.9已停止維護，官方倉庫：mirrorlist.centos.org >> vault.centos.org
+    sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    # 更新官方倉庫(1)[END]
     rm -f /var/run/yum.pid
     variPackageList=(
       epel-release
@@ -72,6 +78,11 @@ function funcProtected8370CloudInit() {
       # use : geoip.so
       geoip
       geoip-devel
+      # librt（use ：swoole-5.1.4）[START]
+      # glibc
+      # glibc-devel
+      # systemd-devel
+      # librt（use ：swoole-5.1.4）[END]
     )
     local variRetry=2
     declare -A variCloudInstallResult
@@ -79,6 +90,42 @@ function funcProtected8370CloudInit() {
       local variCount=0
       while [ $variCount -lt $variRetry ]; do
         if yum install -y "${variEachPackage}"; then
+          # --------------------------------------------------
+          # 特殊處理[START]
+          if [ "${variEachPackage}" = "centos-release-scl" ]; then
+            # 更新官方倉庫(2)[START]
+            # update /etc/yum.repos.d/CentOS-SCLo-scl.repo
+            sed -i '/\[centos-sclo-sclo\]/,/^$/{
+                s|^\s*mirrorlist=|#mirrorlist=|g
+                s|^\s*#\?\s*baseurl=.*|baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/sclo/|g
+                s|^\s*gpgcheck=.*|gpgcheck=0|g
+            }' /etc/yum.repos.d/CentOS-SCLo-scl.repo
+
+            # update /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
+            sed -i '/\[centos-sclo-rh\]/,/^$/{
+                s|^\s*mirrorlist=|#mirrorlist=|g
+                s|^\s*#\?\s*baseurl=.*|baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/rh/|g
+                s|^\s*gpgcheck=.*|gpgcheck=0|g
+            }' /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
+            # 更新官方倉庫(2)[END]
+          fi
+          # -----
+#           if [ "${variEachPackage}" = "glibc-devel" ]; then
+#         cat <<'LIBRTPC' > /usr/lib64/pkgconfig/librt.pc
+# prefix=/usr
+# exec_prefix=${prefix}
+# libdir=${exec_prefix}/lib64
+# includedir=${prefix}/include
+# Name: librt
+# Description: POSIX.1b Real-time Extensions library
+# Version: 1.0
+# Libs: -L${libdir} -lrt
+# Cflags: -I${includedir}
+# LIBRTPC
+#           fi
+          # -----
+          # 特殊處理[END]
+          # --------------------------------------------------
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
           break
         else
@@ -99,9 +146,9 @@ function funcProtected8370CloudInit() {
     return 0
 }
 
-function funcProtected8370LocalInit(){
-    echo 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/openssl/lib/pkgconfig' >> /etc/bashrc
-    echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib' >> /etc/bashrc
+function funcProtected8312LocalInit(){
+    echo 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib/pkgconfig' >> /etc/bashrc
+    echo 'export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/curl/lib:/usr/local/libssh2/lib:/usr/local/brotli/lib' >> /etc/bashrc
     source /etc/bashrc
     # update libzip[START]
     rm -rf /usr/local/src/libzip-1.8.0
@@ -119,21 +166,47 @@ function funcProtected8370LocalInit(){
     ./config --prefix=/usr/local/openssl
     make -j8 && make install
     ln -sf /usr/local/openssl/bin/openssl /usr/bin/openssl
-    ln -sf /usr/local/openssl/lib/libssl.so.1.1 /usr/lib64/libssl.so.1.1
-    ln -sf /usr/local/openssl/lib/libcrypto.so.1.1 /usr/lib64/libcrypto.so.1.1
+    # DEBUG_LABEL[START]
+    # DEBUG_LABEL[END]
     echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
     openssl version && pkg-config --modversion openssl
     ldd /usr/local/openssl/bin/openssl
     echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
     # updeate openssl[END]
+    # libssh2[START]
+    # base ：openssl 1.1.1）
+    rm -rf /usr/local/src/libssh2-1.10.0
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libssh2-1.10.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/libssh2-1.10.0
+    ./configure --prefix=/usr/local/libssh2 --with-openssl --with-libssl-prefix=/usr/local/openssl
+    make -j8 && make install
+    # libssh2[END]
+    # liburl[START]
+    # base : openssl 1.1.1 && libssh2
+    rm -rf /usr/local/src/curl-7.85.0
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf curl-7.85.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/curl-7.85.0
+    ./configure --prefix=/usr/local/curl --with-ssl=/usr/local/openssl --with-libssh2=/usr/local/libssh2
+    make -j8 && make install
+    # liburl[END]
+    # brotli[START]
+    # use : swoole 5.1.4
+    # {
+    #   rm -rf /usr/local/src/brotli-1.1.0
+    #   cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
+    #   mkdir out && cd out
+    #   export LD_LIBRARY_PATH=/usr/local/curl/lib:$LD_LIBRARY_PATH
+    #   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/brotli ..
+    #   make -j8 && make install
+    # }
+    # brotli[END]
     # pdate dynamic link library[START]
     # find /usr/local -name "libzip.pc"
+    # 如安裝「brotli」時，則需添加 :「/usr/local/brotli/lib」
 cat <<LDSOCONF >> /etc/ld.so.conf
-/usr/lib
-/usr/lib64
 /usr/local/lib
 /usr/local/lib64
+/usr/local/curl/lib
 /usr/local/openssl/lib
+/usr/local/libssh2/lib
 LDSOCONF
     ldconfig -v
     # pdate dynamic link library[END]
@@ -148,7 +221,7 @@ LDSOCONF
     return 0
 }
 
-function funcProtected8370Main(){
+function funcProtected8312Main(){
     local variPart1Button=true
     local variPart2Button=true
     source /etc/bashrc # DEBUG_LABEL
@@ -156,8 +229,8 @@ function funcProtected8370Main(){
     if [ "${variPart1Button}" = true ]; then
       {
         # 查看編譯安裝時參數：${VARI_GLOBAL["BIN_NAME"]} -i | grep configure
-        rm -rf /usr/local/src/php-8.3.7
-        cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.3.7.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.3.7
+        rm -rf /usr/local/src/php-8.3.12
+        cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.3.12.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.3.12
         ./configure \
         --prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
         --exec-prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
@@ -177,7 +250,7 @@ function funcProtected8370Main(){
         --with-mysqli=shared,mysqlnd \
         --with-pdo-mysql=shared,mysqlnd \
         --with-gd \
-        --with-curl \
+        --with-curl=/usr/local/curl \
         --with-zlib \
         --with-iconv \
         --with-xmlrpc \
@@ -206,6 +279,8 @@ function funcProtected8370Main(){
         --enable-inline-optimization \
         --disable-fileinfo \
         --with-libzip=/usr/local/libzip/lib64
+        LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
+        # 嘗試注釋此行代碼：LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
         make -j8 && make install
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
         chown -R www:www /usr/local/${VARI_GLOBAL["BIN_NAME"]}
@@ -216,11 +291,11 @@ function funcProtected8370Main(){
         #-----
         touch /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
         chmod 777 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
-        # cp /usr/local/php8370/etc/php-fpm.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.conf
-        # cp /usr/local/php8370/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.3.70/etc/php-fpm.d/www.conf
-        # cp /usr/local/src/php-8.3.70/php.ini-production /usr/local/src/php-8.3.70/etc/php.ini
+        # cp /usr/local/php8312/etc/php-fpm.conf.default /usr/local/src/php-8.3.12/etc/php-fpm.conf
+        # cp /usr/local/php8312/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.3.12/etc/php-fpm.d/www.conf
+        # cp /usr/local/src/php-8.3.12/php.ini-production /usr/local/src/php-8.3.12/etc/php.ini
         # --------------------------------------------------
-        # /usr/local/php8370/etc/php.ini
+        # /usr/local/php8312/etc/php.ini
   cat <<PHPINI > /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
 [PHP]
 ;禁止信息暴露至「http header」
@@ -414,7 +489,7 @@ extension = mysqli.so
 extension = pdo_mysql.so
 PHPINI
         # --------------------------------------------------
-        # /usr/local/php8370/etc/php-fpm.conf
+        # /usr/local/php8312/etc/php-fpm.conf
 cat <<PHPFPMCONF > /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php-fpm.conf
 pid = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/runtime/php-fpm.pid
 error_log = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/php-fpm-error.log
@@ -446,19 +521,19 @@ request_terminate_timeout = 0
 slowlog = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/php-fpm-slow.log
 PHPFPMCONF
         # --------------------------------------------------
-        # /lib/systemd/system/php-fpm-8370.service（模板官方/8370：/usr/local/src/php-8.3.7/sapi/fpm/php-fpm.service）
-cat <<'SYSTEMCTLPHPFPM8370SERVICE' > /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
+        # /lib/systemd/system/php-fpm-8312.service（模板官方/8312：/usr/local/src/php-8.3.12/sapi/fpm/php-fpm.service）
+cat <<'SYSTEMCTLPHPFPM8312SERVICE' > /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
 [Unit]
 Description=The PHP FastCGI Process Manager
 After=network.target
 [Service]
 Type=simple
-PIDFile=/usr/local/php8370/var/run/php-fpm.pid
-ExecStart=/usr/local/php8370/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php8370/etc/php-fpm.conf
+PIDFile=/usr/local/php8312/var/run/php-fpm.pid
+ExecStart=/usr/local/php8312/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php8312/etc/php-fpm.conf
 ExecReload=/bin/kill -USR2 $MAINPID
 ProtectedTmp=true
-# question：systemctl status php-fpm-8370.service >> ERROR: failed to open error_log (/usr/local/php8370/log/php-fpm-error.log): Read-only file system (30)
-# becaue：/usr/lib/systemd/system/php-fpm-8370.service >> ProtectSystem={true || full（default）}，php-fpm將[只讀]掛載目錄：/boot，/usr，/etc
+# question：systemctl status php-fpm-8312.service >> ERROR: failed to open error_log (/usr/local/php8312/log/php-fpm-error.log): Read-only file system (30)
+# becaue：/usr/lib/systemd/system/php-fpm-8312.service >> ProtectSystem={true || full（default）}，php-fpm將[只讀]掛載目錄：/boot，/usr，/etc
 # solve：1/ProtectSystem=false（but:unsafe），2/php-fpm.conf >> error_log等選項調整至非「/boot，/usr，/etc」
 ProtectSystem=false
 ProtectedDevices=true
@@ -470,7 +545,7 @@ RestrictAddressFamilies=AF_INET AF_INET6 AF_NETLINK AF_UNIX
 RestrictNamespaces=true
 [Install]
 WantedBy=multi-user.target
-SYSTEMCTLPHPFPM8370SERVICE
+SYSTEMCTLPHPFPM8312SERVICE
         chmod 745 /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
         systemctl enable ${VARI_GLOBAL["SERVICE_NAME"]}.service
         systemctl restart ${VARI_GLOBAL["SERVICE_NAME"]}.service
@@ -538,8 +613,8 @@ SYSTEMCTLPHPFPM8370SERVICE
                 rm -rf /usr/local/src/rabbitmq-c-0.13.0
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf rabbitmq-c-0.13.0.tar.gz -C /usr/local/src && cd /usr/local/src/rabbitmq-c-0.13.0
                 mkdir build && cd build
-                cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/rabbitmq-c ..
-                # cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/rabbitmq-c -DOPENSSL_ROOT_DIR=/usr/local/openssl -DOPENSSL_LIBRARIES=/usr/local/openssl/lib
+                # cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/rabbitmq-c ..
+                cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/rabbitmq-c -DOPENSSL_ROOT_DIR=/usr/local/openssl -DOPENSSL_INCLUDE_DIR=/usr/local/openssl/include -DOPENSSL_LIBRARIES=/usr/local/openssl/lib
                 cmake --build . --target install
                 # echo '/usr/local/rabbitmq-c/lib64/' >> /etc/ld.so.conf
                 # ldconfig -v
@@ -579,6 +654,7 @@ SYSTEMCTLPHPFPM8370SERVICE
             }
             {
                 # swoole[START]
+                # 5.1.4/待解決 :「configure: error: We have to link to librt on your os, but librt not found.」
                 variExtensionInstallResult["swoole"]="swoole"
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.2
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
@@ -589,6 +665,8 @@ SYSTEMCTLPHPFPM8370SERVICE
                 --enable-openssl  \
                 --enable-mysqlnd  \
                 --enable-sockets
+                # use : 5.1.4
+                # --with-brotli-dir=/usr/local/brotli 
                 make -j8 && make install
                 echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             }
@@ -622,6 +700,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 # sodium[START]
                 variExtensionInstallResult["sodium"]="sodium"
                 # 安裝依賴:libsodium
+                # [安裝]可以忽略:「libtool: warning: '-version-info/-version-number' is ignored for convenience libraries」
                 # https://download.libsodium.org/libsodium/releases
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libsodium-1.0.18-stable.tar.gz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
                 mv /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
@@ -630,7 +709,7 @@ SYSTEMCTLPHPFPM8370SERVICE
                 make -j8 && make install
                 # ldconfig
                 # 安裝擴展/sodium.so
-                cd /usr/local/src/php-8.3.7/ext/sodium
+                cd /usr/local/src/php-8.3.12/ext/sodium
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
@@ -699,8 +778,8 @@ SYSTEMCTLPHPFPM8370SERVICE
     return 0
 }
 
-function funcProtected8370Destruct(){
-  rm -rf /usr/local/src/php-8.3.7 /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
+function funcProtected8312Destruct(){
+  rm -rf /usr/local/src/php-8.3.12 /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
   return 0
 }
 # protected function[END]
@@ -708,28 +787,28 @@ function funcProtected8370Destruct(){
 
 # ##################################################
 # public function[START]
-function funcPublic8370EnvironmentInit(){
-  funcProtected8370CloudInit
-  funcProtected8370LocalInit
-  funcProtected8370Main
-  funcProtected8370Destruct
+function funcPublic8312EnvironmentInit(){
+  funcProtected8312CloudInit
+  funcProtected8312LocalInit
+  funcProtected8312Main
+  funcProtected8312Destruct
   return 0
 }
 
 function funcPublicRebuildImage(){
   # 構建鏡像[START]
-  variParameterDescList=("image pattern（example ：chunio/php:8370）")
+  variParameterDescList=("image pattern（example ：chunio/php:8312）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=$1
   docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null
-  # docker run -d --privileged --name php8370 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
+  # docker run -d --privileged --name php8312 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
   # 鏡像不存在時自動執行：docker pull $variImageName
-  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 centos:7.9.2009 /sbin/init
-  # cd /windows/code/backend/chunio/automatic/docker/php8370
-  # docker exec -it php8370 /bin/bash
-  # docker exec -it php8370 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8370Handler.sh funcPublicBuiltinMain; exec /bin/bash"
+  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} --dns=8.8.8.8 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 centos:7.9.2009 /sbin/init
+  # cd /windows/code/backend/chunio/automatic/docker/php8312
+  # docker exec -it php8312 /bin/bash
+  # docker exec -it php8312 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8312Handler.sh funcPublicBuiltinMain; exec /bin/bash"
   # docker exec -it $VARI_GLOBAL["CONTAINER_NAME"] /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
-  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8370EnvironmentInit;"
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8312EnvironmentInit;"
   variContainerId=$(docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
@@ -741,7 +820,7 @@ function funcPublicRebuildImage(){
 }
 
 function funcPublicReleaseImage(){
-  variParameterDescList=("image pattern（example：chunio/php:8370）")
+  variParameterDescList=("image pattern（example：chunio/php:8312）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1}
   omni.docker releaseImage $variImagePattern
@@ -753,7 +832,7 @@ function funcPublicExec(){
     mkdir -p /windows
     docker stop ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
     docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null || true
-    docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 chunio/php:8370 /sbin/init
+    docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 chunio/php:8312 /sbin/init
   fi
   docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd /windows/code/backend/haohaiyou/gopath/src/skeleton; exec /bin/bash"
   return 0

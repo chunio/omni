@@ -104,7 +104,6 @@ VARI_CLOUD=(
   "09 DSP/BID02 NEWYORK -02 43.130.150.103 22" 
   # bid[END]
   # ipteable[START]
-  "10 CODE/IPTABLE SINGAPORE -01 43.153.215.220 22"
   "11 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
   # ipteable[END]
 )
@@ -126,7 +125,8 @@ function funcPublicSkeleton(){
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   veriModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:8370"}
+  # variImagePattern=${1:-"chunio/php:8370"}
+  variImagePattern=${1:-"chunio/php:8312"}
     cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
@@ -813,16 +813,18 @@ function funcPublicCloudIptableReinit(){
                     variLanSlice=(
                       "redis/common 172.22.0.13 6379"
                       "redis/table 172.22.0.48 7379"
-                      "clickhouse/http 172.22.0.7 8123"
-                      "clickhouse/tcp 172.22.0.7 9000"
-                      "clickhouse/mysql 172.22.0.7 9004"
-                      "kafka/common 172.22.0.50 9092"
+                      "clickhouse/http 172.22.0.20 8123"
+                      "clickhouse/tcp 172.22.0.20 9000"
+                      "clickhouse/mysql 172.22.0.20 9004"
                     )
                     ;;
                   "NEWYORK")
                     variLanSlice=(
                       "redis/common 10.0.0.10 6379"
                       "redis/table 10.0.0.4 7379"
+                      "clickhouse/http 172.22.0.20 8123"
+                      "clickhouse/tcp 172.22.0.20 9000"
+                      "clickhouse/mysql 172.22.0.20 9004"
                     )
                     ;;
                   *)
@@ -1004,6 +1006,29 @@ UNICORNSUPERVISORCONF
 
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
+function funcPublicCloudSkeletonSupervisor(){
+  variHost="localhost"
+  variPort=9501
+  timeout=${timeout:-1}
+  variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
+  # check heartbeat[START]
+  if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
+    echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
+  else
+    echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
+    # supervisor[START]
+    /windows/code/backend/chunio/omni/common/docker/docker.sh matchKill unicorn
+    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+    eval "$(cat /windows/runtime/command.variable)"
+    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
+    # supervisor[END]
+  fi
+  # check heartbeat[END]
+  return 0
+}
+
+# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
+# 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
   variHost="localhost"
   variPort=8000
@@ -1011,9 +1036,9 @@ function funcPublicCloudUnicornSupervisor(){
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-    echo "[ ${variCurrentDate} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
+    echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
   else
-    echo "[ ${variCurrentDate} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
+    echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
     /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm

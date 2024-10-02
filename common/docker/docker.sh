@@ -31,6 +31,7 @@ VARI_GLOBAL["SEPARATOR_LINE"]="-------------------------------------------------
 
 # ##################################################
 # public function[START]
+# 網絡不佳:「Head "https://registry-1.docker.io/v2/chunio/php/blobs/sha256:fa89db0e0fce3d0c80948c0b4c13e53da6ea4e33c89a4c1013ac2b1cc1b4b6ce": EOF」
 function funcPublicReleaseImage(){
   variParameterDescList=("image pattern（example : chunio/php:8370）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -124,6 +125,20 @@ function funcPublicDevelopmentEnvironmentInit(){
   fi
   docker ps -a
   return 0
+}
+
+function funcPublicMatchKill() {
+    local variParameterDescList=("container name/keyword")
+    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+    local variKeyword=$1
+    local variContainerList=$(docker ps -q --filter "name=${variKeyword}")
+    if [ -z "${variContainerList}" ]; then
+        echo "not found : ${variKeyword}"
+        return 0
+    fi
+    docker ps --filter "name=$keyword" --format "{{.ID}}\t{{.Names}}"
+    docker rm -f ${variContainerList}
+    return 0    
 }
 # public function[END]
 # ##################################################
