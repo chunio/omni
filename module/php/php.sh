@@ -4,6 +4,7 @@
 # datetime : 2024/05/20
 
 :<<MARK
+https://www.php.net/distributions/php-8.3.12.tar.gz
 擴展列表	php -m
 擴展詳情	php --ri {$extensionName}
 MARK
@@ -111,6 +112,7 @@ function funcProtected8312CloudInit() {
           fi
           # -----
           # use : swoole-5.1.4[START]
+          # librt
 #           if [ "${variEachPackage}" = "glibc-devel" ]; then
 #         cat <<'LIBRTPC' > /usr/lib64/pkgconfig/librt.pc
 # prefix=/usr
@@ -149,8 +151,8 @@ function funcProtected8312CloudInit() {
 }
 
 function funcProtected8312LocalInit(){
-    echo 'export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib/pkgconfig' >> /etc/bashrc
-    echo 'export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/curl/lib:/usr/local/libssh2/lib:/usr/local/brotli/lib' >> /etc/bashrc
+    echo 'export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib/pkgconfig:$PKG_CONFIG_PATH' >> /etc/bashrc
+    echo 'export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/brotli/lib:/usr/local/libssh2/lib:/usr/local/curl/lib:$LD_LIBRARY_PATH' >> /etc/bashrc
     source /etc/bashrc
     # update libzip[START]
     rm -rf /usr/local/src/libzip-1.8.0
@@ -165,12 +167,23 @@ function funcProtected8312LocalInit(){
     # update openssl[START]
     rm -rf /usr/local/src/openssl-1.1.1
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf openssl-1.1.1.tar.gz -C /usr/local/src/ && cd /usr/local/src/openssl-1.1.1
-    ./config --prefix=/usr/local/openssl
+    ./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl shared zlib
     make -j8 && make install
     ln -sf /usr/local/openssl/bin/openssl /usr/bin/openssl
     openssl version && pkg-config --modversion openssl
     ldd /usr/local/openssl/bin/openssl
     # updeate openssl[END]
+    # brotli[START]
+    # use : liburl && swoole-5.1.4
+    {
+      rm -rf /usr/local/src/brotli-1.1.0
+      cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
+      mkdir out && cd out
+      # export LD_LIBRARY_PATH=/usr/local/curl/lib:$LD_LIBRARY_PATH
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/brotli ..
+      make -j8 && make install
+    }
+    # brotli[END]
     # libssh2[START]
     # base ：openssl 1.1.1
     rm -rf /usr/local/src/libssh2-1.10.0
@@ -182,29 +195,22 @@ function funcProtected8312LocalInit(){
     # base : openssl 1.1.1 && libssh2
     rm -rf /usr/local/src/curl-7.85.0
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf curl-7.85.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/curl-7.85.0
-    ./configure --prefix=/usr/local/curl --with-ssl=/usr/local/openssl --with-libssh2=/usr/local/libssh2
+    ./configure \
+    --prefix=/usr/local/curl \
+    --with-ssl=/usr/local/openssl \
+    --with-libssh2=/usr/local/libssh2
     make -j8 && make install
     # liburl[END]
-    # brotli[START]
-    # use : swoole-5.1.4
-    # {
-    #   rm -rf /usr/local/src/brotli-1.1.0
-    #   cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
-    #   mkdir out && cd out
-    #   export LD_LIBRARY_PATH=/usr/local/curl/lib:$LD_LIBRARY_PATH
-    #   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/brotli ..
-    #   make -j8 && make install
-    # }
-    # brotli[END]
     # pdate dynamic link library[START]
     # find /usr/local -name "libzip.pc"
-    # 如安裝「brotli」時，則需添加 :「/usr/local/brotli/lib」
+    # 如安裝「brotli」時，則需添加 :「」
 cat <<LDSOCONF >> /etc/ld.so.conf
 /usr/local/lib
 /usr/local/lib64
 /usr/local/curl/lib
-/usr/local/openssl/lib
+/usr/local/brotli/lib
 /usr/local/libssh2/lib
+/usr/local/openssl/lib
 LDSOCONF
     ldconfig -v
     # pdate dynamic link library[END]
@@ -662,9 +668,9 @@ SYSTEMCTLPHPFPM8312SERVICE
                 --enable-http2  \
                 --enable-openssl  \
                 --enable-mysqlnd  \
-                --enable-sockets
+                --enable-sockets \
+                --with-brotli-dir=/usr/local/brotli 
                 # use : 5.1.4[START]
-                # --with-brotli-dir=/usr/local/brotli 
                 # use : 5.1.4[END]
                 make -j8 && make install
                 echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
