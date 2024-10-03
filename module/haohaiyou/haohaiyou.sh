@@ -536,7 +536,7 @@ function funcPublicCloudSkeletonRinit() {
                 /usr/bin/cp -rf .env.production.${variEachSlaveRegion} .env
                 expect -c '
                 set timeout -1
-                spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton chunio/php:8370
+                spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
                 expect "skeleton"
                 send "composer install\r"
                 expect "skeleton"
