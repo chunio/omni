@@ -33,16 +33,15 @@ function funcProtectedCloudInit() {
 }
 
 function funcProtected8312CloudInit() {
-    # 更新官方倉庫(1)[START]
-    # 截止2024/06/30，centos7.9已停止維護，官方倉庫：mirrorlist.centos.org >> vault.centos.org
+    # 更新倉庫(1)[START]
+    # 截止2024/06/30，centos7.9已停止維護，官方倉庫 ：mirrorlist.centos.org >> vault.centos.org
     sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
     sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
-    echo "nameserver 8.8.8.8" > /etc/resolv.conf
-    # 更新官方倉庫(1)[END]
+    # echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    # 更新倉庫(1)[END]
     rm -f /var/run/yum.pid
     variPackageList=(
       epel-release
-      # use : composer
       git
       tar
       gcc
@@ -55,8 +54,6 @@ function funcProtected8312CloudInit() {
       unzip
       autoconf
       libatomic
-      # php-pear
-      # php-devel
       libmcrypt
       libmcrypt-devel
       oniguruma
@@ -64,26 +61,53 @@ function funcProtected8312CloudInit() {
       curl-devel
       bzip2-devel
       libpng-devel
+      sqlite-devel
       libxml2-devel
-      openssl-devel
       libjpeg-devel
       freetype-devel
-      sqlite-devel
-      glibc-headers
-      # -----
+      # cmake[START]
       centos-release-scl
       devtoolset-9
-      # -----
-      # use : yaml.so
+      # cmake[END]
+      # yaml.so[START]
       libyaml-devel.x86_64
-      # use : geoip.so
+      # yaml.so[END]
+      # geoip.so[START]
       geoip
       geoip-devel
-      # librt（use ：swoole-5.1.4）[START]
-      # glibc
-      # glibc-devel
+      # geoip.so[END]
+      zlib
+      zlib-devel
+      # zstd[START]
+      http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+      zstd
+      libzstd-devel.x86_64
+      # zstd[END]
+      libwebp-devel
+      libxslt-devel
+      readline-devel
+      # librt[START]
+      # use ：swoole/5.1.4
+      glibc
+      glibc-devel
+      glibc-headers
+      # 提供編譯所需依賴（儘管：自行安裝「brotli 1.1.0」）
+      brotli-devel
       # systemd-devel
-      # librt（use ：swoole-5.1.4）[END]
+      # librt[END]
+      # openladp[START]
+      libtool
+      libtool-ltdl-devel
+      libdb-devel
+      # openladp[END]
+      # 提供編譯所需依賴（儘管：自行安裝「openssl 1.1.1」）
+      # openssl-devel
+      # 異步事件/網絡編程
+      libevent-devel
+      cyrus-sasl-devel
+      # -----
+      libgsasl
+      libgsasl-devel
     )
     local variRetry=2
     declare -A variCloudInstallResult
@@ -94,27 +118,26 @@ function funcProtected8312CloudInit() {
           # --------------------------------------------------
           # 特殊處理[START]
           if [ "${variEachPackage}" = "centos-release-scl" ]; then
-            # 更新官方倉庫(2)[START]
+            # 更新倉庫(2)[START]
             # update /etc/yum.repos.d/CentOS-SCLo-scl.repo
             sed -i '/\[centos-sclo-sclo\]/,/^$/{
                 s|^\s*mirrorlist=|#mirrorlist=|g
                 s|^\s*#\?\s*baseurl=.*|baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/sclo/|g
                 s|^\s*gpgcheck=.*|gpgcheck=0|g
             }' /etc/yum.repos.d/CentOS-SCLo-scl.repo
-
             # update /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
             sed -i '/\[centos-sclo-rh\]/,/^$/{
                 s|^\s*mirrorlist=|#mirrorlist=|g
                 s|^\s*#\?\s*baseurl=.*|baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/rh/|g
                 s|^\s*gpgcheck=.*|gpgcheck=0|g
             }' /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
-            # 更新官方倉庫(2)[END]
+            # 更新倉庫(2)[END]
           fi
           # -----
-          # use : swoole-5.1.4[START]
-          # librt
-#           if [ "${variEachPackage}" = "glibc-devel" ]; then
-#         cat <<'LIBRTPC' > /usr/lib64/pkgconfig/librt.pc
+          # librt[START]
+          # use : swoole-5.1.4
+#           if [ "${variEachPackage}" = "glibc" ]; then
+#             cat <<'LIBRTPC' > /usr/lib64/pkgconfig/librt.pc
 # prefix=/usr
 # exec_prefix=${prefix}
 # libdir=${exec_prefix}/lib64
@@ -126,7 +149,7 @@ function funcProtected8312CloudInit() {
 # Cflags: -I${includedir}
 # LIBRTPC
 #           fi
-          # use : swoole-5.1.4[END]
+          # librt[END]
           # -----
           # 特殊處理[END]
           # --------------------------------------------------
@@ -151,74 +174,109 @@ function funcProtected8312CloudInit() {
 }
 
 function funcProtected8312LocalInit(){
-    echo 'export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib/pkgconfig:$PKG_CONFIG_PATH' >> /etc/bashrc
-    echo 'export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/brotli/lib:/usr/local/libssh2/lib:/usr/local/curl/lib:$LD_LIBRARY_PATH' >> /etc/bashrc
+    # yum remove -y openssl-devel 
+    # yum install -y brotli-devel libtool-ltdl-devel
+    cat <<'ETCBASHRC' >> /etc/bashrc
+# [LD_LIBRARY_PATH]custom linker search path（default ：/lib || /usr/lib）
+export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/brotli/lib64:/usr/local/libssh2/lib:/usr/local/curl/lib:$LD_LIBRARY_PATH
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib64/pkgconfig:$PKG_CONFIG_PATH
+ETCBASHRC
     source /etc/bashrc
-    # update libzip[START]
-    rm -rf /usr/local/src/libzip-1.8.0
-    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -zxf libzip-1.8.0.tar.gz -C /usr/local/src && cd /usr/local/src/libzip-1.8.0
-    mkdir build && cd build
-    cmake ..
-    make -j8 && make install
-    echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-    pkg-config --modversion libzip
-    echo ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-    # update libzip[END]
+    # --------------------------------------------------
     # update openssl[START]
     rm -rf /usr/local/src/openssl-1.1.1
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf openssl-1.1.1.tar.gz -C /usr/local/src/ && cd /usr/local/src/openssl-1.1.1
     ./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl shared zlib
     make -j8 && make install
     ln -sf /usr/local/openssl/bin/openssl /usr/bin/openssl
-    openssl version && pkg-config --modversion openssl
-    ldd /usr/local/openssl/bin/openssl
+    ln -sf /usr/local/openssl/include/openssl /usr/include/openssl
+    ln -sf /usr/local/openssl/lib/libssl.so /usr/lib/libssl.so
+    ln -sf /usr/local/openssl/lib/libcrypto.so /usr/lib/libcrypto.so
+    # 獲取依賴「openssl」的程序列表
+    ldd /usr/bin/openssl
+    if [ "$(pkg-config --modversion openssl)" != "1.1.1" ]; then
+      pkg-config --modversion openssl
+      echo "openssl != 1.1.1"
+      return 1
+    fi
+    # 安裝說明 ：[編譯PHP] old openladp depend on old openssl
+    # 編譯報錯 ：/usr/local/src/openldap-2.4.58/libraries/libldap_r/os-ip.c:262: warning: sys_nerr' is deprecated; use strerror' or `strerror_r' instead
+    # 解決方法 ：可以忽略（建議使用「strerror」||「strerror_r」代替「sys_errlist」||「sys_nerr」）
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf openldap-2.4.58.tgz -C /usr/local/src/ && cd /usr/local/src/openldap-2.4.58
+    ./configure \
+    --prefix=/usr/local/openldap \
+    --with-ssl=/usr/local/openssl \
+    --with-tls=openssl \
+    --with-cyrus-sasl 
+    make depend
+    make -j8 && make install
     # updeate openssl[END]
-    # brotli[START]
-    # use : liburl && swoole-5.1.4
-    {
-      rm -rf /usr/local/src/brotli-1.1.0
-      cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
-      mkdir out && cd out
-      # export LD_LIBRARY_PATH=/usr/local/curl/lib:$LD_LIBRARY_PATH
-      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/brotli ..
-      make -j8 && make install
-    }
-    # brotli[END]
+    # --------------------------------------------------
+    # update libzip[START]
+    rm -rf /usr/local/src/libzip-1.8.0
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -zxf libzip-1.8.0.tar.gz -C /usr/local/src && cd /usr/local/src/libzip-1.8.0
+    mkdir build && cd build
+    cmake .. -DOPENSSL_ROOT_DIR=/usr/local/openssl -DOPENSSL_LIBRARIES=/usr/local/openssl/lib
+    make -j8 && make install
+    pkg-config --modversion libzip
+    if [ "$(pkg-config --modversion libzip)" != "1.8.0" ]; then
+      pkg-config --modversion libzip
+      echo "libzip != 1.8.0"
+      return 1
+    fi
+    # update libzip[END]
+    # --------------------------------------------------
     # libssh2[START]
-    # base ：openssl 1.1.1
+    # depend on ：openssl 1.1.1
     rm -rf /usr/local/src/libssh2-1.10.0
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libssh2-1.10.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/libssh2-1.10.0
     ./configure --prefix=/usr/local/libssh2 --with-openssl --with-libssl-prefix=/usr/local/openssl
     make -j8 && make install
     # libssh2[END]
-    # liburl[START]
-    # base : openssl 1.1.1 && libssh2
+    # --------------------------------------------------
+    # brotli[START]
+    # use : libcurl && swoole-5.1.4
+    {
+      rm -rf /usr/local/src/brotli-1.1.0
+      cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf brotli-1.1.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/brotli-1.1.0
+      mkdir out && cd out
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/brotli ..
+      make -j8 && make install
+    }
+    # brotli[END]
+    # --------------------------------------------------
+    # libcurl[START]
+    # depend on : openssl 1.1.1 && libssh2 
+    #「--with-brotli」depend on :「yum install -y zlib-devel」
     rm -rf /usr/local/src/curl-7.85.0
     cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf curl-7.85.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/curl-7.85.0
     ./configure \
     --prefix=/usr/local/curl \
     --with-ssl=/usr/local/openssl \
-    --with-libssh2=/usr/local/libssh2
+    --with-libssh2=/usr/local/libssh2 \
+    --with-brotli=/usr/local/brotli \
+    --with-zstd \
+    --with-gssapi 
     make -j8 && make install
-    # liburl[END]
-    # pdate dynamic link library[START]
-    # find /usr/local -name "libzip.pc"
-    # 如安裝「brotli」時，則需添加 :「」
+    ln -sf /usr/local/curl/bin/curl /usr/bin/curl
+    curl --version
+    # libcurl[END]
+    # --------------------------------------------------
+    # update dynamic link library[START]
+    # 顯示錯誤 ：ldconfig: Can't stat /libx32: No such file or directory / ldconfig: Path `/usr/lib' given more than once / ldconfig: Path `/usr/lib64' given more than once / ldconfig: Can't stat /usr/libx32: No such file or directory
+    # 解決方法 ：可以忽略 
 cat <<LDSOCONF >> /etc/ld.so.conf
-/usr/local/lib
-/usr/local/lib64
-/usr/local/curl/lib
-/usr/local/brotli/lib
-/usr/local/libssh2/lib
-/usr/local/openssl/lib
+/usr/local/lib/
+/usr/local/lib64/
+/usr/local/curl/lib/
+/usr/local/libssh2/lib/
+/usr/local/openssl/lib/
+/usr/local/openldap/lib/
+/usr/local/brotli/lib64/
 LDSOCONF
+    # 更新緩存 && 顯示詳情
     ldconfig -v
-    # pdate dynamic link library[END]
-    # php process user[START]
-    if ! id www > /dev/null 2>&1; then
-        useradd -s /bin/false -M www
-    fi
-    # php process user[END]
+    # update dynamic link library[END]
     # --------------------------------------------------
     echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     # --------------------------------------------------
@@ -226,13 +284,22 @@ LDSOCONF
 }
 
 function funcProtected8312Main(){
-    local variPart1Button=true
+    # php process user[START]
+    if ! id www > /dev/null 2>&1; then
+        useradd -s /bin/false -M www
+    fi
+    # php process user[END]
+    # install php main
+    local variPart1Button=true 
+    # install php extension
     local variPart2Button=true
     source /etc/bashrc 
     source /opt/rh/devtoolset-9/enable 
     if [ "${variPart1Button}" = true ]; then
       {
-        # 查看編譯安裝時參數：${VARI_GLOBAL["BIN_NAME"]} -i | grep configure
+        # 編譯報錯 ：/opt/rh/devtoolset-9/root/usr/libexec/gcc/x86_64-redhat-linux/9/ld: warning: libssl.so.10, needed by /usr/lib64/libldap-2.4.so.2, may conflict with libssl.so.1.1
+        # 解決方法 ：基於「openssl 1.1.1」，重新編譯「openldap 2.4.58」
+        # [查看]編譯參數 ：${VARI_GLOBAL["BIN_NAME"]} -i | grep configure
         rm -rf /usr/local/src/php-8.3.12
         cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.3.12.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.3.12
         ./configure \
@@ -247,16 +314,21 @@ function funcProtected8312Main(){
         --with-fpm-group=www \
         --with-config-file-path=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc \
         --with-mysql-sock=/usr/local/mysql/runtime/mysql.sock \
-        --with-mhash \
+        --with-curl=/usr/local/curl \
         --with-openssl=/usr/local/openssl \
         --with-openssl-dir=/usr/local/openssl \
+        --with-libzip=/usr/local/libzip/lib64 \
+        --with-ldap=/usr/local/openldap \
+        --with-ldap-sasl \
         --with-mysql=shared,mysqlnd \
         --with-mysqli=shared,mysqlnd \
         --with-pdo-mysql=shared,mysqlnd \
         --with-gd \
-        --with-curl=/usr/local/curl \
+        --with-bz2 \
+        --with-zip \
         --with-zlib \
         --with-iconv \
+        --with-mhash \
         --with-xmlrpc \
         --with-gettext \
         --with-jpeg-dir \
@@ -270,21 +342,19 @@ function funcProtected8312Main(){
         --enable-soap \
         --enable-shmop \
         --enable-pcntl \
-        --disable-debug \
-        --disable-rpath \
         --enable-shared \
         --enable-bcmath \
         --enable-sysvsem \
         --enable-mbregex \
+        --enable-mysqlnd \
         --enable-sockets \
         --enable-session \
         --enable-mbstring \
         --enable-calendar \
         --enable-inline-optimization \
-        --disable-fileinfo \
-        --with-libzip=/usr/local/libzip/lib64
-        # 嘗試注釋此行代碼：LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib"
-        # LDFLAGS="-Wl,-rpath=/usr/local/openssl/lib" # DEBUG_LABEL
+        --disable-debug \
+        --disable-rpath \
+        --disable-fileinfo
         make -j8 && make install
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
         chown -R www:www /usr/local/${VARI_GLOBAL["BIN_NAME"]}
@@ -567,7 +637,6 @@ SYSTEMCTLPHPFPM8312SERVICE
           mkdir -p /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
           variExtensionList=(
               # example : "extensionPackageFullName extensionPackageShortName extionsionName"
-              # [hyperf3.1]導致衝突
               # "psr-1.2.0.tgz psr-1.2.0 psr"
               "zip-1.22.3.tgz zip-1.22.3 zip"
               # wget https://github.com/phpredis/phpredis/archive/4.1.1.tar.gz -O /data/download/phpredis-4.1.1.tar.gz
@@ -609,11 +678,29 @@ SYSTEMCTLPHPFPM8312SERVICE
             mkdir -p /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
             echo ';custom external extension' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             {
+                # swoole[START]
+                # 編譯報錯 : configure: error: We have to link to librt on your os, but librt not found.
+                # 解決方法 ：yum install -y brotli-devel
+                variExtensionInstallResult["swoole"]="swoole"
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.4.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.4
+                /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
+                ./configure \
+                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                --with-openssl-dir=/usr/local/openssl \
+                --with-brotli-dir=/usr/local/brotli \
+                --enable-http2  \
+                --enable-sockets \
+                --enable-openssl  \
+                --enable-mysqlnd
+                make -j8 && make install
+                echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+            }
+            {
                 # amqp[start]
                 # rabbitmq-c : https://github.com/alanxz/rabbitmq-c/releases
                 # amqp : http://pecl.php.net/package/amqp
                 variExtensionInstallResult["amqp"]="amqp"
-                # latest : rabbitmq-c-0.14.0.tar.gz（need:cmake 3.22）
+                # latest : rabbitmq-c-0.14.0.tar.gz（need : cmake 3.22）
                 rm -rf /usr/local/src/rabbitmq-c-0.13.0
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf rabbitmq-c-0.13.0.tar.gz -C /usr/local/src && cd /usr/local/src/rabbitmq-c-0.13.0
                 mkdir build && cd build
@@ -627,8 +714,8 @@ SYSTEMCTLPHPFPM8312SERVICE
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                --with-amqp \
-                --with-librabbitmq-dir=/usr/local/rabbitmq-c
+                --with-librabbitmq-dir=/usr/local/rabbitmq-c \
+                --with-amqp
                 make -j8 && make install
                 echo 'extension = amqp.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             }
@@ -656,25 +743,7 @@ SYSTEMCTLPHPFPM8312SERVICE
                 make -j8 && make install
                 echo 'extension = geoip.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             }
-            {
-                # swoole[START]
-                # 5.1.4/待解決 :「configure: error: We have to link to librt on your os, but librt not found.」
-                variExtensionInstallResult["swoole"]="swoole"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.2
-                /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
-                ./configure \
-                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                --with-openssl-dir=/usr/local/openssl \
-                --enable-http2  \
-                --enable-openssl  \
-                --enable-mysqlnd  \
-                --enable-sockets \
-                --with-brotli-dir=/usr/local/brotli 
-                # use : 5.1.4[START]
-                # use : 5.1.4[END]
-                make -j8 && make install
-                echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
-            }
+            # swoole
             {
                 # inotify[START]
                 if [[ ${variInotifyButton:-false} == true ]]; then
@@ -705,7 +774,8 @@ SYSTEMCTLPHPFPM8312SERVICE
                 # sodium[START]
                 variExtensionInstallResult["sodium"]="sodium"
                 # 安裝依賴:libsodium
-                # [安裝]可以忽略:「libtool: warning: '-version-info/-version-number' is ignored for convenience libraries」
+                # 編譯報錯 ：libtool: warning: '-version-info/-version-number' is ignored for convenience libraries
+                # 解決方法 ：可以忽略
                 # https://download.libsodium.org/libsodium/releases
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libsodium-1.0.18-stable.tar.gz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
                 mv /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.18
@@ -745,11 +815,12 @@ SYSTEMCTLPHPFPM8312SERVICE
                 protobuf
             )
             variConflictExtensionList=(
-                # Fatal error: Declaration of Monolog\Logger::emergency(Stringable|string $message, array $context = []): void must be compatible with PsrExt\Log\LoggerInterface::emergency($message, array $context = [])
+                # 開啟報錯 ：Fatal error: Declaration of Monolog\Logger::emergency(Stringable|string $message, array $context = []): void must be compatible with PsrExt\Log\LoggerInterface::emergency($message, array $context = [])
                 psr
                 uopz
                 trace
-                # [hyperf]官網顯僅需滿足「PHP >= 8.1 && swoole >= 5.0.2」即支持[xdebug]，但實際依然報錯:「WARNING Server::check_worker_exit_status(): worker(pid=35270, id=4) abnormal exit, status=0, signal=11」
+                # 開啟報錯 ：WARNING Server::check_worker_exit_status(): worker(pid=35270, id=4) abnormal exit, status=0, signal=11
+                # 解決方法 ：雖然「hyperf」官網說明「PHP >= 8.1 && swoole >= 5.0.2」即可支持「xdebug」，實際依然報錯
                 xdebug
                 xhprof
                 blackfire
@@ -807,12 +878,9 @@ function funcPublicRebuildImage(){
   variImagePattern=$1
   docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null
   # docker run -d --privileged --name php8312 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock centos:7.9.2009 /sbin/init
-  # 鏡像不存在時自動執行：docker pull $variImageName
-  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} --dns=8.8.8.8 -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 centos:7.9.2009 /sbin/init
-  # cd /windows/code/backend/chunio/automatic/docker/php8312
-  # docker exec -it php8312 /bin/bash
+  # 本地鏡像不存在時，自動執行 ：docker pull $variImageName
+  docker run -d --privileged --name ${VARI_GLOBAL["CONTAINER_NAME"]} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 9501:9501 centos:7.9.2009 /sbin/init
   # docker exec -it php8312 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php8312Handler.sh funcPublicBuiltinMain; exec /bin/bash"
-  # docker exec -it $VARI_GLOBAL["CONTAINER_NAME"] /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]} environmentInit; exec /bin/bash"
   docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 8312EnvironmentInit;"
   variContainerId=$(docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
