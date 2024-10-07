@@ -3,7 +3,7 @@
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
 
-:<<MARK
+:<<'MARK'
 MARK
 
 declare -A VARI_GLOBAL
