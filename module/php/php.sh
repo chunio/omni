@@ -749,7 +749,7 @@ SYSTEMCTLPHPFPM8312SERVICE
                 # 解決方法 ：yum install -y brotli-devel
                 # ----------
                 # 編譯報錯 ：/usr/local/src/extension/php8312/swoole-5.1.4/ext-src/swoole_http_response.cc:979:17: warning: ‘name_len’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-                # 解決方法 : 未解決的
+                # 解決方法 : unsolved
                 # ----------
                 # 運行報錯 ：skeleton.Worker.1: symbol lookup error: /usr/local/php8312/lib/extensions/no-debug-non-zts-20230831/swoole.so: undefined symbol: BrotliEncoderMaxCompressedSize
                 # 解決方法 ：export {CFLAGS && LDFLAGS}
