@@ -65,18 +65,18 @@ function funcProtected8312CloudInit() {
       libmcrypt-devel
       oniguruma
       oniguruma-devel
-      # 網絡編程/異步事件
-      libevent-devel
-      cyrus-sasl-devel
-      # 提供:編譯依賴（儘管：自行安裝「openssl 1.1.1」）
-      # openssl-devel
       # 提供:編譯依賴（儘管：自行安裝「brotli 1.1.0」）
       # [google]壓縮算法
       brotli-devel
+      # 提供:編譯依賴（儘管：自行安裝「openssl 1.1.1」）
+      # openssl-devel
+      # 網絡編程/異步事件
+      libevent-devel
+      cyrus-sasl-devel
       libpng-devel
       sqlite-devel
-      libxml2
-      libxml2-devel
+      # libxml2
+      # libxml2-devel
       libjpeg-devel
       freetype-devel
       # cmake[START]
@@ -165,8 +165,8 @@ function funcProtected8312CloudInit() {
 function funcProtected8312LocalInit(){
     cat <<'ETCBASHRC' >> /etc/bashrc
 # [LD_LIBRARY_PATH]custom linker search path（default ：/lib || /usr/lib）
-export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/brotli/lib64:/usr/local/curl/lib:/usr/local/libssh2/lib:$LD_LIBRARY_PATH
-export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib64/pkgconfig:/usr/local/curl/lib/pkgconfig:$PKG_CONFIG_PATH
+export LD_LIBRARY_PATH=/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:/usr/local/openssl/lib:/usr/local/brotli/lib64:/usr/local/curl/lib:/usr/local/libxml2/lib:/usr/local/libssh2/lib:$LD_LIBRARY_PATH
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/openssl/lib/pkgconfig:/usr/local/brotli/lib64/pkgconfig:/usr/local/curl/lib/pkgconfig:/usr/local/libxml2/lib/pkgconfig:$PKG_CONFIG_PATH
 ETCBASHRC
     source /etc/bashrc
     # --------------------------------------------------
@@ -266,8 +266,8 @@ ETCBASHRC
     # update curl[START]
     # depend on : openssl 1.1.1 && libssh2 
     #「--with-brotli」depend on :「yum install -y zlib-devel」
-    rm -rf /usr/local/src/curl-7.85.0
-    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf curl-7.85.0.tar.gz -C /usr/local/src/ && cd /usr/local/src/curl-7.85.0
+    rm -rf /usr/local/src/curl-7.88.1
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf curl-7.88.1.tar.gz -C /usr/local/src/ && cd /usr/local/src/curl-7.88.1
     ./configure \
     --prefix=/usr/local/curl \
     --with-ssl=/usr/local/openssl \
@@ -277,13 +277,13 @@ ETCBASHRC
     --with-gssapi 
     make -j8 && make install
     ln -sf /usr/local/curl/bin/curl /usr/bin/curl
-    if [ "$(curl --version | head -n 1 | awk '{print $2}')" != "7.85.0" ]; then
+    if [ "$(curl --version | head -n 1 | awk '{print $2}')" != "7.88.1" ]; then
         curl --version
-        echo "curl != 7.85.0"
+        echo "curl != 7.88.1"
         return 1
     fi
     if ! curl --version | grep -q "brotli/1.1.0"; then
-        echo "curl/7.85.0 is not linked brotli/1.1.0"
+        echo "curl/7.88.1 is not linked brotli/1.1.0"
         return 1
     fi
     # update curl[END]
@@ -301,6 +301,25 @@ ETCBASHRC
     fi
     # update zip[END]
     # --------------------------------------------------
+    # update libxml2[START]
+    # php/8312 depend on : libxml2/latest
+    # https://download.gnome.org/sources/libxml2/
+    cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -Jxf libxml2-2.13.4.tar.xz -C /usr/local/src && cd /usr/local/src/libxml2-2.13.4
+    ./configure --prefix=/usr/local/libxml2 --with-python=no
+    make -j8 && make install
+    # remove old version
+    rm -rf /usr/lib/libxml2*.so*
+    rm -rf /usr/lib64/libxml2*.so*
+    rm -rf /usr/include/libxml2
+    rm -rf /usr/bin/xml2-config
+    rm -rf /usr/lib/pkgconfig/libxml-2.0.pc
+    rm -rf /usr/lib64/pkgconfig/libxml-2.0.pc
+    if [ "$(pkg-config --modversion libxml-2.0)" != "2.13.4" ]; then
+      pkg-config --modversion libxml-2.0
+      echo "libxml2 != 2.13.4"
+      return 1
+    fi
+    # --------------------------------------------------
     # update dynamic link library[START]
 cat <<LDSOCONF >> /etc/ld.so.conf
 /usr/local/lib/
@@ -308,6 +327,7 @@ cat <<LDSOCONF >> /etc/ld.so.conf
 /usr/local/curl/lib/
 /usr/local/libssh2/lib/
 /usr/local/openssl/lib/
+/usr/local/libxml2/lib/
 /usr/local/openldap/lib/
 /usr/local/brotli/lib64/
 LDSOCONF
@@ -340,6 +360,10 @@ function funcProtected8312Main(){
         # 解決方法 ：基於「openssl 1.1.1」，更新「openldap 2.4.58」
         rm -rf /usr/local/src/php-8.3.12
         cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.3.12.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.3.12
+        local variOldcflags="${CFLAGS}"
+        local variOldldflags="${LDFLAGS}"
+        export CFLAGS="-I/usr/local/curl/include -I/usr/local/libxml2/include ${CFLAGS}"
+        export LDFLAGS="-L/usr/local/curl/lib -L/usr/local/libxml2/lib ${LDFLAGS}"
         ./configure \
         --prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
         --exec-prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
@@ -348,6 +372,7 @@ function funcProtected8312Main(){
         --includedir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/include \
         --libdir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib \
         --mandir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/man \
+        --with-libxml=/usr/local/libxml2 \
         --with-fpm-user=www \
         --with-fpm-group=www \
         --with-config-file-path=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc \
@@ -394,6 +419,8 @@ function funcProtected8312Main(){
         --disable-rpath \
         --disable-fileinfo
         make -j8 && make install
+        export CFLAGS="${variOldcflags}"
+        export LDFLAGS="${variOldldflags}"
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
         chown -R www:www /usr/local/${VARI_GLOBAL["BIN_NAME"]}
         # ----------
@@ -717,11 +744,16 @@ SYSTEMCTLPHPFPM8312SERVICE
             echo ';custom external extension' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             {
                 # swoole[START]
+                # ----------
                 # 編譯報錯 : configure: error: We have to link to librt on your os, but librt not found.
                 # 解決方法 ：yum install -y brotli-devel
                 # ----------
+                # 編譯報錯 ：/usr/local/src/extension/php8312/swoole-5.1.4/ext-src/swoole_http_response.cc:979:17: warning: ‘name_len’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+                # 解決方法 : 未解決的
+                # ----------
                 # 運行報錯 ：skeleton.Worker.1: symbol lookup error: /usr/local/php8312/lib/extensions/no-debug-non-zts-20230831/swoole.so: undefined symbol: BrotliEncoderMaxCompressedSize
                 # 解決方法 ：export {CFLAGS && LDFLAGS}
+                # ----------
                 variExtensionInstallResult["swoole"]="swoole"
                 cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.4.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.4
                 local variOldcflags=${CFLAGS}
@@ -831,16 +863,19 @@ SYSTEMCTLPHPFPM8312SERVICE
                 mv /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.20
                 cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.20
                 #使用「--prefix=/usr/local」，則安装至 ：/usr/local/include/sodium
+                local variOldcflags=${CFLAGS}
+                local variOldCxxflags=${CXXFLAGS}
+                export CFLAGS="-O2"
+                export CXXFLAGS="-O2"
                 ./configure --prefix=/usr/local
                 make -j8 && make install
                 cd /usr/local/src/php-8.3.12/ext/sodium
-                # local variOldcflags=${CFLAGS}
-                # CFLAGS="-O"
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
                 make -j8 && make install
-                # export CFLAGS="${variOldcflags}"
+                export CFLAGS="${variOldcflags}"
+                export CXXFLAGS="${variOldCxxflags}"
                 echo 'extension = sodium.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             }
             # custom install[END]
