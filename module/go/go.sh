@@ -3,9 +3,10 @@
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
 
-:<<MARK
+:<<'MARK'
+[golang:1.2x.x] apt-get update && apt-get install -y graphviz（「graphviz」提供「svg/生成函數調用圖譜的命令」）
+1.21+，「go.mod >> toolchain ${go1.21.x}」表示指定版本，於模块目錄下執行「go version」則會顯示「${go1.21.x}」（即使：係統存在其他版本，禁止：export GOTOOLCHAIN=local）
 MARK
-
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -47,7 +48,6 @@ function funcPublicRunNode()
   if [ ! -d "${variMasterPath}/gopath/src/${variModuleName}" ]; then
      read -p "The module（${variModuleName}）does not exist. Whether to create a new module (type 'confirm' to go mod init ${variModuleName}): " variInput
   fi
-
   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
