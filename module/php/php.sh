@@ -927,7 +927,8 @@ SYSTEMCTLPHPFPM8312SERVICE
             composer --version >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
             # composer[END]
             composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/
-            # composer config --global --auth github-oauth.github.com ${token1}
+            variGithubCommonToken=$(funcProtectedPullEncryptEnvi "GITHUB_COMMON_TOKEN")
+            composer config --global --auth github-oauth.github.com ${variGithubCommonToken}
             # composer update --prefer-source
           }
         }
