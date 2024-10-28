@@ -49,21 +49,26 @@ VARI_CLOUD=(
   # notice[START]
   "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 DSP/NOTICE SINGAPORE -02 43.134.68.173 22"
-  "03 DSP/COMMON NEWYORK -01 43.130.116.28 22"
+  "03 DSP/COMMON USEAST -01 43.130.116.28 22"
   # notice[END]
   # bid[START]
   "04 DSP/BID01 SINGAPORE -01 124.156.196.133 22"
   "05 DSP/BID02 SINGAPORE -02 119.28.115.210 22"
   "06 DSP/BID03 SINGAPORE -03 43.128.108.79 22"
   "07 DSP/BID04 SINGAPORE -04 43.156.33.106 22"
-  "08 DSP/BID05 SINGAPORE -05 43.153.211.106 22"
-  "09 DSP/BID01 USEAST -01 43.130.79.155 22"
-  "10 DSP/BID02 USEAST -02 43.130.150.103 22" 
+  "08 DSP/BID01 USEAST -01 43.130.79.155 22"
+  "09 DSP/BID02 USEAST -02 43.130.150.103 22" 
   # bid[END]
   # ipteable[START]
   "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
   "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
   # ipteable[END]
+  "51 ADX/COMMON SINGAPORE -01 43.156.20.19 22"
+  "52 ADX/NOTICE01 SINGAPORE -01 43.156.142.216 22"
+  "53 ADX/BID01 SINGAPORE -01 43.156.142.216 22"
+  "54 ADX/COMMON USEAST -01 170.106.132.12 22"
+  "55 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
+  "56 ADX/BID USEAST -01 43.130.141.55 22"
 )
 # local variable[END]
 # ##################################################
@@ -943,7 +948,7 @@ function funcPublicCloudIptableReinit(){
                       "clickhouse/mysql 172.22.0.20 9004"
                     )
                     ;;
-                  "NEWYORK")
+                  "USEAST")
                     variLanSlice=(
                       "redis/common 10.0.0.10 6379"
                       "redis/table 10.0.0.4 7379"
