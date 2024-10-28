@@ -29,6 +29,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.s
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
+    # 更新倉庫(1)[START]
+    #「centos7.9」已停止維護（截止2024/06/30），官方倉庫 ：mirrorlist.centos.org >> vault.centos.org
+    sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
+    # 更新倉庫(1)[END]
+    rm -f /var/run/yum.pid
     variQshellPath=$(command -v ab) || true
     if [ -z "${variQshellPath}" ];then
         yum install -y httpd-tools

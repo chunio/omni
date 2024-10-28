@@ -57,12 +57,12 @@ VARI_CLOUD=(
   "06 DSP/BID03 SINGAPORE -03 43.128.108.79 22"
   "07 DSP/BID04 SINGAPORE -04 43.156.33.106 22"
   "08 DSP/BID05 SINGAPORE -05 43.153.211.106 22"
-  "09 DSP/BID01 NEWYORK -01 43.130.79.155 22"
-  "10 DSP/BID02 NEWYORK -02 43.130.150.103 22" 
+  "09 DSP/BID01 USEAST -01 43.130.79.155 22"
+  "10 DSP/BID02 USEAST -02 43.130.150.103 22" 
   # bid[END]
   # ipteable[START]
   "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
-  "12 CODE/IPTABLE NEWYORK -01 43.130.133.237 22"
+  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
   # ipteable[END]
 )
 # local variable[END]
@@ -83,7 +83,7 @@ function funcPublicSkeleton(){
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   veriModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:8312"}
+  variImagePattern=${1:-"chunio/php:8.3.12"}
     cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
@@ -178,6 +178,7 @@ function funcPublicUnicorn()
   variMasterPath="/windows/code/backend/haohaiyou"
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   veriModuleName="unicorn"
+  docker rm -f ${veriModuleName} 2> /dev/null
   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
   rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
