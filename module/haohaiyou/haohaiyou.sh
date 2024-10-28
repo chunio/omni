@@ -710,6 +710,24 @@ function funcPublicCloudUnicornModuleReinit() {
   variSlaveCrontabUri="/var/spool/cron/root"
   variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
+  # ----------
+  variHttpPort=8000
+  variGrpcPort=9000
+  case ${variModuleName} in
+    "adx")
+        variHttpPort=8001
+        variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    *)
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+  esac
+  # ----------
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
@@ -816,8 +834,8 @@ function funcPublicCloudUnicornModuleReinit() {
                   git clone git@github.com:chunio/unicorn.git && cd unicorn
                   git checkout ${variBranchName}
                 fi
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
+                /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
                 mkdir -p ./bin && chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
@@ -1168,13 +1186,13 @@ function funcPublicCloudSkeletonSupervisor(){
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
-  local variParameterDescMulti=("module adx/dsp")
+  local variParameterDescMulti=("module name : dsp，adx")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variModule=${1:-"dsp"}
+  variModuleName=${1:-"dsp"}
   variHost="localhost"
   variHttpPort=8000
   variGrpcPort=9000
-  case ${variModule} in
+  case ${variModuleName} in
     "adx")
         variHttpPort=8001
         variGrpcPort=9001
