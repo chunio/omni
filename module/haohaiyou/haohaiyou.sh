@@ -43,9 +43,15 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # global variable[END]
 # local variable[START]
 VARI_CLOUD=(
+  # ==================================================
   # jump[START]
   "00 INDEX HONGKONG -00 119.28.55.124 22"
   # jump[END]
+  # ==================================================
+  # ipteable[START]
+  "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
+  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
+  # ipteable[END]
   # notice[START]
   "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 DSP/NOTICE SINGAPORE -02 43.134.68.173 22"
@@ -59,16 +65,20 @@ VARI_CLOUD=(
   "08 DSP/BID01 USEAST -01 43.130.79.155 22"
   "09 DSP/BID02 USEAST -02 43.130.150.103 22" 
   # bid[END]
-  # ipteable[START]
-  "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
-  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
-  # ipteable[END]
-  "51 ADX/COMMON SINGAPORE -01 43.156.20.19 22"
-  "52 ADX/NOTICE01 SINGAPORE -01 43.156.142.216 22"
-  "53 ADX/BID01 SINGAPORE -01 43.156.142.216 22"
-  "54 ADX/COMMON USEAST -01 170.106.132.12 22"
-  "55 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
-  "56 ADX/BID USEAST -01 43.130.141.55 22"
+  # ==================================================
+  # common[START]
+  "51 ADX/COMMON SINGAPORE -01 43.156.140.171 22"
+  "52 ADX/COMMON USEAST -01 170.106.132.12 22"
+  # common[END]
+  # notice[START]
+  "53 ADX/NOTICE01 SINGAPORE -01 119.28.122.140 22"
+  "54 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
+  # notice[END]
+  # bid[START]
+  "55 ADX/BID01 SINGAPORE -01 43.156.142.216 22"
+  "56 ADX/BID01 USEAST -01 43.130.141.55 22"
+  # bid[END]
+  # ==================================================
 )
 # local variable[END]
 # ##################################################
@@ -698,7 +708,7 @@ function funcPublicCloudUnicornModuleReinit() {
   variMasterAccount="root"
   # slave variable[START]
   variSlaveCrontabUri="/var/spool/cron/root"
-  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor"
+  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
@@ -1158,22 +1168,40 @@ function funcPublicCloudSkeletonSupervisor(){
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
+  local variParameterDescMulti=("module adx/dsp")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+  variModule=${1:-"dsp"}
   variHost="localhost"
-  variPort=8000
-  timeout=${timeout:-1}
+  variHttpPort=8000
+  variGrpcPort=9000
+  case ${variModule} in
+    "adx")
+        variHttpPort=8001
+        variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    *)
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+  esac
+  variTimeout=${variTimeout:-1}
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
-  if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-    echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
+  if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
+    echo "[ ${variCurrentDate} / ${variHttpPort} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
   else
-    echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
+    echo "[ ${variCurrentDate} / ${variHttpPort} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
     # supervisor[START]
-    /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
-    /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
+    /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
+    /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
     /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/command.variable)"
-    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
+    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
     # supervisor[END]
   fi
   # check heartbeat[END]
