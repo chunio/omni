@@ -75,8 +75,8 @@ VARI_CLOUD=(
   "54 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
   # notice[END]
   # bid[START]
-  "55 ADX/BID01 SINGAPORE -01 43.156.142.216 22"
-  "56 ADX/BID01 USEAST -01 43.130.141.55 22"
+  "55 ADX/BID01 SINGAPORE -01 43.134.74.106 22"
+  "56 ADX/BID01 USEAST -01 43.130.66.178 22"
   # bid[END]
   # ==================================================
 )
@@ -325,7 +325,7 @@ function funcPublicRebuildImage(){
 }
 
 function funcPublicCloudIndex(){
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -409,7 +409,7 @@ function funcPublicCloudSkeletonRinit() {
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   variBranchName=${1:-"main"}
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -419,10 +419,10 @@ function funcPublicCloudSkeletonRinit() {
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "Enter the 「NODE_LABEL」 keyword to match: "
+  echo -n "enter the 「LABEL」 keyword to match: "
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *" ${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
@@ -533,170 +533,6 @@ MASTEREOF
   return 0
 }
 
-# 手動清理歷史任務：/var/spool/cron/root
-function funcPublicCloudUnicornReinit() {
-  local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variModuleName=$1
-  variBranchName=$2
-  variEnvi="production"
-  variBinName="unicorn_${variModuleName}"
-  variScpStatus=1
-  variMasterAccount="root"
-  # slave variable[START]
-  variSlaveCrontabUri="/var/spool/cron/root"
-  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor"
-  # slave variable[END]
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_CLOUD[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachLabel=$(echo $variEachValue | awk '{print $2}')
-    variEachRegion=$(echo $variEachValue | awk '{print $3}')
-    variEachMemo=$(echo $variEachValue | awk '{print $4}')
-    variEachIp=$(echo $variEachValue | awk '{print $5}')
-    variEachPort=$(echo $variEachValue | awk '{print $6}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-  done
-  echo -n "enter the 「NODE_LABEL」 keyword to match: "
-  read variSlaveKeyword
-  echo "Matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachLabel=$(echo $variEachValue | awk '{print $2}')
-      variEachRegion=$(echo $variEachValue | awk '{print $3}')
-      variEachMemo=$(echo $variEachValue | awk '{print $4}')
-      variEachIp=$(echo $variEachValue | awk '{print $5}')
-      variEachPort=$(echo $variEachValue | awk '{print $6}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-    fi
-  done
-  echo -n "enter the [number]index ( 空格間隔 ) : "
-  read -a variInputIndexList
-  variMasterKeyword="INDEX"
-  for variMasterValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
-      for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_CLOUD[@]}"; do
-          variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
-          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
-            variEachNodeLabel=$(echo $variSlaveValue | awk '{print $2}')
-            variEachNodeRegion=$(echo $variSlaveValue | awk '{print $3}')
-            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
-            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
-            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
-            echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
-            rm -rf /root/.ssh/known_hosts
-            if [[ ${variScpStatus} -eq 1 ]]; then
-              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
-            fi
-            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
-              echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
-              rm -rf /root/.ssh/known_hosts
-              if [[ ${variScpStatus} -eq 1 ]]; then
-                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachSlaveIP}:/
-                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-              fi
-              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                # --------------------------------------------------
-                # （1）ssh init[START]
-                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                echo "StrictHostKeyChecking no" > ~/.ssh/config
-                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # （1）ssh init[END]
-                # --------------------------------------------------
-                # （2）omni.system init[START]
-                if ! command -v git &> /dev/null; then
-                    yum install -y git
-                fi
-                mkdir -p /windows/runtime
-                if [ -d "/windows/code/backend/chunio/omni" ]; then
-                  cd /windows/code/backend/chunio/omni
-                  echo "[ omni ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ omni ] git fetch origin finished"
-                  echo "[ omni ] git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "[ omni ] git reset --hard origin/main finished"
-                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                else
-                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                  git clone https://github.com/chunio/omni.git
-                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                fi
-                #（2）omni.system init[END]
-                # --------------------------------------------------
-                #（3）slave main[START]
-                ulimit -n 655360
-                docker rm -f unicorn 2> /dev/null
-                if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
-                  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-                  # ----
-                  echo "[ unicorn ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ unicorn ] git fetch origin finished"
-                  # -----
-                  echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
-                  git reset --hard origin/${variBranchName}
-                  echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-                  # -----
-                else
-                  mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-                  git clone git@github.com:chunio/unicorn.git && cd unicorn
-                  git checkout ${variBranchName}
-                fi
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
-                mkdir -p ./bin && chmod 777 -R .
-                /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
-                echo "" > /windows/runtime/command.variable
-                nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
-                (
-                  while true; do
-                    if grep -q ":800" /windows/runtime/unicorn.log; then
-                      cat /windows/runtime/unicorn.log
-                      echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
-                      echo "nohup ./bin/${variBinName} -ENVI_LABEL ${variEnvi} -NODE_LABEL ${variEachNodeLabel} -NODE_REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
-                      break
-                    elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
-                      cat /windows/runtime/unicorn.log
-                      break
-                    fi
-                    sleep 1
-                  done
-                ) # &
-                # unicorn[END]
-                # supervisor[START]
-                if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
-                  echo "[ virtual/supervisor ] crontab is active"
-                else
-                  echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-                  echo "[ virtual/supervisor ] crontab init succeeded"
-                fi
-                cat "${variSlaveCrontabUri}"
-                systemctl reload crond
-                # supervisor[END]
-                #（3）slave main[END]
-                # --------------------------------------------------
-SLAVEEOF
-MASTEREOF
-          fi
-        done
-      done
-    fi
-  done
-  return 0
-}
-
 function funcPublicCloudUnicornModuleReinit() {
   local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -707,6 +543,7 @@ function funcPublicCloudUnicornModuleReinit() {
   variScpStatus=1
   variMasterAccount="root"
   # slave variable[START]
+  # systemctl reload crond
   variSlaveCrontabUri="/var/spool/cron/root"
   variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
@@ -729,7 +566,7 @@ function funcPublicCloudUnicornModuleReinit() {
   esac
   # ----------
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -739,10 +576,10 @@ function funcPublicCloudUnicornModuleReinit() {
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "enter the 「NODE_LABEL」 keyword to match: "
+  echo -n "enter the 「LABEL」 keyword to match: "
   read variSlaveKeyword
   echo "Matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
@@ -840,13 +677,13 @@ function funcPublicCloudUnicornModuleReinit() {
                 mkdir -p ./bin && chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
                 echo "" > /windows/runtime/command.variable
-                nohup ./bin/${variBinName} -ENVI ${variEnvi} -MEMO ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
+                nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
                 (
                   while true; do
-                    if grep -q ":800" /windows/runtime/unicorn.log; then
+                    if grep -q ":${variHttpPort}" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -MEMO ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -MEMO ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
+                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
+                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
                       break
                     elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
@@ -885,7 +722,7 @@ function funcPublicCloudIptableReinit(){
   # variEvent=$1
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -895,10 +732,10 @@ function funcPublicCloudIptableReinit(){
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "enter the 「NODE_LABEL」 keyword to match : "
+  echo -n "enter the 「LABEL」 keyword to match : "
   read variSlaveKeyword
   echo "matched (${variSlaveKeyword}) : "
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
@@ -968,19 +805,38 @@ function funcPublicCloudIptableReinit(){
                 # （3）slave main[START]
                 case ${variEachNodeRegion} in
                   "SINGAPORE")
+                    # adx[START]
                     variLanSlice=(
-                      "redis/common 172.22.0.13 6379"
-                      "redis/table 172.22.0.48 7379"
-                      "clickhouse/http 172.22.0.20 8123"
-                      "clickhouse/tcp 172.22.0.20 9000"
-                      "clickhouse/mysql 172.22.0.20 9004"
+                      "redis/common 172.22.0.18 6379"
+                      "redis/table 172.22.0.80 7379"
+                      "clickhouse/http 172.22.0.21 8123"
+                      "clickhouse/tcp 172.22.0.21 9000"
+                      "clickhouse/mysql 172.22.0.21 9004"
                     )
+                    # adx[END]
+                    # dsp[START]
+                    # variLanSlice=(
+                    #   "redis/common 172.22.0.13 6379"
+                    #   "redis/table 172.22.0.48 7379"
+                    #   "clickhouse/http 172.22.0.20 8123"
+                    #   "clickhouse/tcp 172.22.0.20 9000"
+                    #   "clickhouse/mysql 172.22.0.20 9004"
+                    # )
+                    # dsp[END]
                     ;;
                   "USEAST")
+                    # adx[START]
                     variLanSlice=(
-                      "redis/common 10.0.0.10 6379"
-                      "redis/table 10.0.0.4 7379"
+                      "redis/common 10.0.0.14 6379"
+                      "redis/table 10.0.0.9 7379"
                     )
+                    # adx[END]
+                    # dsp[START]
+                    # variLanSlice=(
+                    #   "redis/common 10.0.0.10 6379"
+                    #   "redis/table 10.0.0.4 7379"
+                    # )
+                    # dsp[END]
                     ;;
                   *)
                     echo "error : lan not found"
@@ -1024,7 +880,7 @@ function funcPublicCloudUnicornCheck() {
   # variMasterAccount="ec2-user"
   variMasterAccount="root"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachLabel=$(echo $variEachValue | awk '{print $2}')
@@ -1034,10 +890,10 @@ function funcPublicCloudUnicornCheck() {
     variEachPort=$(echo $variEachValue | awk '{print $6}')
     printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
   done
-  echo -n "enter the 「NODE_LABEL」 keyword to match : "
+  echo -n "enter the 「LABEL」 keyword to match : "
   read variSlaveKeyword
   echo "matched (${variSlaveKeyword}) :"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "NODE_LABEL" "NODE_REGION" "MEMO" "IP" "PORT"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
       variEachIndex=$(echo $variEachValue | awk '{print $1}')
@@ -1133,7 +989,7 @@ function funcPublicUnicornRestart(){
   /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm &&
   /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm && 
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn &&
-  nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnviLabel} -NODE_LABEL ${variNodeLabel} -NODE_REGION ${variNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
+  nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnviLabel} -LABEL ${variNodeLabel} -REGION ${variNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
   # supervisor[START]
   yum install -y epel-release
   yum install -y supervisor
