@@ -944,6 +944,7 @@ MASTEREOF
 function funcPublicUnicornRuntime(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
   pwd
+  ll -lh
   return 0
 }
 
