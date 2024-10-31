@@ -48,10 +48,6 @@ VARI_CLOUD=(
   "00 INDEX HONGKONG -00 119.28.55.124 22"
   # jump[END]
   # ==================================================
-  # ipteable[START]
-  "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
-  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
-  # ipteable[END]
   # notice[START]
   "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
   "02 DSP/NOTICE SINGAPORE -02 43.134.68.173 22"
@@ -65,6 +61,10 @@ VARI_CLOUD=(
   "08 DSP/BID01 USEAST -01 43.130.79.155 22"
   "09 DSP/BID02 USEAST -02 43.130.150.103 22" 
   # bid[END]
+  # ipteable[START]
+  "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
+  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
+  # ipteable[END]
   # ==================================================
   # common[START]
   "51 ADX/COMMON SINGAPORE -01 43.156.140.171 22"
@@ -578,7 +578,7 @@ function funcPublicCloudUnicornModuleReinit() {
   done
   echo -n "enter the 「LABEL」 keyword to match: "
   read variSlaveKeyword
-  echo "Matched (${variSlaveKeyword}):"
+  echo "matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
@@ -938,6 +938,12 @@ MASTEREOF
       done
     fi
   done
+  return 0
+}
+
+function funcPublicUnicornRuntime(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  pwd
   return 0
 }
 
