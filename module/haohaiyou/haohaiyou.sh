@@ -941,7 +941,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicUnicornRuntime(){
+function funcPublicCdUnicornRuntime(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
   pwd
   ll -lh
