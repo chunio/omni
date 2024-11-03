@@ -537,7 +537,7 @@ MASTEREOF
   return 0
 }
 
-function funcPublicCloudUnicornModuleReinit() {
+function funcPublicCloudUnicornReinit() {
   local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variModuleName=$1
@@ -810,22 +810,22 @@ function funcPublicCloudIptableReinit(){
                 case ${variEachNodeRegion} in
                   "SINGAPORE")
                     # adx[START]
-                    variLanSlice=(
-                      "redis/common 172.22.0.18 6379"
-                      "redis/table 172.22.0.80 7379"
-                      "clickhouse/http 172.22.0.21 8123"
-                      "clickhouse/tcp 172.22.0.21 9000"
-                      "clickhouse/mysql 172.22.0.21 9004"
-                    )
+                    # variLanSlice=(
+                    #   "redis/common 172.22.0.18 6379"
+                    #   "redis/table 172.22.0.80 7379"
+                    #   "clickhouse/http 172.22.0.21 8123"
+                    #   "clickhouse/tcp 172.22.0.21 9000"
+                    #   "clickhouse/mysql 172.22.0.21 9004"
+                    # )
                     # adx[END]
                     # dsp[START]
-                    # variLanSlice=(
-                    #   "redis/common 172.22.0.13 6379"
-                    #   "redis/table 172.22.0.48 7379"
-                    #   "clickhouse/http 172.22.0.20 8123"
-                    #   "clickhouse/tcp 172.22.0.20 9000"
-                    #   "clickhouse/mysql 172.22.0.20 9004"
-                    # )
+                    variLanSlice=(
+                      "redis/common 172.22.0.13 6379"
+                      "redis/table 172.22.0.48 7379"
+                      "clickhouse/http 172.22.0.20 8123"
+                      "clickhouse/tcp 172.22.0.20 9000"
+                      "clickhouse/mysql 172.22.0.20 9004"
+                    )
                     # dsp[END]
                     ;;
                   "USEAST")
@@ -836,10 +836,10 @@ function funcPublicCloudIptableReinit(){
                     )
                     # adx[END]
                     # dsp[START]
-                    # variLanSlice=(
-                    #   "redis/common 10.0.0.10 6379"
-                    #   "redis/table 10.0.0.4 7379"
-                    # )
+                    variLanSlice=(
+                      "redis/common 10.0.0.10 6379"
+                      "redis/table 10.0.0.4 7379"
+                    )
                     # dsp[END]
                     ;;
                   *)
