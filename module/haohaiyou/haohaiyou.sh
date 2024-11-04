@@ -48,27 +48,28 @@ VARI_CLOUD=(
   "00 INDEX HONGKONG -00 119.28.55.124 22"
   # jump[END]
   # ==================================================
-  # notice[START]
+  # common[START]
   "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
-  "02 DSP/NOTICE SINGAPORE -02 43.134.68.173 22"
-  "03 DSP/COMMON USEAST -01 43.130.116.28 22"
+  "02 DSP/COMMON USEAST -01 43.130.116.28 22"
+  # common[END]
+  # notice[START]
+  "03 DSP/NOTICE01 SINGAPORE -01 101.32.165.195 22"
+  "04 DSP/NOTICE02 SINGAPORE -02 43.153.194.242 22"
+  "05 DSP/NOTICE01 USEAST -01 43.130.106.95 22"
+  "06 DSP/NOTICE02 USEAST -02 170.106.14.178 22"
   # notice[END]
   # bid[START]
-  "04 DSP/BID01 SINGAPORE -01 124.156.196.133 22"
-  "05 DSP/BID02 SINGAPORE -02 119.28.115.210 22"
-  "06 DSP/BID03 SINGAPORE -03 43.128.108.79 22"
-  "07 DSP/BID04 SINGAPORE -04 43.156.33.106 22"
-  "08 DSP/BID01 USEAST -01 43.130.79.155 22"
-  "09 DSP/BID02 USEAST -02 43.130.150.103 22" 
+  "07 DSP/BID01 SINGAPORE IPTABLE 43.134.241.241 22"
+  "08 DSP/BID02 SINGAPORE -02 119.28.114.114 22"
+  "09 DSP/BID03 SINGAPORE -03 43.156.43.47 22"
+  "10 DSP/BID04 SINGAPORE -04 43.133.43.225 22"
+  "11 DSP/BID01 USEAST IPTABLE 43.130.90.22 22" 
+  "12 DSP/BID02 USEAST -02 43.130.108.36 22" 
   # bid[END]
-  # ipteable[START]
-  "11 CODE/IPTABLE SINGAPORE -01 43.134.97.55 22"
-  "12 CODE/IPTABLE USEAST -01 43.130.133.237 22"
-  # ipteable[END]
   # ==================================================
   # common[START]
-  "51 ADX/COMMON SINGAPORE -01 43.156.140.171 22"
-  "52 ADX/COMMON USEAST -01 170.106.132.12 22"
+  "51 ADX/COMMON SINGAPORE IPTABLE 43.156.140.171 22"
+  "52 ADX/COMMON USEAST IPTABLE 170.106.132.12 22"
   # common[END]
   # notice[START]
   "53 ADX/NOTICE01 SINGAPORE -01 119.28.122.140 22"
@@ -545,6 +546,7 @@ function funcPublicCloudUnicornReinit() {
   variEnvi="production"
   variBinName="unicorn_${variModuleName}"
   variScpStatus=1
+  variScpOnce=0
   variMasterAccount="root"
   # slave variable[START]
   # systemctl reload crond
@@ -617,7 +619,11 @@ function funcPublicCloudUnicornReinit() {
             echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
             rm -rf /root/.ssh/known_hosts
             if [[ ${variScpStatus} -eq 1 ]]; then
-              scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
+              if [[ ${variScpOnce} -eq 0 ]]; then
+                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+                scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
+                variScpOnce=1
+              fi 
             fi
             ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
               echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
@@ -707,6 +713,7 @@ function funcPublicCloudUnicornReinit() {
                 cat "${variSlaveCrontabUri}"
                 systemctl reload crond
                 # supervisor[END]
+                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
                 #（3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF
@@ -949,6 +956,12 @@ function funcPublicCdUnicornRuntime(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
   pwd
   ll -lh
+  return 0
+}
+
+function funcPublicTailUnicornNotice(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  tail -f notice-$(date -u +%Y%m%d).log
   return 0
 }
 
