@@ -941,7 +941,9 @@ function funcPublicCloudUnicornCheck() {
               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                tail -n 100 /windows/runtime/unicorn.log
+                tail -n 50 /windows/runtime/unicorn.log
+                # 按「文件大小」倒敘排序，取前5個
+                ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 6
 SLAVEEOF
 MASTEREOF
           fi
@@ -961,6 +963,7 @@ function funcPublicCdUnicornRuntime(){
 
 function funcPublicTailUnicornNotice(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  echo "tail -f notice-$(date -u +%Y%m%d).log"
   tail -f notice-$(date -u +%Y%m%d).log
   return 0
 }
