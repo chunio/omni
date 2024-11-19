@@ -4,6 +4,14 @@
 # datetime : 2024/05/20
 
 :<<'MARK'
+# https://docs.github.com/en/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#removing-a-secret-introduced-by-an-earlier-commit-on-your-branch
+working with push protection from the command line ：
+0，git log
+1，git rebase -i {$commitId}~1
+2，[delete commit] dd && :wq
+3，[check conflict] git status
+4，[resolve conflict] git add module/confict.file && git rebase --continue
+5，git push origin main
 MARK
 
 declare -A VARI_GLOBAL
