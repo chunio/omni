@@ -49,8 +49,8 @@ VARI_CLOUD=(
   # jump[END]
   # ==================================================
   # common[START]
-  "01 DSP/COMMON SINGAPORE -01 43.133.61.186 22"
-  "02 DSP/COMMON USEAST -01 43.130.116.28 22"
+  "01 MIX/COMMON SINGAPORE -01 43.133.61.186 22"
+  "02 MIX/COMMON USEAST -01 43.130.116.28 22"
   # common[END]
   # notice[START]
   "03 DSP/NOTICE01 SINGAPORE -01 101.32.165.195 22"
