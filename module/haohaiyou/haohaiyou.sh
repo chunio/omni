@@ -80,8 +80,10 @@ VARI_CLOUD=(
   # bid[START]
   "57 ADX/BID01 SINGAPORE -01 43.134.74.106 22"
   "58 ADX/BID02 SINGAPORE -02 101.32.254.10 22"
-  "59 ADX/BID01 USEAST -01 43.130.66.178 22"
-  "60 ADX/BID02 USEAST -02 170.106.165.51 22"
+  "59 ADX/BID03 SINGAPORE -03 43.159.52.147 22"
+  "60 ADX/BID01 USEAST -01 43.130.66.178 22"
+  "61 ADX/BID02 USEAST -02 170.106.165.51 22"
+  "62 ADX/BID03 USEAST -03 170.106.9.32 22"
   # bid[END]
   # ==================================================
 )
@@ -131,6 +133,7 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker rm -f skeleton 2> /dev/null
   docker-compose down -v
   docker-compose -p ${veriModuleName} up --build -d
   docker update --restart=always ${veriModuleName}
@@ -686,14 +689,14 @@ function funcPublicCloudUnicornReinit() {
                 /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
                 mkdir -p ./bin && chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
-                echo "" > /windows/runtime/command.variable
+                echo "" > /windows/runtime/${variModuleName}.command
                 nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
                 (
                   while true; do
                     if grep -q ":${variHttpPort}" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
                       echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/command.variable
+                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/${variModuleName}.command
                       break
                     elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
@@ -1043,28 +1046,28 @@ UNICORNSUPERVISORCONF
   return 0
 }
 
-# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
+# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
-function funcPublicCloudSkeletonSupervisor(){
-  variHost="localhost"
-  variPort=9501
-  timeout=${timeout:-1}
-  variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
-  # check heartbeat[START]
-  if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-    echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
-  else
-    echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
-    # supervisor[START]
-    /windows/code/backend/chunio/omni/common/docker/docker.sh matchKill unicorn
-    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-    eval "$(cat /windows/runtime/command.variable)"
-    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
-    # supervisor[END]
-  fi
-  # check heartbeat[END]
-  return 0
-}
+# function funcPublicCloudSkeletonSupervisor(){
+#   variHost="localhost"
+#   variPort=9501
+#   timeout=${timeout:-1}
+#   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
+#   # check heartbeat[START]
+#   if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
+#     echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
+#   else
+#     echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
+#     # supervisor[START]
+#     /windows/code/backend/chunio/omni/common/docker/docker.sh matchKill unicorn
+#     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+#     eval "$(cat /windows/runtime/command.variable)"
+#     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
+#     # supervisor[END]
+#   fi
+#   # check heartbeat[END]
+#   return 0
+# }
 
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
@@ -1101,7 +1104,7 @@ function funcPublicCloudUnicornSupervisor(){
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
     /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-    eval "$(cat /windows/runtime/command.variable)"
+    eval "$(cat /windows/runtime/${variModuleName}.command)"
     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
     # supervisor[END]
   fi
