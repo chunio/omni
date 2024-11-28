@@ -693,13 +693,13 @@ function funcPublicCloudUnicornReinit() {
                 nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &
                 (
                   while true; do
-                    if grep -q ":${variHttpPort}" /windows/runtime/unicorn.log; then
-                      cat /windows/runtime/unicorn.log
+                    if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
+                      cat /windows/runtime/${variBinName}.log
                       echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
                       echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
                       break
-                    elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
-                      cat /windows/runtime/unicorn.log
+                    elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
+                      cat /windows/runtime/${variBinName}.log
                       break
                     fi
                     sleep 1
