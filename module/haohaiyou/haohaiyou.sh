@@ -686,17 +686,17 @@ function funcPublicCloudUnicornReinit() {
                 fi
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
                 /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+                # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
                 mkdir -p ./bin && chmod 777 -R .
                 /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
-                echo "" > /windows/runtime/${variModuleName}.command
-                nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
+                echo "" > /windows/runtime/${variBinName}.command
+                nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &
                 (
                   while true; do
                     if grep -q ":${variHttpPort}" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 & [success]"
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/unicorn.log 2>&1 &" > /windows/runtime/${variModuleName}.command
+                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -LABEL ${variEachNodeLabel} -REGION ${variEachNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
                       break
                     elif grep -qE "failed|error|panic" /windows/runtime/unicorn.log; then
                       cat /windows/runtime/unicorn.log
@@ -944,9 +944,9 @@ function funcPublicCloudUnicornCheck() {
               echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<SLAVEEOF
-                tail -n 50 /windows/runtime/unicorn.log
-                # 按「文件大小」倒敘排序，取前5個
-                ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 6
+                tail -n 50 /windows/runtime/unicorn_*.log
+                # 按「文件大小」倒敘排序，取前10個
+                ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 11
 SLAVEEOF
 MASTEREOF
           fi
@@ -1102,9 +1102,9 @@ function funcPublicCloudUnicornSupervisor(){
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
-    /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+    # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-    eval "$(cat /windows/runtime/${variModuleName}.command)"
+    eval "$(cat /windows/runtime/unicorn_${variModuleName}.command)"
     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
     # supervisor[END]
   fi
