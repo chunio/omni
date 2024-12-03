@@ -42,48 +42,91 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # global variable[END]
 # local variable[START]
-VARI_CLOUD=(
+VARI_CLOUD_OLD=(
   # ==================================================
   # jump[START]
-  "00 INDEX HONGKONG -00 119.28.55.124 22"
+  "000 INDEX HONGKONG -00 119.28.55.124 22"
   # jump[END]
   # ==================================================
   # common[START]
-  "01 MIX/COMMON SINGAPORE -01 43.133.61.186 22"
-  "02 MIX/COMMON USEAST -01 43.130.116.28 22"
+  "001 MIX/COMMON SINGAPORE -01 43.133.61.186 22"
+  "002 MIX/COMMON USEAST -01 43.130.116.28 22"
+  "003 ADX/COMMON SINGAPORE IPTABLE 43.156.140.171 22"
+  "004 ADX/COMMON USEAST IPTABLE 170.106.132.12 22"
   # common[END]
   # notice[START]
-  "11 DSP/NOTICE01 SINGAPORE -01 101.32.165.195 22"
-  "12 DSP/NOTICE02 SINGAPORE -02 43.153.194.242 22"
-  "13 DSP/NOTICE01 USEAST -01 43.130.106.95 22"
-  "14 DSP/NOTICE02 USEAST -02 170.106.14.178 22"
+  "101 DSP/NOTICE01 SINGAPORE -01 101.32.165.195 22"
+  "102 DSP/NOTICE02 SINGAPORE -02 43.153.194.242 22"
+  "103 DSP/NOTICE01 USEAST -01 43.130.106.95 22"
+  "104 DSP/NOTICE02 USEAST -02 170.106.14.178 22"
   # notice[END]
   # bid[START]
-  "15 DSP/BID01 SINGAPORE IPTABLE 43.134.241.241 22"
-  "16 DSP/BID02 SINGAPORE -02 119.28.114.114 22"
-  "17 DSP/BID03 SINGAPORE -03 43.156.43.47 22"
-  "18 DSP/BID04 SINGAPORE -04 43.133.43.225 22"
-  "19 DSP/BID01 USEAST IPTABLE 43.130.90.22 22" 
-  "20 DSP/BID02 USEAST -02 43.130.108.36 22" 
+  "105 DSP/BID01 SINGAPORE IPTABLE 43.134.241.241 22"
+  "106 DSP/BID02 SINGAPORE -02 119.28.114.114 22"
+  "107 DSP/BID03 SINGAPORE -03 43.156.43.47 22"
+  "108 DSP/BID04 SINGAPORE -04 43.133.43.225 22"
+  "109 DSP/BID01 USEAST IPTABLE 43.130.90.22 22"
+  "200 DSP/BID02 USEAST -02 43.130.108.36 22" 
   # bid[END]
   # ==================================================
-  # common[START]
-  "41 ADX/COMMON SINGAPORE IPTABLE 43.156.140.171 22"
-  "42 ADX/COMMON USEAST IPTABLE 170.106.132.12 22"
-  # common[END]
   # notice[START]
-  "51 ADX/NOTICE01 SINGAPORE -01 119.28.122.140 22"
-  "52 ADX/NOTICE02 SINGAPORE -02 101.32.126.189 22"
-  "53 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
-  "54 ADX/NOTICE02 USEAST -02 43.130.108.190 22"
+  "201 ADX/NOTICE01 SINGAPORE -01 119.28.122.140 22"
+  "202 ADX/NOTICE02 SINGAPORE -02 101.32.126.189 22"
+  "203 ADX/NOTICE01 USEAST -01 170.106.160.191 22"
+  "204 ADX/NOTICE02 USEAST -02 43.130.108.190 22"
   # notice[END]
   # bid[START]
-  "55 ADX/BID01 SINGAPORE -01 43.134.74.106 22"
-  "56 ADX/BID02 SINGAPORE -02 101.32.254.10 22"
-  "57 ADX/BID03 SINGAPORE -03 43.159.52.147 22"
-  "58 ADX/BID01 USEAST -01 43.130.66.178 22"
-  "59 ADX/BID02 USEAST -02 170.106.165.51 22"
-  "60 ADX/BID03 USEAST -03 170.106.9.32 22"
+  "205 ADX/BID01 SINGAPORE -01 43.134.74.106 22"
+  "206 ADX/BID02 SINGAPORE -02 101.32.254.10 22"
+  "207 ADX/BID03 SINGAPORE -03 43.159.52.147 22"
+  "208 ADX/BID01 USEAST -01 43.130.66.178 22"
+  "209 ADX/BID02 USEAST -02 170.106.165.51 22"
+  "210 ADX/BID03 USEAST -03 170.106.9.32 22"
+  # bid[END]
+  # ==================================================
+)
+
+VARI_CLOUD=(
+  # ==================================================
+  # jump[START]
+  "000 JUMPER -- -- HONGKONG -- 119.28.55.124 22 --"
+  # jump[END]
+  # ==================================================
+  # common[START]
+  "001 MIX COMMON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
+  "002 MIX COMMON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
+  "003 ADX COMMON 01 PADDLEWAVER SINGAPORE 43.156.140.171 22 IPTABLE"
+  "004 ADX COMMON 01 PADDLEWAVER USEAST 170.106.132.12 22 IPTABLE"
+  # common[END]
+  # ==================================================
+  # notice[START]
+  "201 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
+  "202 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 --"
+  "203 ADX NOTICE 01 PADDLEWAVER USEAST 170.106.160.191 22 --"
+  "204 ADX NOTICE 02 PADDLEWAVER USEAST 43.130.108.190 22 --"
+  # notice[END]
+  # bid[START]
+  "205 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 --"
+  "206 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 --"
+  "207 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 --"
+  "208 ADX BID 01 PADDLEWAVER USEAST 43.130.66.178 22 --"
+  "209 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
+  "210 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
+  # bid[END]
+  # ==================================================
+  # notice[START]
+  "101 DSP NOTICE 01 PADDLEWAVER SINGAPORE 101.32.165.195 22 --"
+  "102 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.153.194.242 22 --"
+  "103 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 --"
+  "104 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 --"
+  # notice[END]
+  # bid[START]
+  "105 DSP BID 01 PADDLEWAVER SINGAPORE 43.134.241.241 22 IPTABLE"
+  "106 DSP BID 02 PADDLEWAVER SINGAPORE 119.28.114.114 22 --"
+  "107 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.43.47 22 --"
+  "108 DSP BID 04 PADDLEWAVER SINGAPORE 43.133.43.225 22 --"
+  "109 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 IPTABLE"
+  "200 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
   # bid[END]
   # ==================================================
 )
@@ -548,8 +591,8 @@ function funcPublicCloudUnicornReinit() {
   variBranchName=$2
   variEnvi="production"
   variBinName="unicorn_${variModuleName}"
-  variScpStatus=1
-  variScpOnce=0
+  variScpAble=1
+  variScpSyncOnce=0
   variMasterAccount="root"
   # slave variable[START]
   # systemctl reload crond
@@ -557,81 +600,92 @@ function funcPublicCloudUnicornReinit() {
   variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
   # ----------
-  variHttpPort=8000
-  variGrpcPort=9000
+  # variHttpPort=8000
+  # variGrpcPort=9000
   case ${variModuleName} in
     "adx")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    "dsp")
         variHttpPort=8001
         variGrpcPort=9001
         ;;
-    "dsp")
-        variHttpPort=8000
-        variGrpcPort=9000
-        ;;
     *)
-        variHttpPort=8000
-        variGrpcPort=9000
+        return 1
         ;;
   esac
   # ----------
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "DOMAIN" "REGION" "LABEL" "IP" "PORT" "DESC" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachLabel=$(echo $variEachValue | awk '{print $2}')
-    variEachRegion=$(echo $variEachValue | awk '{print $3}')
-    variEachMemo=$(echo $variEachValue | awk '{print $4}')
-    variEachIp=$(echo $variEachValue | awk '{print $5}')
-    variEachPort=$(echo $variEachValue | awk '{print $6}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+    variEachModule=$(echo $variEachValue | awk '{print $2}')
+    variEachService=$(echo $variEachValue | awk '{print $3}')
+    variEachLabel=$(echo $variEachValue | awk '{print $4}')
+    variEachDomain=$(echo $variEachValue | awk '{print $5}')
+    variEachRegion=$(echo $variEachValue | awk '{print $6}')
+    variEachIp=$(echo $variEachValue | awk '{print $7}')
+    variEachPort=$(echo $variEachValue | awk '{print $8}')
+    variEachDesc=$(echo $variEachValue | awk '{print $9}')
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
   done
-  echo -n "enter the 「LABEL」 keyword to match: "
+  echo -n "enter the keyword to match: "
   read variSlaveKeyword
   echo "matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "DOMAIN" "REGION" "LABEL" "IP" "PORT" "DESC" 
   for variEachValue in "${VARI_CLOUD[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachLabel=$(echo $variEachValue | awk '{print $2}')
-      variEachRegion=$(echo $variEachValue | awk '{print $3}')
-      variEachMemo=$(echo $variEachValue | awk '{print $4}')
-      variEachIp=$(echo $variEachValue | awk '{print $5}')
-      variEachPort=$(echo $variEachValue | awk '{print $6}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+    variEachIndex=$(echo $variEachValue | awk '{print $1}')
+    variEachModule=$(echo $variEachValue | awk '{print $2}')
+    variEachService=$(echo $variEachValue | awk '{print $3}')
+    variEachLabel=$(echo $variEachValue | awk '{print $4}')
+    variEachDomain=$(echo $variEachValue | awk '{print $5}')
+    variEachRegion=$(echo $variEachValue | awk '{print $6}')
+    variEachIp=$(echo $variEachValue | awk '{print $7}')
+    variEachPort=$(echo $variEachValue | awk '{print $8}')
+    variEachDesc=$(echo $variEachValue | awk '{print $9}')
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
     fi
   done
-  echo -n "enter the [number]index ( 空格間隔 ) : "
+  echo -n "enter the index/number ( 空格間隔 ) : "
   read -a variInputIndexList
-  variMasterKeyword="INDEX"
+  variMasterKeyword="JUMPER"
   for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
+      variEachMasterModule="JUMPER"
+      variEachMasterService=$(echo $variMasterValue | awk '{print $3}')
+      variEachMastrLabel=$(echo $variMasterValue | awk '{print $4}')
+      variEachMastrDomain=$(echo $variMasterValue | awk '{print $5}')
+      variEachMastrRegion=$(echo $variMasterValue | awk '{print $6}')
+      variEachMasterIp=$(echo $variMasterValue | awk '{print $7}')
+      variEachMastrPort=$(echo $variMasterValue | awk '{print $8}')
       for variEachInputIndex in "${variInputIndexList[@]}"; do
         for variSlaveValue in "${VARI_CLOUD[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
           if [[ $variEachIndex == ${variEachInputIndex} ]]; then
-            variEachNodeLabel=$(echo $variSlaveValue | awk '{print $2}')
-            variEachNodeRegion=$(echo $variSlaveValue | awk '{print $3}')
-            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
-            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
-            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
-            echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
+            variEachNodeModule=$(echo $variSlaveValue | awk '{print $2}')
+            variEachNodeService=$(echo $variSlaveValue | awk '{print $3}')
+            variEachNodeLabel=$(echo $variSlaveValue | awk '{print $4}')
+            variEachNodeDomain=$(echo $variSlaveValue | awk '{print $5}')
+            variEachNodeRegion=$(echo $variSlaveValue | awk '{print $6}')
+            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $7}')
+            variEachSlavePort=$(echo $variSlaveValue | awk '{print $8}')
+            variEachNodeDesc=$(echo $variSlaveValue | awk '{print $9}')
+            echo "=================================================="
+            echo "initiate connection: [${variEachMasterService} / ${variEachMastrDomain} / ${variEachMastrRegion} / ${variEachMastrLabel}] ${variEachMasterIp}:${variEachMastrPort} ..."
             rm -rf /root/.ssh/known_hosts
-            if [[ ${variScpStatus} -eq 1 ]]; then
-              if [[ ${variScpOnce} -eq 0 ]]; then
+            if [[ ${variScpAble} -eq 1 ]]; then
+              if [[ ${variScpSyncOnce} -eq 0 ]]; then
                 md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-                scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIP}:/
-                variScpOnce=1
+                scp -P ${variEachMastrPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variMasterAccount}@${variEachMasterIp}:/
+                variScpSyncOnce=1
               fi 
             fi
-            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIP} <<MASTEREOF
-              echo "initiate connection: [${variEachNodeLabel} / ${variEachNodeRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
+            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variMasterAccount}@${variEachMasterIp} <<MASTEREOF
+              echo "initiate connection: [${variSlaveValue}] ${variEachSlaveIP}:${variEachSlavePort} ..."
               rm -rf /root/.ssh/known_hosts
-              if [[ ${variScpStatus} -eq 1 ]]; then
+              if [[ ${variScpAble} -eq 1 ]]; then
                 scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachSlaveIP}:/
                 scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               fi
