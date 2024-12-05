@@ -21,12 +21,19 @@ EOF
 EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*customKeywork*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
 # ----------
 # 擴展存儲[START]
+（1）係統磁盤/擴容
 [ext4]
 lsblk
 yum install -y cloud-utils-growpart
 growpart /dev/vda 1
 resize2fs /dev/vda1
 df -h /dev/vda1
+# ----------
+（2）數據磁盤/掛載
+mkdir -p /mnt/datadisk0/unicorn/runtime && mkdir -p /mnt/volume1/unicorn/runtime
+mount --bind /mnt/datadisk0/unicorn/runtime /mnt/volume1/unicorn/runtime
+df -h /mnt/volume1/unicorn/runtime 
+mount | grep runtime
 # 擴展存儲[END]
 # ----------
 MARK
@@ -447,9 +454,9 @@ function funcPublicCloudIndex(){
     variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
     variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
     if [[ 10#$variEachSlaveIndex -eq 10#$variInput ]]; then
-      echo "----------------------------------------------------------------------------------------------------"
+      echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-      echo "----------------------------------------------------------------------------------------------------"
+      echo "===================================================================================================="
       # 配置一層[SSH]秘鑰
       # ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
       # 配置二層[SSH]秘鑰
@@ -892,7 +899,6 @@ function funcPublicCloudIptableReinit(){
  local variParameterDescMulti=("domain : pw，yone")
   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
   variDomainName=${1:-"pw"}
-  variBranchName=${2:-"main"}
   declare -a variSelectedCloud
   case ${variDomainName} in
     "pw")
@@ -927,7 +933,39 @@ function funcPublicCloudIptableReinit(){
   printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
   variAllIndexSlice=""
   for variEachValue in "${variSelectedCloud[@]}"; do
-   if [[ $variEachMasterValue == *" JUMPER "* ]]; then
+    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
+      # 採集當前頁面的全部索引[START]
+      variAllIndexSlice="${variAllIndexSlice} $(echo $variEachValue | awk '{print $1}')"
+      # 採集當前頁面的全部索引[END]
+      variEachIndex=$(echo $variEachValue | awk '{print $1}')
+      variEachModule=$(echo $variEachValue | awk '{print $2}')
+      variEachService=$(echo $variEachValue | awk '{print $3}')
+      variEachLabel=$(echo $variEachValue | awk '{print $4}')
+      variEachDomain=$(echo $variEachValue | awk '{print $5}')
+      variEachRegion=$(echo $variEachValue | awk '{print $6}')
+      variEachIp=$(echo $variEachValue | awk '{print $7}')
+      variEachPort=$(echo $variEachValue | awk '{print $8}')
+      variEachDesc=$(echo $variEachValue | awk '{print $9}')
+      printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
+    fi
+  done
+  #（3）精準選擇
+  echo -n "enter the index/number ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
+  read -a variInputIndexSlice
+  if [[ ${variInputIndexSlice} -eq 0 ]]; then
+    variInputIndexSlice=(${variAllIndexSlice})
+    echo "index : ${variInputIndexSlice[@]}"
+  else
+    echo "index : ${variInputIndexSlice[@]}"
+  fi
+  read -p "type「confirm」to continue : " variInput
+  # variInputLower=$(echo "$variInput" | tr '[:upper:]' '[:lower:]')
+  # if [[ "$variInputLower" != "confirm" ]]; then
+  if [[ "$variInput" != "confirm" ]]; then
+    return 1
+  fi
+  for variEachMasterValue in "${variSelectedCloud[@]}"; do
+    if [[ $variEachMasterValue == *" JUMPER "* ]]; then
       variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
       variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
       for variEachInputIndex in "${variInputIndexSlice[@]}"; do
@@ -940,24 +978,17 @@ function funcPublicCloudIptableReinit(){
             variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
             variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
             variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            echo "===================================================================================================="
-            echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            echo "===================================================================================================="
+            # echo "####################################################################################################"
+            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
+            # echo "####################################################################################################"
             rm -rf /root/.ssh/known_hosts
-            if [[ ${variScpAble} -eq 1 ]]; then
-              if [[ ${variScpSyncOnce} -eq 0 ]]; then
-                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-                scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/
-                variScpSyncOnce=1
-              fi 
-            fi
             ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               rm -rf /root/.ssh/known_hosts
-              scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
-              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<'SLAVEEOF'
+              scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIp}:/
+              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIp} <<'SLAVEEOF'
                 # --------------------------------------------------
                 # （1）ssh init[START]
                 tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
