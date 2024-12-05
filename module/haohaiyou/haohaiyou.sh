@@ -4,6 +4,8 @@
 # datetime : 2024/05/20
 
 :<<'MARK'
+/windows/code/backend/chunio/omni/init/system/system.sh init
+cd /windows/code/backend/chunio/omni && find . -type f -exec dos2unix {} \;
 # ----------
 # [示例]將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
 # about : funcProtectedTemplate
@@ -85,7 +87,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 #   # bid[END]
 #   # ==================================================
 # )
-VARI_CLOUD_PADDLEWAVER=(
+VARI_PADDLEWAVER_CLOUD=(
   # ==================================================
   # jumper
   "000 JUMPER -- -- HONGKONG -- 119.28.55.124 22 --"
@@ -93,8 +95,8 @@ VARI_CLOUD_PADDLEWAVER=(
   "002 MIX IPTABLE 01 MIX USEAST 170.106.132.12 22 --"
   # ==================================================
   # common
-  "101 MIX APOLLO/COMMON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
-  "102 MIX APOLLO/COMMON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
+  "101 MIX COMMON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 hyperf/kratos"
+  "102 MIX COMMON 01 PADDLEWAVER USEAST 43.130.116.28 22 hyperf/kratos"
   # ==================================================
   # adx
   "201 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
@@ -121,7 +123,7 @@ VARI_CLOUD_PADDLEWAVER=(
   "300 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
   # ==================================================
 )
-VARI_CLOUD_YONE=(
+VARI_YONE_CLOUD=(
   # ==================================================
   # jumper
   "000 JUMPER -- -- HONGKONG -- 119.28.55.124 22 --"
@@ -129,8 +131,8 @@ VARI_CLOUD_YONE=(
   "002 MIX IPTABLE 01 MIX USEAST 170.106.132.12 22 --"
   # ==================================================
   # common
-  "101 MIX APOLLO/COMMON 01 YONE SINGAPORE 43.134.87.222 22 --"
-  "102 MIX APOLLO/COMMON 01 YONE USEAST 43.130.147.251 22 --"
+  "101 MIX COMMON 01 YONE SINGAPORE 43.134.87.222 22 hyperf/kratos"
+  "102 MIX COMMON 01 YONE USEAST 43.130.147.251 22 hyperf/kratos"
   # ==================================================
   # adx
   "201 ADX NOTICE 01 YONE SINGAPORE 43.159.51.144 22 --"
@@ -608,11 +610,12 @@ MASTEREOF
 }
 
 function funcPublicCloudUnicornReinit() {
-  local variParameterDescMulti=("module name : dsp，adx" "branch name : main，feature/zengweitao/xxxx")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variParameterDescMulti=("module : dsp，adx" "domain : pw, yone" "branch : main，feature/zengweitao/xxxx")
+  funcProtectedCheckRequiredParameter 3 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variModuleName=$1
-  variBranchName=$2
-  variEnvi="production"
+  variDomainName=$2
+  variBranchName=$3
+  variEnvi="PRODUCTION"
   variBinName="unicorn_${variModuleName}"
   variScpAble=1
   variScpSyncOnce=0
@@ -638,10 +641,21 @@ function funcPublicCloudUnicornReinit() {
         return 1
         ;;
   esac
+  case ${variModuleName} in
+    "pw")
+        variCloud=${VARI_PADDLEWAVER_CLOUD}
+        ;;
+    "yone")
+        variCloud=${VARI_YONE_CLOUD}
+        ;;
+    *)
+        return 1
+        ;;
+  esac
   # ----------
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "DOMAIN" "REGION" "LABEL" "IP" "PORT" "DESC" 
-  for variEachValue in "${VARI_CLOUD[@]}"; do
+  for variEachValue in "${variCloud[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachModule=$(echo $variEachValue | awk '{print $2}')
     variEachService=$(echo $variEachValue | awk '{print $3}')
