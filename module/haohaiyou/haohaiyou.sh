@@ -578,15 +578,15 @@ function funcPublicCloudSkeletonRinit() {
             variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
             variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
             variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            echo "===================================================================================================="
-            echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            echo "===================================================================================================="
+            # echo "####################################################################################################"
+            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
+            # echo "####################################################################################################"
             rm -rf /root/.ssh/known_hosts
             ssh -o StrictHostKeyChecking=no -p ${variJumperPort} -t root@${variJumperIp} <<JUMPEREOF
               # //TODO：send SHUTDOWN/signal to redis pub/sub
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIp}:/
               ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIp} <<SLAVEEOF
@@ -663,10 +663,10 @@ JUMPEREOF
 }
 
 function funcPublicCloudUnicornReinit() {
-  local variParameterDescMulti=("module : dsp，adx" "domain : pw, yone" "branch : main，feature/zengweitao/example")
+  local variParameterDescMulti=("domain : pw, yone" "module : dsp，adx" "branch : main，feature/zengweitao/example")
   funcProtectedCheckRequiredParameter 3 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variModuleName=$1
-  variDomainName=$2
+  variDomainName=$1
+  variModuleName=$2
   variBranchName=$3
   variEnvi="PRODUCTION"
   variBinName="unicorn_${variModuleName}"
@@ -683,12 +683,12 @@ function funcPublicCloudUnicornReinit() {
   # variGrpcPort=9000
   case ${variModuleName} in
     "adx")
-        variHttpPort=8000
-        variGrpcPort=9000
-        ;;
-    "dsp")
         variHttpPort=8001
         variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
         ;;
     *)
         return 1
@@ -774,9 +774,9 @@ function funcPublicCloudUnicornReinit() {
             variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
             variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
             variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            echo "===================================================================================================="
-            echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            echo "===================================================================================================="
+            # echo "####################################################################################################"
+            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
+            # echo "####################################################################################################"
             rm -rf /root/.ssh/known_hosts
             if [[ ${variScpAble} -eq 1 ]]; then
               if [[ ${variScpSyncOnce} -eq 0 ]]; then
@@ -786,9 +786,9 @@ function funcPublicCloudUnicornReinit() {
               fi 
             fi
             ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "----------------------------------------------------------------------------------------------------"
+              echo "===================================================================================================="
               rm -rf /root/.ssh/known_hosts
               if [[ ${variScpAble} -eq 1 ]]; then
                 scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachSlaveIp}:/
