@@ -471,8 +471,7 @@ function funcPublicCloudIndex(){
 # echo "StrictHostKeyChecking no" > ~/.ssh/config
 # chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
 # jump server init[END]
-
-function funcPublicCloudIndexInit() {
+function funcPublicCloudJumperReinit() {
   variMasterKeyword="INDEX"
   for variMasterValue in "${VARI_CLOUD[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
@@ -889,7 +888,6 @@ JUMPEREOF
   return 0
 }
 
-
 function funcPublicCloudIptableReinit(){
   # local variParameterDescMulti=("event : singapore，virginia")
   # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -1147,22 +1145,8 @@ JUMPEREOF
   return 0
 }
 
-function funcPublicCdUnicornRuntime(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
-  pwd
-  ll -lh
-  return 0
-}
-
-function funcPublicTailUnicornNotice(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
-  echo "tail -f notice-$(date -u +%Y%m%d).log"
-  tail -f notice-$(date -u +%Y%m%d).log
-  return 0
-}
-
 # 將「80」端口轉發至「9501」端口
-function funcPublic80(){
+function funcPublicCloud80To9501(){
   veriModuleName="skeleton"
   variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
@@ -1201,40 +1185,24 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-# example: funcPublicUnicornRestart "production" "CODE/BID01" "SINGAPORE"
-function funcPublicUnicornRestart(){
-  variEnviLabel=${1}
-  variNodeLabel=${2}
-  variNodeRegion=${3}
-  /windows/code/backend/chunio/omni/init/system/system.sh showPort 8000 confirm &&
-  /windows/code/backend/chunio/omni/init/system/system.sh showPort 9000 confirm && 
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn &&
-  nohup ./bin/unicorn_exec -ENVI_LABEL ${variEnviLabel} -LABEL ${variNodeLabel} -REGION ${variNodeRegion} > /windows/runtime/unicorn.log 2>&1 &
-  # supervisor[START]
-  yum install -y epel-release
-  yum install -y supervisor
-  cat <<UNICORNSUPERVISORCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/unicorn_supervisor.conf
-[program:unicorn_supervisor]
-command=/bin/bash -c '/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh unicornRestart "${variEnviLabel}" "${variNodeLabel}" "${variNodeRegion}"'
-directory=/windows/code/backend/chunio/omni
-user=root
-autostart=true
-autorestart=true
-startretries=10
-exitcodes=0
-stopsignal=TERM
-stopwaitsecs=10
-redirect_stderr=true
-stdout_logfile=/windows/runtime/unicorn_supervisor_stdout.log
-stderr_logfile=/windows/runtime/unicorn_supervisor_stderr.log
-stdout_logfile_maxbytes=1024MB
-stdout_logfile_backups=10
-stderr_logfile_maxbytes=1024MB
-stderr_logfile_backups=10
-UNICORNSUPERVISORCONF
-  # supervisor[END]
+function funcPublicCdUnicornRuntime(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  pwd
+  df -h
+  ll -lh
   return 0
 }
+
+function funcPublicTailUnicornNotice(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  pwd
+  df -h
+  echo "tail -f notice-$(date -u +%Y%m%d).log"
+  tail -f notice-$(date -u +%Y%m%d).log
+  return 0
+}
+
+
 
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
