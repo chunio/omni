@@ -671,7 +671,7 @@ function funcPublicCloudUnicornReinit() {
   read variSlaveKeyword
   echo "matched (${variSlaveKeyword}):"
   printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "DOMAIN" "REGION" "LABEL" "IP" "PORT" "DESC" 
-  for variEachValue in "${VARI_CLOUD[@]}"; do
+  for variEachValue in "${variCloud[@]}"; do
     if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
     variEachModule=$(echo $variEachValue | awk '{print $2}')
@@ -688,7 +688,7 @@ function funcPublicCloudUnicornReinit() {
   echo -n "enter the index/number ( 空格間隔 ) : "
   read -a variInputIndexList
   variMasterKeyword="JUMPER"
-  for variMasterValue in "${VARI_CLOUD[@]}"; do
+  for variMasterValue in "${variCloud[@]}"; do
     if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
       variEachMasterModule="JUMPER"
       variEachMasterService=$(echo $variMasterValue | awk '{print $3}')
@@ -698,7 +698,7 @@ function funcPublicCloudUnicornReinit() {
       variEachMasterIp=$(echo $variMasterValue | awk '{print $7}')
       variEachMastrPort=$(echo $variMasterValue | awk '{print $8}')
       for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_CLOUD[@]}"; do
+        for variSlaveValue in "${variCloud[@]}"; do
           variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
           if [[ $variEachIndex == ${variEachInputIndex} ]]; then
             variEachNodeModule=$(echo $variSlaveValue | awk '{print $2}')
