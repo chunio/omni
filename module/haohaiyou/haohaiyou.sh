@@ -4,8 +4,8 @@
 # datetime : 2024/05/20
 
 :<<'MARK'
-/windows/code/backend/chunio/omni/init/system/system.sh init
 cd /windows/code/backend/chunio/omni && find . -type f -exec dos2unix {} \;
+/windows/code/backend/chunio/omni/init/system/system.sh init
 # ----------
 # [示例]將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
 # about : funcProtectedTemplate
