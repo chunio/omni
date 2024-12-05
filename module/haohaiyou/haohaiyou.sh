@@ -889,59 +889,72 @@ JUMPEREOF
 }
 
 function funcPublicCloudIptableReinit(){
-  # local variParameterDescMulti=("event : singapore，virginia")
-  # funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  # variEvent=$1
-  variJumperAccount="root"
+ local variParameterDescMulti=("domain : pw，yone")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+  variDomainName=${1:-"pw"}
+  variBranchName=${2:-"main"}
+  declare -a variSelectedCloud
+  case ${variDomainName} in
+    "pw")
+        variSelectedCloud=("${VARI_PADDLEWAVER_CLOUD[@]}")
+        ;;
+    "yone")
+        variSelectedCloud=("${VARI_YONE_CLOUD[@]}")
+        ;;
+    *)
+        return 1
+        ;;
+  esac
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT" 
-  for variEachValue in "${VARI_CLOUD[@]}"; do
+  #（1）初始展示
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
+  for variEachValue in "${variSelectedCloud[@]}"; do
     variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachLabel=$(echo $variEachValue | awk '{print $2}')
-    variEachRegion=$(echo $variEachValue | awk '{print $3}')
-    variEachMemo=$(echo $variEachValue | awk '{print $4}')
-    variEachIp=$(echo $variEachValue | awk '{print $5}')
-    variEachPort=$(echo $variEachValue | awk '{print $6}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
+    variEachModule=$(echo $variEachValue | awk '{print $2}')
+    variEachService=$(echo $variEachValue | awk '{print $3}')
+    variEachLabel=$(echo $variEachValue | awk '{print $4}')
+    variEachDomain=$(echo $variEachValue | awk '{print $5}')
+    variEachRegion=$(echo $variEachValue | awk '{print $6}')
+    variEachIp=$(echo $variEachValue | awk '{print $7}')
+    variEachPort=$(echo $variEachValue | awk '{print $8}')
+    variEachDesc=$(echo $variEachValue | awk '{print $9}')
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
   done
-  echo -n "enter the 「LABEL」 keyword to match : "
+  #（2）模糊匹配
+  echo -n "enter the keyword to match: "
   read variSlaveKeyword
-  echo "matched (${variSlaveKeyword}) : "
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "LABEL" "REGION" "MEMO" "IP" "PORT"
-  for variEachValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachLabel=$(echo $variEachValue | awk '{print $2}')
-      variEachRegion=$(echo $variEachValue | awk '{print $3}')
-      variEachMemo=$(echo $variEachValue | awk '{print $4}')
-      variEachIp=$(echo $variEachValue | awk '{print $5}')
-      variEachPort=$(echo $variEachValue | awk '{print $6}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachLabel" "$variEachRegion" "${variEachMemo}" "$variEachIp" "$variEachPort"
-    fi
-  done
-  echo -n "enter the [number]index ( 空格間隔 ) : "
-  read -a variInputIndexList
-  variMasterKeyword="INDEX"
-  for variMasterValue in "${VARI_CLOUD[@]}"; do
-    if [[ $variMasterValue == *" ${variMasterKeyword} "* ]]; then
-      variEachMasterLabel=$(echo $variMasterValue | awk '{print $2}')
-      variEachMastrRegion=$(echo $variMasterValue | awk '{print $3}')
-      variEachMastrMemo=$(echo $variMasterValue | awk '{print $4}')
-      variEachMasterIP=$(echo $variMasterValue | awk '{print $5}')
-      variEachMastrPort=$(echo $variMasterValue | awk '{print $6}')
-      for variEachInputIndex in "${variInputIndexList[@]}"; do
-        for variSlaveValue in "${VARI_CLOUD[@]}"; do
-          variEachIndex=$(echo $variSlaveValue | awk '{print $1}')
-          if [[ $variEachIndex == ${variEachInputIndex} ]]; then
-            variEachSlaveLabel=$(echo $variSlaveValue | awk '{print $2}')
-            variEachSlaveRegion=$(echo $variSlaveValue | awk '{print $3}')
-            variEachSlaveMemo=$(echo $variSlaveValue | awk '{print $4}')
-            variEachSlaveIP=$(echo $variSlaveValue | awk '{print $5}')
-            variEachSlavePort=$(echo $variSlaveValue | awk '{print $6}')
-            echo "initiate connection: [${variEachMasterLabel} / ${variEachMastrRegion} / ${variEachMastrMemo}] ${variEachMasterIP}:${variEachMastrPort} ..."
+  echo "matched (${variSlaveKeyword}):"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
+  variAllIndexSlice=""
+  for variEachValue in "${variSelectedCloud[@]}"; do
+   if [[ $variEachMasterValue == *" JUMPER "* ]]; then
+      variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
+      variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
+      for variEachInputIndex in "${variInputIndexSlice[@]}"; do
+        for variEachSlaveValue in "${variSelectedCloud[@]}"; do
+          variEachSlaveIndex=$(echo $variEachSlaveValue | awk '{print $1}')
+          if [[ $variEachSlaveIndex == ${variEachInputIndex} ]]; then
+            variEachSlaveService=$(echo $variEachSlaveValue | awk '{print $3}')
+            variEachSlaveLabel=$(echo $variEachSlaveValue | awk '{print $4}')
+            variEachSlaveDomain=$(echo $variEachSlaveValue | awk '{print $5}')
+            variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
+            variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
+            variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
+            echo "===================================================================================================="
+            echo ">> [ JUMPER ] ${variEachMasterValue} ..."
+            echo "===================================================================================================="
             rm -rf /root/.ssh/known_hosts
-            ssh -o StrictHostKeyChecking=no -A -p ${variEachMastrPort} -t ${variJumperAccount}@${variEachMasterIP} <<MASTEREOF
-              echo "initiate connection: [${variEachSlaveLabel} / ${variEachSlaveRegion} / ${variEachSlaveMemo}] ${variEachSlaveIP}:${variEachSlavePort} ..."
+            if [[ ${variScpAble} -eq 1 ]]; then
+              if [[ ${variScpSyncOnce} -eq 0 ]]; then
+                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+                scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/
+                variScpSyncOnce=1
+              fi 
+            fi
+            ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+              echo "----------------------------------------------------------------------------------------------------"
+              echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
+              echo "----------------------------------------------------------------------------------------------------"
               rm -rf /root/.ssh/known_hosts
               scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIP}:/
               ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIP} <<'SLAVEEOF'
@@ -987,28 +1000,66 @@ function funcPublicCloudIptableReinit(){
                     # )
                     # adx[END]
                     # dsp[START]
-                    variLanSlice=(
-                      "redis/common 172.22.0.13 6379"
-                      "redis/table 172.22.0.48 7379"
-                      "clickhouse/http 172.22.0.20 8123"
-                      "clickhouse/tcp 172.22.0.20 9000"
-                      "clickhouse/mysql 172.22.0.20 9004"
-                    )
+                    # variLanSlice=(
+                    #   "redis/common 172.22.0.13 6379"
+                    #   "redis/table 172.22.0.48 7379"
+                    #   "clickhouse/http 172.22.0.20 8123"
+                    #   "clickhouse/tcp 172.22.0.20 9000"
+                    #   "clickhouse/mysql 172.22.0.20 9004"
+                    # )
                     # dsp[END]
+                    # mix[START]
+                    variLanSlice=(
+                      "redis/hyperf/pw/envi 172.22.0.13 6379"
+                      "redis/adx/pw/common 172.22.0.2 11210"
+                      "redis/adx/pw/table 172.22.0.96 11220"
+                      "redis/adx/pw/snapshot 172.22.0.36 11230"
+                      "redis/dsp/pw/common 172.22.0.38 11310"
+                      "redis/dsp/pw/table 172.22.0.48 7379"
+                      # ----------
+                      "redis/hyperf/yone/envi 172.22.0.82 21320"
+                      "redis/adx/yone/common 172.22.0.14 21210"
+                      "redis/adx/yone/table 172.22.0.59 21220"
+                      "redis/adx/yone/snapshot 172.22.0.46 21230"
+                      "redis/dsp/yone/common 172.22.0.27 21310"
+                      "redis/dsp/yone/table 172.22.0.82 21320"
+                      # ----------
+                      "clickhouse/mix/mix/http 172.22.0.20 8123"
+                      "clickhouse/mix/mix/tcp 172.22.0.20 9000"
+                      "clickhouse/mix/mix/mysql 172.22.0.20 9004"
+                    )
+                    # mix[END]
                     ;;
                   "USEAST")
                     # adx[START]
-                    variLanSlice=(
-                      "redis/common 10.0.0.14 6379"
-                      "redis/table 10.0.0.9 7379"
-                    )
+                    # variLanSlice=(
+                    #   "redis/common 10.0.0.14 6379"
+                    #   "redis/table 10.0.0.9 7379"
+                    # )
                     # adx[END]
                     # dsp[START]
-                    variLanSlice=(
-                      "redis/common 10.0.0.10 6379"
-                      "redis/table 10.0.0.4 7379"
-                    )
+                    # variLanSlice=(
+                    #   "redis/common 10.0.0.10 6379"
+                    #   "redis/table 10.0.0.4 7379"
+                    # )
                     # dsp[END]
+                    # mix[START]
+                    variLanSlice=(
+                      "redis/hyperf/pw/envi 10.0.0.10 6379"
+                      "redis/adx/pw/common 10.0.0.12 12210"
+                      "redis/adx/pw/table 10.0.0.5 12220"
+                      "redis/adx/pw/snapshot 10.0.0.39 12230"
+                      "redis/dsp/pw/common 10.0.0.47 12310"
+                      "redis/dsp/pw/table 10.0.0.4 7379"
+                      # ----------
+                      "redis/hyperf/yone/common 10.0.0.16 22110"
+                      "redis/adx/yone/common 10.0.0.6 22210"
+                      "redis/adx/yone/common 10.0.0.11 22220"
+                      "redis/adx/yone/snapshot 10.0.0.13 22230"
+                      "redis/dsp/yone/common 10.0.0.3 22310"
+                      "redis/dsp/yone/table 10.0.0.2 22320"
+                    )
+                    # mix[END]
                     ;;
                   *)
                     echo "error : lan not found"
@@ -1033,7 +1084,7 @@ function funcPublicCloudIptableReinit(){
                 # （3）slave main[END]
                 # --------------------------------------------------
 SLAVEEOF
-MASTEREOF
+JUMPEREOF
           fi
         done
       done
