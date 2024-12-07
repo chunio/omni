@@ -721,15 +721,15 @@ function funcPublicCloudUnicornReinit() {
         docker rm -f unicorn 2> /dev/null
         if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
           cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-          # ----
+          # ----------
           echo "[ unicorn ] git fetch origin ..."
           git fetch origin
           echo "[ unicorn ] git fetch origin finished"
-          # -----
+          # ----------
           echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
           git reset --hard origin/${variBranchName}
           echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-          # -----
+          # ----------
         else
           mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
           git clone git@github.com:chunio/unicorn.git && cd unicorn
