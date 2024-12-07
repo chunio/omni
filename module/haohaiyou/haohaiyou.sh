@@ -633,11 +633,8 @@ function funcPublicCloudUnicornReinit() {
   # slave variable[START]
   # systemctl reload crond
   variSlaveCrontabUri="/var/spool/cron/root"
-  variSlaveCCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
+  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
-  # ----------
-  # variHttpPort=8000
-  # variGrpcPort=9000
   case ${variModuleName} in
     "adx")
         variHttpPort=8001
@@ -680,7 +677,7 @@ function funcPublicCloudUnicornReinit() {
         variScpSyncOnce=1
       fi 
     fi
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperPort}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
