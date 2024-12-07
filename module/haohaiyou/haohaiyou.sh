@@ -535,6 +535,126 @@ MARK
   return 0
 }
 
+function funcPublicCloudIptableReinit(){
+  funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    rm -rf /root/.ssh/known_hosts
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf /root/.ssh/known_hosts
+      scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t root@${variEachIp} <<'SLAVEEOF'
+        # --------------------------------------------------
+        # （1）ssh init[START]
+        tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        echo "StrictHostKeyChecking no" > ~/.ssh/config
+        chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+        # （1）ssh init[END]
+        # --------------------------------------------------
+        # （2）omni.system init[START]
+        if ! command -v git &> /dev/null; then
+            yum install -y git
+        fi
+        mkdir -p /windows/runtime
+        if [ -d "/windows/code/backend/chunio/omni" ]; then
+          cd /windows/code/backend/chunio/omni
+          echo "[ omni ] git fetch origin ..."
+          git fetch origin
+          echo "[ omni ] git fetch origin finished"
+          echo "[ omni ] git reset --hard origin/main ..."
+          git reset --hard origin/main
+          echo "[ omni ] git reset --hard origin/main finished"
+          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+        else
+          mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+        fi
+        #（2）omni.system init[END]
+        # --------------------------------------------------
+        # （3）slave main[START]
+        case ${variEachRegion} in
+          "SINGAPORE")
+            variLanSlice=(
+              "redis/skeleton/paddlewaver/envi 172.22.0.13 6379"
+              "redis/adx/paddlewaver/common 172.22.0.2 11210"
+              "redis/adx/paddlewaver/table 172.22.0.96 11220"
+              "redis/adx/paddlewaver/snapshot 172.22.0.36 11230"
+              "redis/dsp/paddlewaver/common 172.22.0.38 11310"
+              "redis/dsp/paddlewaver/table 172.22.0.48 7379"
+              # ----------
+              "redis/hyperf/yone/envi 172.22.0.34 21110"
+              "redis/adx/yone/common 172.22.0.14 21210"
+              "redis/adx/yone/table 172.22.0.59 21220"
+              "redis/adx/yone/snapshot 172.22.0.46 21230"
+              "redis/dsp/yone/common 172.22.0.27 21310"
+              "redis/dsp/yone/table 172.22.0.82 21320"
+              # ----------
+              "clickhouse/mix/mix/http 172.22.0.20 8123"
+              "clickhouse/mix/mix/tcp 172.22.0.20 9000"
+              "clickhouse/mix/mix/mysql 172.22.0.20 9004"
+            )
+            ;;
+          "USEAST")
+            variLanSlice=(
+              "redis/skeleton/paddlewaver/envi 10.0.0.10 6379"
+              "redis/adx/paddlewaver/common 10.0.0.12 12210"
+              "redis/adx/paddlewaver/table 10.0.0.5 12220"
+              "redis/adx/paddlewaver/snapshot 10.0.0.39 12230"
+              "redis/dsp/paddlewaver/common 10.0.0.47 12310"
+              "redis/dsp/paddlewaver/table 10.0.0.4 7379"
+              # ----------
+              "redis/hyperf/yone/common 10.0.0.16 22110"
+              "redis/adx/yone/common 10.0.0.6 22210"
+              "redis/adx/yone/common 10.0.0.11 22220"
+              "redis/adx/yone/snapshot 10.0.0.13 22230"
+              "redis/dsp/yone/common 10.0.0.3 22310"
+              "redis/dsp/yone/table 10.0.0.2 22320"
+            )
+            ;;
+          *)
+            echo "error : lan not found"
+            exit 1
+            ;;
+        esac
+        # declare -p variLanSlice
+        # 3A/清空規則
+        iptables -t nat -F
+        iptables -F FORWARD
+        iptables -P FORWARD ACCEPT
+        # 3B/追加規則
+        for variEachLan in "\${variLanSlice[@]}"; do
+          read -r variEachLabel variEachIP variEachPort <<< "\${variEachLan}"
+          echo 1 > /proc/sys/net/ipv4/ip_forward
+          iptables -t nat -A PREROUTING -p tcp --dport \${variEachPort} -j DNAT --to-destination \${variEachIP}:\${variEachPort}
+          iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j MASQUERADE
+          # iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j SNAT --to-source 172.22.0.45
+        done
+        # 3C/查看規則
+        iptables -t nat -L -n -v
+        # （3）slave main[END]
+        # --------------------------------------------------
+SLAVEEOF
+JUMPEREOF
+  done
+  return 0
+}
+
 function funcPublicCloudSkeletonRinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -626,6 +746,46 @@ function funcPublicCloudSkeletonRinit() {
 SLAVEEOF
 JUMPEREOF
   done
+  return 0
+}
+
+# 將「80」端口轉發至「9501」端口
+function funcPublicCloudSkeletonProxy(){
+  veriModuleName="skeleton"
+  variCurrentIp=$(hostname -I | awk '{print $1}')
+  cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
+server {
+    listen 80;
+    server_name _;
+    location /report/adx {
+        proxy_pass http://${variCurrentIp}:9501/report/adx;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+LOCALSKELETONCONF
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}-nginx:
+    image: nginx:1.27.0
+    container_name: ${veriModuleName}-nginx
+    volumes:
+      - /windows:/windows
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+      - common
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker ps -a | grep ${veriModuleName}
   return 0
 }
 
@@ -784,126 +944,6 @@ JUMPEREOF
   return 0
 }
 
-function funcPublicCloudIptableReinit(){
-  funcProtectedCloudSeletor
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-      rm -rf /root/.ssh/known_hosts
-      scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t root@${variEachIp} <<'SLAVEEOF'
-        # --------------------------------------------------
-        # （1）ssh init[START]
-        tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-        echo "StrictHostKeyChecking no" > ~/.ssh/config
-        chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-        # （1）ssh init[END]
-        # --------------------------------------------------
-        # （2）omni.system init[START]
-        if ! command -v git &> /dev/null; then
-            yum install -y git
-        fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni" ]; then
-          cd /windows/code/backend/chunio/omni
-          echo "[ omni ] git fetch origin ..."
-          git fetch origin
-          echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/main ..."
-          git reset --hard origin/main
-          echo "[ omni ] git reset --hard origin/main finished"
-          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-        else
-          mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-          git clone https://github.com/chunio/omni.git
-          cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-        fi
-        #（2）omni.system init[END]
-        # --------------------------------------------------
-        # （3）slave main[START]
-        case ${variEachRegion} in
-          "SINGAPORE")
-            variLanSlice=(
-              "redis/skeleton/paddlewaver/envi 172.22.0.13 6379"
-              "redis/adx/paddlewaver/common 172.22.0.2 11210"
-              "redis/adx/paddlewaver/table 172.22.0.96 11220"
-              "redis/adx/paddlewaver/snapshot 172.22.0.36 11230"
-              "redis/dsp/paddlewaver/common 172.22.0.38 11310"
-              "redis/dsp/paddlewaver/table 172.22.0.48 7379"
-              # ----------
-              "redis/hyperf/yone/envi 172.22.0.34 21110"
-              "redis/adx/yone/common 172.22.0.14 21210"
-              "redis/adx/yone/table 172.22.0.59 21220"
-              "redis/adx/yone/snapshot 172.22.0.46 21230"
-              "redis/dsp/yone/common 172.22.0.27 21310"
-              "redis/dsp/yone/table 172.22.0.82 21320"
-              # ----------
-              "clickhouse/mix/mix/http 172.22.0.20 8123"
-              "clickhouse/mix/mix/tcp 172.22.0.20 9000"
-              "clickhouse/mix/mix/mysql 172.22.0.20 9004"
-            )
-            ;;
-          "USEAST")
-            variLanSlice=(
-              "redis/skeleton/paddlewaver/envi 10.0.0.10 6379"
-              "redis/adx/paddlewaver/common 10.0.0.12 12210"
-              "redis/adx/paddlewaver/table 10.0.0.5 12220"
-              "redis/adx/paddlewaver/snapshot 10.0.0.39 12230"
-              "redis/dsp/paddlewaver/common 10.0.0.47 12310"
-              "redis/dsp/paddlewaver/table 10.0.0.4 7379"
-              # ----------
-              "redis/hyperf/yone/common 10.0.0.16 22110"
-              "redis/adx/yone/common 10.0.0.6 22210"
-              "redis/adx/yone/common 10.0.0.11 22220"
-              "redis/adx/yone/snapshot 10.0.0.13 22230"
-              "redis/dsp/yone/common 10.0.0.3 22310"
-              "redis/dsp/yone/table 10.0.0.2 22320"
-            )
-            ;;
-          *)
-            echo "error : lan not found"
-            exit 1
-            ;;
-        esac
-        # declare -p variLanSlice
-        # 3A/清空規則
-        iptables -t nat -F
-        iptables -F FORWARD
-        iptables -P FORWARD ACCEPT
-        # 3B/追加規則
-        for variEachLan in "\${variLanSlice[@]}"; do
-          read -r variEachLabel variEachIP variEachPort <<< "\${variEachLan}"
-          echo 1 > /proc/sys/net/ipv4/ip_forward
-          iptables -t nat -A PREROUTING -p tcp --dport \${variEachPort} -j DNAT --to-destination \${variEachIP}:\${variEachPort}
-          iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j MASQUERADE
-          # iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j SNAT --to-source 172.22.0.45
-        done
-        # 3C/查看規則
-        iptables -t nat -L -n -v
-        # （3）slave main[END]
-        # --------------------------------------------------
-SLAVEEOF
-JUMPEREOF
-  done
-  return 0
-}
-
 function funcPublicCloudUnicornCheck() {
   funcProtectedCloudSeletor
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
@@ -936,45 +976,7 @@ JUMPEREOF
   return 0
 }
 
-# 將「80」端口轉發至「9501」端口
-function funcPublicCloud80To9501(){
-  veriModuleName="skeleton"
-  variCurrentIp=$(hostname -I | awk '{print $1}')
-  cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
-server {
-    listen 80;
-    server_name _;
-    location /report/adx {
-        proxy_pass http://${variCurrentIp}:9501/report/adx;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-LOCALSKELETONCONF
-  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-services:
-  ${veriModuleName}-nginx:
-    image: nginx:1.27.0
-    container_name: ${veriModuleName}-nginx
-    volumes:
-      - /windows:/windows
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
-    ports:
-      - "80:80"
-    networks:
-      - common
-networks:
-  common:
-    driver: bridge
-DOCKERCOMPOSEYML
-  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
-  docker ps -a | grep ${veriModuleName}
-  return 0
-}
+
 
 function funcPublicCdUnicornRuntime(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
@@ -992,8 +994,6 @@ function funcPublicTailUnicornNotice(){
   tail -f notice-$(date -u +%Y%m%d).log
   return 0
 }
-
-
 
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
