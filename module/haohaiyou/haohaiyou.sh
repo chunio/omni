@@ -835,12 +835,12 @@ function funcPublicCloudIptableReinit(){
         case ${variEachRegion} in
           "SINGAPORE")
             variLanSlice=(
-              "redis/hyperf/pw/envi 172.22.0.13 6379"
-              "redis/adx/pw/common 172.22.0.2 11210"
-              "redis/adx/pw/table 172.22.0.96 11220"
-              "redis/adx/pw/snapshot 172.22.0.36 11230"
-              "redis/dsp/pw/common 172.22.0.38 11310"
-              "redis/dsp/pw/table 172.22.0.48 7379"
+              "redis/skeleton/paddlewaver/envi 172.22.0.13 6379"
+              "redis/adx/paddlewaver/common 172.22.0.2 11210"
+              "redis/adx/paddlewaver/table 172.22.0.96 11220"
+              "redis/adx/paddlewaver/snapshot 172.22.0.36 11230"
+              "redis/dsp/paddlewaver/common 172.22.0.38 11310"
+              "redis/dsp/paddlewaver/table 172.22.0.48 7379"
               # ----------
               "redis/hyperf/yone/envi 172.22.0.34 21110"
               "redis/adx/yone/common 172.22.0.14 21210"
@@ -856,12 +856,12 @@ function funcPublicCloudIptableReinit(){
             ;;
           "USEAST")
             variLanSlice=(
-              "redis/hyperf/pw/envi 10.0.0.10 6379"
-              "redis/adx/pw/common 10.0.0.12 12210"
-              "redis/adx/pw/table 10.0.0.5 12220"
-              "redis/adx/pw/snapshot 10.0.0.39 12230"
-              "redis/dsp/pw/common 10.0.0.47 12310"
-              "redis/dsp/pw/table 10.0.0.4 7379"
+              "redis/skeleton/paddlewaver/envi 10.0.0.10 6379"
+              "redis/adx/paddlewaver/common 10.0.0.12 12210"
+              "redis/adx/paddlewaver/table 10.0.0.5 12220"
+              "redis/adx/paddlewaver/snapshot 10.0.0.39 12230"
+              "redis/dsp/paddlewaver/common 10.0.0.47 12310"
+              "redis/dsp/paddlewaver/table 10.0.0.4 7379"
               # ----------
               "redis/hyperf/yone/common 10.0.0.16 22110"
               "redis/adx/yone/common 10.0.0.6 22210"
@@ -877,11 +877,11 @@ function funcPublicCloudIptableReinit(){
             ;;
         esac
         # declare -p variLanSlice
-        # 清空規則
+        # 3A/清空規則
         iptables -t nat -F
         iptables -F FORWARD
         iptables -P FORWARD ACCEPT
-        # 追加規則
+        # 3B/追加規則
         for variEachLan in "\${variLanSlice[@]}"; do
           read -r variEachLabel variEachIP variEachPort <<< "\${variEachLan}"
           echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -889,7 +889,7 @@ function funcPublicCloudIptableReinit(){
           iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j MASQUERADE
           # iptables -t nat -A POSTROUTING -d \${variEachIP} -p tcp --dport \${variEachPort} -j SNAT --to-source 172.22.0.45
         done
-        # 查看規則
+        # 3C/查看規則
         iptables -t nat -L -n -v
         # （3）slave main[END]
         # --------------------------------------------------
