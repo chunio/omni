@@ -91,7 +91,7 @@ function funcProtectedCloudSeletor() {
     "03 YONE --"
   )
   local variSecondIndexSlice=(
-    "01 SKELETON hyperf/{adx&&dsp}singleton"
+    "01 SKELETON include:php/go({adx&&dsp}SingletonGoroutine)"
     "02 ADX --"
     "03 DSP --"
   )
@@ -526,8 +526,8 @@ MARK
 
 function funcPublicCloudSkeletonRinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variBranchName=${1:-"main"}
+  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variBranchName=${1}
   funcProtectedCloudSeletor
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
@@ -656,6 +656,13 @@ function funcPublicCloudUnicornReinit() {
     variEachIp=$(echo ${variEachValue} | awk '{print $7}')
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    # 檢測目標節點環節是否支持當前模塊[START]
+    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
+    if [[ $variEachValueLower != *$variModuleName* ]]; then
+      echo "invalid selection : [ ${variEachValue} ]"
+      continue
+    fi
+    # 檢測目標節點環節是否支持當前模塊[END]
     rm -rf /root/.ssh/known_hosts
     if [[ ${variScpAble} -eq 1 ]]; then
       if [[ ${variScpSyncOnce} -eq 0 ]]; then
