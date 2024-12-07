@@ -67,25 +67,26 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 # protected function[START]
 function funcProtectedCloudSeletor() {
   VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
+  tar -czf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh 
   # 未使用「local」關鍵字的變量皆全局變量
   local variFirstIndexSlice=(
-    "01 IPTABLE --"
+    "01 COMMON --"
     "02 PADDLEWAVER --"
     "03 YONE --"
   )
   local variSecondIndexSlice=(
-    "01 MIX hyperf/{adx&&dsp}common"
+    "01 SKELETON hyperf/{adx&&dsp}common"
     "02 ADX --"
     "03 DSP --"
   )
   local variIptableCloudSlice=(
-    "01 MIX IPTABLE 01 MIX SINGAPORE 43.156.140.171 22 --"
-    "02 MIX IPTABLE 01 MIX USEAST 170.106.132.12 22 --"
+    "01 -- -- 01 ALL SINGAPORE 43.156.140.171 22 iptable"
+    "02 -- -- 01 ALL USEAST 170.106.132.12 22 iptable"
   )
   local variPaddlewaverCloudSlice=(
     # ==================================================
-    "01 MIX COMMON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
-    "02 MIX COMMON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
+    "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
+    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
     # ==================================================
     "01 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
     "02 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 --"
@@ -112,8 +113,8 @@ function funcProtectedCloudSeletor() {
   )
   local variYoneCloudSlice=(
     # ==================================================
-    "01 MIX COMMON 01 YONE SINGAPORE 43.134.87.222 22 --"
-    "02 MIX COMMON 01 YONE USEAST 43.130.147.251 22 --"
+    "01 SKELETON SINGLETON 01 YONE SINGAPORE 43.134.87.222 22 --"
+    "02 SKELETON SINGLETON 01 YONE USEAST 43.130.147.251 22 --"
     # ==================================================
     "01 ADX NOTICE 01 YONE SINGAPORE 43.159.51.144 22 --"
     "02 ADX NOTICE 02 YONE SINGAPORE 43.133.63.172 22 --"
@@ -134,7 +135,7 @@ function funcProtectedCloudSeletor() {
     "08 DSP BID 02 YONE USEAST 43.166.254.61 22 --" 
     # ==================================================
   )
-  printf "%-15s %-15s %-15s\n" "INDEX" "CLOUD" "NEXT"
+  printf "%-15s %-15s %-15s\n" "INDEX" "CLOUD" "DESC"
   for variEachValue in "${variFirstIndexSlice[@]}"; do
     variEachIndex=$(echo "$variEachValue" | awk '{print $1}')
     variEachCloud=$(echo "$variEachValue" | awk '{print $2}')
@@ -152,7 +153,7 @@ function funcProtectedCloudSeletor() {
   esac
   # ----------
   if [[ ${variSelectedCloudIndex} == "01" ]]; then
-    variSelectedModuleName="MIX" 
+    variSelectedModuleName="--" 
   else
     printf "%-15s %-15s %-15s\n" "INDEX" "MODULE" "DESC"
     for variEachValue in "${variSecondIndexSlice[@]}"; do
@@ -164,7 +165,7 @@ function funcProtectedCloudSeletor() {
     echo -n "enter the index : "
     read variSelectedModuleIndex
     case $variSelectedModuleIndex in
-      01) variSelectedModuleName="MIX" ;;
+      01) variSelectedModuleName="SKELETON" ;;
       02) variSelectedModuleName="ADX" ;;
       03) variSelectedModuleName="DSP" ;;
       *) echo "invalid selection : ${variSelectedModuleIndex}"; return 1 ;;
@@ -451,66 +452,28 @@ function funcPublicRebuildImage(){
 }
 
 function funcPublicCloudIndex(){
-  local variParameterDescMulti=("domain : pw，yone")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variDomainName=${1:-"pw"}
-  declare -a variSelectedCloud
-  case ${variDomainName} in
-    "pw")
-        variSelectedCloud=("${VARI_PADDLEWAVER_CLOUD[@]}")
-        ;;
-    "yone")
-        variSelectedCloud=("${VARI_YONE_CLOUD[@]}")
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  #（1）初始展示
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachModule=$(echo $variEachValue | awk '{print $2}')
-    variEachService=$(echo $variEachValue | awk '{print $3}')
-    variEachLabel=$(echo $variEachValue | awk '{print $4}')
-    variEachDomain=$(echo $variEachValue | awk '{print $5}')
-    variEachRegion=$(echo $variEachValue | awk '{print $6}')
-    variEachIp=$(echo $variEachValue | awk '{print $7}')
-    variEachPort=$(echo $variEachValue | awk '{print $8}')
-    variEachDesc=$(echo $variEachValue | awk '{print $9}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
+  funcProtectedCloudSeletor
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    echo "===================================================================================================="
+    echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
+    echo "===================================================================================================="
+    # 配置一層[SSH]秘鑰
+    # ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
+    # 配置二層[SSH]秘鑰
+    echo "ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}"
+    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}
+    rm -rf /root/.ssh/known_hosts
   done
-  read -p "enter the index to connect : " variInput
-  if [[ ! $variInput =~ ^[0-9]+$ ]]; then
-    echo "error : expect a index"
-    return 1
-  fi
-  for variEachMasterValue in "${variSelectedCloud[@]}"; do
-    if [[ $variMasterValue == *" JUMPER "* ]]; then
-      variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
-      variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
-      break
-    fi
-  done
-  for variEachSlaveValue in "${variSelectedCloud[@]}"; do
-    variEachSlaveIndex=$(echo $variEachSlaveValue | awk '{print $1}')
-    variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
-    variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-    if [[ 10#$variEachSlaveIndex -eq 10#$variInput ]]; then
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-      echo "===================================================================================================="
-      # 配置一層[SSH]秘鑰
-      # ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
-      # 配置二層[SSH]秘鑰
-      echo "ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}"
-      ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}
-      rm -rf /root/.ssh/known_hosts
-      return 0
-    fi
-  done
-  echo "error : invalid index ($variInput)"
-  return 1
+  return 0
 }
 
 # jump server init[START]
@@ -938,8 +901,7 @@ JUMPEREOF
   return 0
 }
 
-function funcPublicCloudIptableReinit2(){
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+function funcPublicCloudIptableReinit(){
   funcProtectedCloudSeletor
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
@@ -1057,104 +1019,30 @@ JUMPEREOF
 }
 
 function funcPublicCloudUnicornCheck() {
-  local variParameterDescMulti=("domain : pw，yone")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variDomainName=${1:-"pw"}
-  variJumperAccount="root"
-  declare -a variSelectedCloud
-  case ${variDomainName} in
-    "pw")
-        variSelectedCloud=("${VARI_PADDLEWAVER_CLOUD[@]}")
-        ;;
-    "yone")
-        variSelectedCloud=("${VARI_YONE_CLOUD[@]}")
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  #（1）初始展示
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachModule=$(echo $variEachValue | awk '{print $2}')
-    variEachService=$(echo $variEachValue | awk '{print $3}')
-    variEachLabel=$(echo $variEachValue | awk '{print $4}')
-    variEachDomain=$(echo $variEachValue | awk '{print $5}')
-    variEachRegion=$(echo $variEachValue | awk '{print $6}')
-    variEachIp=$(echo $variEachValue | awk '{print $7}')
-    variEachPort=$(echo $variEachValue | awk '{print $8}')
-    variEachDesc=$(echo $variEachValue | awk '{print $9}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
-  done
-  #（2）模糊匹配
-  echo -n "enter the keyword to match: "
-  read variSlaveKeyword
-  echo "matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  variAllIndexSlice=""
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      # 採集當前頁面的全部索引[START]
-      variAllIndexSlice="${variAllIndexSlice} $(echo $variEachValue | awk '{print $1}')"
-      # 採集當前頁面的全部索引[END]
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachModule=$(echo $variEachValue | awk '{print $2}')
-      variEachService=$(echo $variEachValue | awk '{print $3}')
-      variEachLabel=$(echo $variEachValue | awk '{print $4}')
-      variEachDomain=$(echo $variEachValue | awk '{print $5}')
-      variEachRegion=$(echo $variEachValue | awk '{print $6}')
-      variEachIp=$(echo $variEachValue | awk '{print $7}')
-      variEachPort=$(echo $variEachValue | awk '{print $8}')
-      variEachDesc=$(echo $variEachValue | awk '{print $9}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
-    fi
-  done
-  #（3）精準選擇
-  echo -n "enter the index/number ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
-  read -a variInputIndexSlice
-  if [[ ${variInputIndexSlice} -eq 0 ]]; then
-    variInputIndexSlice=(${variAllIndexSlice})
-    echo "index : ${variInputIndexSlice[@]}"
-  else
-    echo "index : ${variInputIndexSlice[@]}"
-  fi
-  read -p "type「confirm」to continue : " variInput
-  # variInputLower=$(echo "$variInput" | tr '[:upper:]' '[:lower:]')
-  # if [[ "$variInputLower" != "confirm" ]]; then
-  if [[ "$variInput" != "confirm" ]]; then
-    return 1
-  fi
-  for variEachMasterValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachMasterValue == *" JUMPER "* ]]; then
-      variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
-      variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
-      for variEachInputIndex in "${variInputIndexSlice[@]}"; do
-        for variEachSlaveValue in "${variSelectedCloud[@]}"; do
-          variEachSlaveIndex=$(echo $variEachSlaveValue | awk '{print $1}')
-          if [[ $variEachSlaveIndex == ${variEachInputIndex} ]]; then
-            variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
-            variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            # echo "===================================================================================================="
-            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            # echo "===================================================================================================="
-            rm -rf /root/.ssh/known_hosts
-            ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-              echo "===================================================================================================="
-              echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "===================================================================================================="
-              rm -rf /root/.ssh/known_hosts
-              ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIp} <<SLAVEEOF
-                tail -n 50 /windows/runtime/unicorn_*.log
-                # 按「文件大小」倒敘排序，取前10個
-                ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 11
-                df -h
+  funcProtectedCloudSeletor
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    rm -rf /root/.ssh/known_hosts
+    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf /root/.ssh/known_hosts
+      ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
+        tail -n 50 /windows/runtime/unicorn_*.log
+        # 按「文件大小」倒敘排序，取前10個
+        ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 11
+        df -h
 SLAVEEOF
 JUMPEREOF
-          fi
-        done
-      done
-    fi
   done
   return 0
 }
@@ -1285,19 +1173,17 @@ function funcPublicCloudUnicornSupervisor(){
 }
 
 function funcPublicTest() {
-  VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
   funcProtectedCloudSeletor
-  for index in "${!VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachValue=(${VARI_B40BC66C185E49E93B95239A8365AC4A[$index]})
-    variEachIndex=$(echo ${variEachValue[@]} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue[@]} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue[@]} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue[@]} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue[@]} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue[@]} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue[@]} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue[@]} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue[@]} | awk '{print $9}')
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
   done
   return 0
 }
