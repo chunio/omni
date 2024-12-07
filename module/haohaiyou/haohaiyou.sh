@@ -69,6 +69,9 @@ function funcProtectedCloudSeletor() {
   # --------------------------------------------------
   # call example :
   # funcProtectedCloudSeletor
+  # local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  # local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  # local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   # for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
   #   variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
   #   variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -216,7 +219,7 @@ function funcProtectedCloudSeletor() {
     variSelectIndexSlice=(${variInputIndexSlice[@]})
   fi
   echo "index : ${variSelectIndexSlice[@]}"
-  read -p "type「confirm」to continue : " variInput
+  read -p "input「confirm」to continue : " variInput
   if [[ "$variInput" != "confirm" ]]; then
     return 1
   fi
@@ -225,6 +228,11 @@ function funcProtectedCloudSeletor() {
       VARI_B40BC66C185E49E93B95239A8365AC4A+=("${variSelectedCloudMap[$variEachIndex]}")
     fi
   done
+  length=${#VARI_B40BC66C185E49E93B95239A8365AC4A[@]}
+  if [[ ${length} -eq 0 ]]; then
+    echo "invalid selection"
+    return 1
+  fi 
   # printf '%s\n' "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"
   return 0
 }
@@ -241,7 +249,7 @@ function funcPublicSkeleton(){
   veriModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   variImagePattern=${1:-"chunio/php:8.3.12"}
-    cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
 return 0
@@ -589,11 +597,11 @@ function funcPublicCloudSkeletonRinit() {
             echo "[ skeleton ] git fetch origin ..."
             git fetch origin
             echo "[ skeleton ] git fetch origin finished"
-            # -----
+            # ----------
             echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
             git reset --hard origin/${variBranchName}
             echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
-            # -----
+            # ----------
           else
             mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
             git clone git@github.com:chunio/skeleton.git && cd skeleton
