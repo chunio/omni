@@ -66,6 +66,22 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 # ##################################################
 # protected function[START]
 function funcProtectedCloudSeletor() {
+  # --------------------------------------------------
+  # call example :
+  # funcProtectedCloudSeletor
+  # for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+  #   variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+  #   variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+  #   variEachService=$(echo ${variEachValue} | awk '{print $3}')
+  #   variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+  #   variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+  #   variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+  #   variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+  #   variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+  #   variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+  # done
+  # return 0
+  # --------------------------------------------------
   VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
   tar -czf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh 
   # 未使用「local」關鍵字的變量皆全局變量
@@ -466,12 +482,13 @@ function funcPublicCloudIndex(){
     echo "===================================================================================================="
     echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
     echo "===================================================================================================="
-    # 配置一層[SSH]秘鑰
-    # ssh -o StrictHostKeyChecking=no -J root@${variEachMasterIP}:${variEachMasterPort} root@${variSlaveIp} -p ${variSlavePort}
-    # 配置二層[SSH]秘鑰
-    echo "ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}"
-    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} root@${variJumperIp}" root@${variEachSlaveIp} -p ${variEachSlavePort}
     rm -rf /root/.ssh/known_hosts
+    echo "ssh -o StrictHostKeyChecking=no -J ${VARI_GLOBAL['JUMPER_ACCOUNT']}@${VARI_GLOBAL['JUMPER_IP']}:${VARI_GLOBAL['JUMPER_PORT']} root@${variEachIp} -p ${variEachPort}"
+    # 配置一層[SSH]秘鑰
+    # ssh -o StrictHostKeyChecking=no -J root@${VARI_GLOBAL["JUMPER_IP"]}:${VARI_GLOBAL["JUMPER_PORT"]} root@${variEachIp} -p ${variEachPort}
+    # 配置二層[SSH]秘鑰
+    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${VARI_GLOBAL["JUMPER_PORT"]} ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]}" root@${variEachIp} -p ${variEachPort}
+    return 0
   done
   return 0
 }
@@ -508,188 +525,109 @@ MARK
 }
 
 function funcPublicCloudSkeletonRinit() {
-  local variParameterDescMulti=("domain : pw，yone" "branch : main（default），feature/zengweitao/example")
-  funcProtectedCheckOptionParameter 2 variParameterDescMulti[@]
-  variDomainName=${1:-"pw"}
-  variBranchName=${2:-"main"}
-  declare -a variSelectedCloud
-  case ${variDomainName} in
-    "pw")
-        variSelectedCloud=("${VARI_PADDLEWAVER_CLOUD[@]}")
-        ;;
-    "yone")
-        variSelectedCloud=("${VARI_YONE_CLOUD[@]}")
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  #（1）初始展示
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachModule=$(echo $variEachValue | awk '{print $2}')
-    variEachService=$(echo $variEachValue | awk '{print $3}')
-    variEachLabel=$(echo $variEachValue | awk '{print $4}')
-    variEachDomain=$(echo $variEachValue | awk '{print $5}')
-    variEachRegion=$(echo $variEachValue | awk '{print $6}')
-    variEachIp=$(echo $variEachValue | awk '{print $7}')
-    variEachPort=$(echo $variEachValue | awk '{print $8}')
-    variEachDesc=$(echo $variEachValue | awk '{print $9}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
-  done
-  #（2）模糊匹配
-  echo -n "enter the keyword to match: "
-  read variSlaveKeyword
-  echo "matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  variAllIndexSlice=""
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      # 採集當前頁面的全部索引[START]
-      variAllIndexSlice="${variAllIndexSlice} $(echo $variEachValue | awk '{print $1}')"
-      # 採集當前頁面的全部索引[END]
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachModule=$(echo $variEachValue | awk '{print $2}')
-      variEachService=$(echo $variEachValue | awk '{print $3}')
-      variEachLabel=$(echo $variEachValue | awk '{print $4}')
-      variEachDomain=$(echo $variEachValue | awk '{print $5}')
-      variEachRegion=$(echo $variEachValue | awk '{print $6}')
-      variEachIp=$(echo $variEachValue | awk '{print $7}')
-      variEachPort=$(echo $variEachValue | awk '{print $8}')
-      variEachDesc=$(echo $variEachValue | awk '{print $9}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
-    fi
-  done
-  #（3）精準選擇
-  echo -n "enter the index/number ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
-  read -a variInputIndexSlice
-  if [[ ${variInputIndexSlice} -eq 0 ]]; then
-    variInputIndexSlice=(${variAllIndexSlice})
-    echo "index : ${variInputIndexSlice[@]}"
-  else
-    echo "index : ${variInputIndexSlice[@]}"
-  fi
-  read -p "type「confirm」to continue : " variInput
-  # variInputLower=$(echo "$variInput" | tr '[:upper:]' '[:lower:]')
-  # if [[ "$variInputLower" != "confirm" ]]; then
-  if [[ "$variInput" != "confirm" ]]; then
-    return 1
-  fi
-  for variEachMasterValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachMasterValue == *" JUMPER "* ]]; then
-      variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
-      variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
-      for variEachInputIndex in "${variInputIndexSlice[@]}"; do
-        for variEachSlaveValue in "${variSelectedCloud[@]}"; do
-          variEachSlaveIndex=$(echo $variEachSlaveValue | awk '{print $1}')
-          if [[ $variEachSlaveIndex == ${variEachInputIndex} ]]; then
-            variEachSlaveService=$(echo $variEachSlaveValue | awk '{print $3}')
-            variEachSlaveLabel=$(echo $variEachSlaveValue | awk '{print $4}')
-            variEachSlaveDomain=$(echo $variEachSlaveValue | awk '{print $5}')
-            variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
-            variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
-            variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            # echo "####################################################################################################"
-            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            # echo "####################################################################################################"
-            rm -rf /root/.ssh/known_hosts
-            ssh -o StrictHostKeyChecking=no -p ${variJumperPort} -t root@${variJumperIp} <<JUMPEREOF
-              # //TODO：send SHUTDOWN/signal to redis pub/sub
-              echo "===================================================================================================="
-              echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "===================================================================================================="
-              rm -rf /root/.ssh/known_hosts
-              scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIp}:/
-              ssh -o StrictHostKeyChecking=no -p ${variEachSlavePort} -t root@${variEachSlaveIp} <<SLAVEEOF
-                # --------------------------------------------------
-                # （1）ssh init[START]
-                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                echo "StrictHostKeyChecking no" > ~/.ssh/config
-                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # （1）ssh init[END]
-                # --------------------------------------------------
-                # （2）omni.system init[START]
-                if ! command -v git &> /dev/null; then
-                    yum install -y git
-                fi
-                mkdir -p /windows/runtime
-                if [ -d "/windows/code/backend/chunio/omni" ]; then
-                  cd /windows/code/backend/chunio/omni
-                  echo "[ omni ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ omni ] git fetch origin finished"
-                  echo "[ omni ] git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "[ omni ] git reset --hard origin/main finished"
-                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                else
-                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                  git clone https://github.com/chunio/omni.git
-                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                fi
-                #（2）omni.system init[END]
-                # --------------------------------------------------
-                #（3）slave main[START]
-                docker rm -f skeleton 2> /dev/null
-                if [ -d "/windows/code/backend/haohaiyou/gopath/src/skeleton" ]; then
-                  cd /windows/code/backend/haohaiyou/gopath/src/skeleton
-                  echo "[ skeleton ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ skeleton ] git fetch origin finished"
-                  # -----
-                  echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
-                  git reset --hard origin/${variBranchName}
-                  echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
-                  # -----
-                else
-                  mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-                  git clone git@github.com:chunio/skeleton.git && cd skeleton
-                  git checkout ${variBranchName}
-                fi
-                chmod 777 -R .
-                echo "/usr/bin/cp -rf .env.production.${variEachSlaveDomain}.${variEachSlaveRegion} .env"
-                /usr/bin/cp -rf .env.production.${variEachSlaveDomain}.${variEachSlaveRegion} .env
-                expect -c '
-                set timeout -1
-                spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
-                expect "skeleton"
-                send "composer install\r"
-                expect "skeleton"
-                send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
-                expect "skeleton"
-                send "exit\r"
-                expect eof
-                '
-                #（3）slave main[END]
-                # --------------------------------------------------
+  local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
+  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
+  variBranchName=${1:-"main"}
+  funcProtectedCloudSeletor
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    rm -rf /root/.ssh/known_hosts
+    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+        rm -rf /root/.ssh/known_hosts
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
+        ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
+          # --------------------------------------------------
+          # （1）ssh init[START]
+          tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+          mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+          echo "StrictHostKeyChecking no" > ~/.ssh/config
+          chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+          # （1）ssh init[END]
+          # --------------------------------------------------
+          # （2）omni.system init[START]
+          if ! command -v git &> /dev/null; then
+              yum install -y git
+          fi
+          mkdir -p /windows/runtime
+          if [ -d "/windows/code/backend/chunio/omni" ]; then
+            cd /windows/code/backend/chunio/omni
+            echo "[ omni ] git fetch origin ..."
+            git fetch origin
+            echo "[ omni ] git fetch origin finished"
+            echo "[ omni ] git reset --hard origin/main ..."
+            git reset --hard origin/main
+            echo "[ omni ] git reset --hard origin/main finished"
+            chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+          else
+            mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+            git clone https://github.com/chunio/omni.git
+            cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+          fi
+          #（2）omni.system init[END]
+          # --------------------------------------------------
+          #（3）slave main[START]
+          docker rm -f skeleton 2> /dev/null
+          if [ -d "/windows/code/backend/haohaiyou/gopath/src/skeleton" ]; then
+            cd /windows/code/backend/haohaiyou/gopath/src/skeleton
+            echo "[ skeleton ] git fetch origin ..."
+            git fetch origin
+            echo "[ skeleton ] git fetch origin finished"
+            # -----
+            echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
+            git reset --hard origin/${variBranchName}
+            echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
+            # -----
+          else
+            mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+            git clone git@github.com:chunio/skeleton.git && cd skeleton
+            git checkout ${variBranchName}
+          fi
+          chmod 777 -R .
+          echo "/usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env"
+          /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env
+          expect -c '
+          set timeout -1
+          spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
+          expect "skeleton"
+          send "composer install\r"
+          expect "skeleton"
+          send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+          expect "skeleton"
+          send "exit\r"
+          expect eof
+          '
+          #（3）slave main[END]
+          # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
-          fi
-        done
-      done
-    fi
   done
   return 0
 }
 
 function funcPublicCloudUnicornReinit() {
-  local variParameterDescMulti=("domain : pw, yone" "module : dsp，adx" "branch : main，feature/zengweitao/example")
-  funcProtectedCheckRequiredParameter 3 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variDomainName=$1
-  variModuleName=$2
-  variBranchName=$3
+  local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variModuleName=$1
+  variBranchName=$2
   variEnvi="PRODUCTION"
   variBinName="unicorn_${variModuleName}"
   variScpAble=1
   variScpSyncOnce=0
-  variJumperAccount="root"
   # slave variable[START]
   # systemctl reload crond
-  variSlaveCrontabUri="/var/spool/cron/root"
-  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
+  variCrontabUri="/var/spool/cron/root"
+  variCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
   # ----------
   # variHttpPort=8000
@@ -707,196 +645,120 @@ function funcPublicCloudUnicornReinit() {
         return 1
         ;;
   esac
-  declare -a variSelectedCloud
-  case ${variDomainName} in
-    "pw")
-        variSelectedCloud=("${VARI_PADDLEWAVER_CLOUD[@]}")
-        ;;
-    "yone")
-        variSelectedCloud=("${VARI_YONE_CLOUD[@]}")
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  # ----------
-  tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
-  #（1）初始展示
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    variEachIndex=$(echo $variEachValue | awk '{print $1}')
-    variEachModule=$(echo $variEachValue | awk '{print $2}')
-    variEachService=$(echo $variEachValue | awk '{print $3}')
-    variEachLabel=$(echo $variEachValue | awk '{print $4}')
-    variEachDomain=$(echo $variEachValue | awk '{print $5}')
-    variEachRegion=$(echo $variEachValue | awk '{print $6}')
-    variEachIp=$(echo $variEachValue | awk '{print $7}')
-    variEachPort=$(echo $variEachValue | awk '{print $8}')
-    variEachDesc=$(echo $variEachValue | awk '{print $9}')
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
-  done
-  #（2）模糊匹配
-  echo -n "enter the keyword to match: "
-  read variSlaveKeyword
-  echo "matched (${variSlaveKeyword}):"
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC" 
-  variAllIndexSlice=""
-  for variEachValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachValue == *"${variSlaveKeyword}"* ]]; then
-      # 採集當前頁面的全部索引[START]
-      variAllIndexSlice="${variAllIndexSlice} $(echo $variEachValue | awk '{print $1}')"
-      # 採集當前頁面的全部索引[END]
-      variEachIndex=$(echo $variEachValue | awk '{print $1}')
-      variEachModule=$(echo $variEachValue | awk '{print $2}')
-      variEachService=$(echo $variEachValue | awk '{print $3}')
-      variEachLabel=$(echo $variEachValue | awk '{print $4}')
-      variEachDomain=$(echo $variEachValue | awk '{print $5}')
-      variEachRegion=$(echo $variEachValue | awk '{print $6}')
-      variEachIp=$(echo $variEachValue | awk '{print $7}')
-      variEachPort=$(echo $variEachValue | awk '{print $8}')
-      variEachDesc=$(echo $variEachValue | awk '{print $9}')
-      printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
+  funcProtectedCloudSeletor
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    rm -rf /root/.ssh/known_hosts
+    if [[ ${variScpAble} -eq 1 ]]; then
+      if [[ ${variScpSyncOnce} -eq 0 ]]; then
+        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+        scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]}:/
+        variScpSyncOnce=1
+      fi 
     fi
-  done
-  #（3）精準選擇
-  echo -n "enter the index/number ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
-  read -a variInputIndexSlice
-  if [[ ${variInputIndexSlice} -eq 0 ]]; then
-    variInputIndexSlice=(${variAllIndexSlice})
-    echo "index : ${variInputIndexSlice[@]}"
-  else
-    echo "index : ${variInputIndexSlice[@]}"
-  fi
-  read -p "type「confirm」to continue : " variInput
-  # variInputLower=$(echo "$variInput" | tr '[:upper:]' '[:lower:]')
-  # if [[ "$variInputLower" != "confirm" ]]; then
-  if [[ "$variInput" != "confirm" ]]; then
-    return 1
-  fi
-  for variEachMasterValue in "${variSelectedCloud[@]}"; do
-    if [[ $variEachMasterValue == *" JUMPER "* ]]; then
-      variJumperIp=$(echo $variEachMasterValue | awk '{print $7}')
-      variJumperPort=$(echo $variEachMasterValue | awk '{print $8}')
-      for variEachInputIndex in "${variInputIndexSlice[@]}"; do
-        for variEachSlaveValue in "${variSelectedCloud[@]}"; do
-          variEachSlaveIndex=$(echo $variEachSlaveValue | awk '{print $1}')
-          if [[ $variEachSlaveIndex == ${variEachInputIndex} ]]; then
-            variEachSlaveService=$(echo $variEachSlaveValue | awk '{print $3}')
-            variEachSlaveLabel=$(echo $variEachSlaveValue | awk '{print $4}')
-            variEachSlaveDomain=$(echo $variEachSlaveValue | awk '{print $5}')
-            variEachSlaveRegion=$(echo $variEachSlaveValue | awk '{print $6}')
-            variEachSlaveIp=$(echo $variEachSlaveValue | awk '{print $7}')
-            variEachSlavePort=$(echo $variEachSlaveValue | awk '{print $8}')
-            # echo "####################################################################################################"
-            # echo ">> [ JUMPER ] ${variEachMasterValue} ..."
-            # echo "####################################################################################################"
-            rm -rf /root/.ssh/known_hosts
-            if [[ ${variScpAble} -eq 1 ]]; then
-              if [[ ${variScpSyncOnce} -eq 0 ]]; then
-                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-                scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/
-                variScpSyncOnce=1
-              fi 
+    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf /root/.ssh/known_hosts
+      if [[ ${variScpAble} -eq 1 ]]; then
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachIp}:/
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
+      fi
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
+        # --------------------------------------------------
+        # （1）ssh init[START]
+        tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        echo "StrictHostKeyChecking no" > ~/.ssh/config
+        chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
+        # （1）ssh init[END]
+        # --------------------------------------------------
+        # （2）omni.system init[START]
+        if ! command -v git &> /dev/null; then
+            yum install -y git
+        fi
+        mkdir -p /windows/runtime
+        if [ -d "/windows/code/backend/chunio/omni" ]; then
+          cd /windows/code/backend/chunio/omni
+          echo "[ omni ] git fetch origin ..."
+          git fetch origin
+          echo "[ omni ] git fetch origin finished"
+          echo "[ omni ] git reset --hard origin/main ..."
+          git reset --hard origin/main
+          echo "[ omni ] git reset --hard origin/main finished"
+          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+        else
+          mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+        fi
+        #（2）omni.system init[END]
+        # --------------------------------------------------
+        #（3）slave main[START]
+        ulimit -n 655360
+        docker rm -f unicorn 2> /dev/null
+        if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
+          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+          # ----
+          echo "[ unicorn ] git fetch origin ..."
+          git fetch origin
+          echo "[ unicorn ] git fetch origin finished"
+          # -----
+          echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
+          git reset --hard origin/${variBranchName}
+          echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
+          # -----
+        else
+          mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+          git clone git@github.com:chunio/unicorn.git && cd unicorn
+          git checkout ${variBranchName}
+        fi
+        /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
+        /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
+        # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+        mkdir -p ./bin && chmod 777 -R .
+        /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
+        echo "" > /windows/runtime/${variBinName}.command
+        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
+        (
+          while true; do
+            if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
+              cat /windows/runtime/${variBinName}.log
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+              break
+            elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
+              cat /windows/runtime/${variBinName}.log
+              break
             fi
-            ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-              echo "===================================================================================================="
-              echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
-              echo "===================================================================================================="
-              rm -rf /root/.ssh/known_hosts
-              if [[ ${variScpAble} -eq 1 ]]; then
-                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachSlaveIp}:/
-                scp -P ${variEachSlavePort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachSlaveIp}:/
-              fi
-              ssh -o StrictHostKeyChecking=no -A -p ${variEachSlavePort} -t root@${variEachSlaveIp} <<SLAVEEOF
-                # --------------------------------------------------
-                # （1）ssh init[START]
-                tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-                mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-                echo "StrictHostKeyChecking no" > ~/.ssh/config
-                chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-                # （1）ssh init[END]
-                # --------------------------------------------------
-                # （2）omni.system init[START]
-                if ! command -v git &> /dev/null; then
-                    yum install -y git
-                fi
-                mkdir -p /windows/runtime
-                if [ -d "/windows/code/backend/chunio/omni" ]; then
-                  cd /windows/code/backend/chunio/omni
-                  echo "[ omni ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ omni ] git fetch origin finished"
-                  echo "[ omni ] git reset --hard origin/main ..."
-                  git reset --hard origin/main
-                  echo "[ omni ] git reset --hard origin/main finished"
-                  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                else
-                  mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-                  git clone https://github.com/chunio/omni.git
-                  cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-                fi
-                #（2）omni.system init[END]
-                # --------------------------------------------------
-                #（3）slave main[START]
-                ulimit -n 655360
-                docker rm -f unicorn 2> /dev/null
-                if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
-                  cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-                  # ----
-                  echo "[ unicorn ] git fetch origin ..."
-                  git fetch origin
-                  echo "[ unicorn ] git fetch origin finished"
-                  # -----
-                  echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
-                  git reset --hard origin/${variBranchName}
-                  echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-                  # -----
-                else
-                  mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-                  git clone git@github.com:chunio/unicorn.git && cd unicorn
-                  git checkout ${variBranchName}
-                fi
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
-                /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
-                # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
-                mkdir -p ./bin && chmod 777 -R .
-                /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
-                echo "" > /windows/runtime/${variBinName}.command
-                nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachSlaveService} -DOMAIN ${variEachSlaveDomain} -REGION ${variEachSlaveRegion} > /windows/runtime/${variBinName}.log 2>&1 &
-                (
-                  while true; do
-                    if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-                      cat /windows/runtime/${variBinName}.log
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachSlaveService} -DOMAIN ${variEachSlaveDomain} -REGION ${variEachSlaveRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-                      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachSlaveService} -DOMAIN ${variEachSlaveDomain} -REGION ${variEachSlaveRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-                      break
-                    elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-                      cat /windows/runtime/${variBinName}.log
-                      break
-                    fi
-                    sleep 1
-                  done
-                ) # &
-                # unicorn[END]
-                # supervisor[START]
-                if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
-                  echo "[ virtual/supervisor ] crontab is active"
-                else
-                  echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-                  echo "[ virtual/supervisor ] crontab init succeeded"
-                fi
-                cat "${variSlaveCrontabUri}"
-                systemctl reload crond
-                # supervisor[END]
-                md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-                #（3）slave main[END]
-                # --------------------------------------------------
+            sleep 1
+          done
+        ) # &
+        # unicorn[END]
+        # supervisor[START]
+        if grep -Fq "${variCrontabTask}" "${variCrontabUri}"; then
+          echo "[ virtual/supervisor ] crontab is active"
+        else
+          echo "${variCrontabTask}" >> "${variCrontabUri}"
+          echo "[ virtual/supervisor ] crontab init succeeded"
+        fi
+        cat "${variCrontabUri}"
+        systemctl reload crond
+        # supervisor[END]
+        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+        #（3）slave main[END]
+        # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
-          fi
-        done
-      done
-    fi
   done
   return 0
 }
@@ -1169,22 +1031,6 @@ function funcPublicCloudUnicornSupervisor(){
     # supervisor[END]
   fi
   # check heartbeat[END]
-  return 0
-}
-
-function funcPublicTest() {
-  funcProtectedCloudSeletor
-  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-  done
   return 0
 }
 # public function[END]
