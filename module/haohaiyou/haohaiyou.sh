@@ -91,7 +91,7 @@ function funcProtectedCloudSeletor() {
     "03 YONE --"
   )
   local variSecondIndexSlice=(
-    "01 SKELETON hyperf/{adx&&dsp}common"
+    "01 SKELETON hyperf/{adx&&dsp}singleton"
     "02 ADX --"
     "03 DSP --"
   )
