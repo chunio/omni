@@ -48,9 +48,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["JUMPER_ACCOUNT"]="root"
-VARI_GLOBAL["JUMPER_IP"]="119.28.55.124"
-VARI_GLOBAL["JUMPER_PORT"]="22"
+VARI_GLOBAL["JUMPER_ACCOUNT"]=""
+VARI_GLOBAL["JUMPER_IP"]=""
+VARI_GLOBAL["JUMPER_PORT"]=""
 # 0 declare 顯式聲明，支持指定數據類型（否則：字符串（default））
 # 1 declare -a 索引數組
 # 2 declare -A 關聯數組
@@ -469,6 +469,9 @@ function funcPublicRebuildImage(){
 
 function funcPublicCloudIndex(){
   funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -483,11 +486,11 @@ function funcPublicCloudIndex(){
     echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
     echo "===================================================================================================="
     rm -rf /root/.ssh/known_hosts
-    echo "ssh -o StrictHostKeyChecking=no -J ${VARI_GLOBAL['JUMPER_ACCOUNT']}@${VARI_GLOBAL['JUMPER_IP']}:${VARI_GLOBAL['JUMPER_PORT']} root@${variEachIp} -p ${variEachPort}"
+    echo "ssh -o StrictHostKeyChecking=no -J ${variJumperAccount}@${variJumperIp}:${variJumperPort} root@${variEachIp} -p ${variEachPort}"
     # 配置一層[SSH]秘鑰
-    # ssh -o StrictHostKeyChecking=no -J root@${VARI_GLOBAL["JUMPER_IP"]}:${VARI_GLOBAL["JUMPER_PORT"]} root@${variEachIp} -p ${variEachPort}
+    # ssh -o StrictHostKeyChecking=no -J ${variJumperAccount}@${variJumperIp}:${variJumperPort} root@${variEachIp} -p ${variEachPort}
     # 配置二層[SSH]秘鑰
-    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${VARI_GLOBAL["JUMPER_PORT"]} ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]}" root@${variEachIp} -p ${variEachPort}
+    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} ${variJumperAccount}@${variJumperIp}" root@${variEachIp} -p ${variEachPort}
     return 0
   done
   return 0
@@ -529,6 +532,9 @@ function funcPublicCloudSkeletonRinit() {
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variBranchName=${1}
   funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -540,7 +546,7 @@ function funcPublicCloudSkeletonRinit() {
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -646,6 +652,9 @@ function funcPublicCloudUnicornReinit() {
         ;;
   esac
   funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -667,11 +676,11 @@ function funcPublicCloudUnicornReinit() {
     if [[ ${variScpAble} -eq 1 ]]; then
       if [[ ${variScpSyncOnce} -eq 0 ]]; then
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-        scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]}:/
+        scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/
         variScpSyncOnce=1
       fi 
     fi
-    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperPort}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -772,6 +781,9 @@ JUMPEREOF
 
 function funcPublicCloudIptableReinit(){
   funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -783,7 +795,7 @@ function funcPublicCloudIptableReinit(){
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -889,6 +901,9 @@ JUMPEREOF
 
 function funcPublicCloudUnicornCheck() {
   funcProtectedCloudSeletor
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -900,7 +915,7 @@ function funcPublicCloudUnicornCheck() {
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${VARI_GLOBAL["JUMPER_PORT"]} -t ${VARI_GLOBAL["JUMPER_ACCOUNT"]}@${VARI_GLOBAL["JUMPER_IP"]} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
