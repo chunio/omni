@@ -626,8 +626,8 @@ function funcPublicCloudUnicornReinit() {
   variScpSyncOnce=0
   # slave variable[START]
   # systemctl reload crond
-  variCrontabUri="/var/spool/cron/root"
-  variCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
+  variSlaveCrontabUri="/var/spool/cron/root"
+  variSlaveCCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
   # ----------
   # variHttpPort=8000
@@ -752,13 +752,13 @@ function funcPublicCloudUnicornReinit() {
         ) # &
         # unicorn[END]
         # supervisor[START]
-        if grep -Fq "${variCrontabTask}" "${variCrontabUri}"; then
+        if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
           echo "[ virtual/supervisor ] crontab is active"
         else
-          echo "${variCrontabTask}" >> "${variCrontabUri}"
+          echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
           echo "[ virtual/supervisor ] crontab init succeeded"
         fi
-        cat "${variCrontabUri}"
+        cat "${variSlaveCrontabUri}"
         systemctl reload crond
         # supervisor[END]
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
