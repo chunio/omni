@@ -36,6 +36,8 @@ df -h /mnt/volume1/unicorn/runtime
 mount | grep runtime
 # 擴展存儲[END]
 # --------------------------------------------------
+scp root@170.106.165.51:/windows/runtime/profile001.svg .
+# --------------------------------------------------
 MARK
 
 declare -A VARI_GLOBAL
@@ -213,7 +215,8 @@ function funcProtectedCloudSeletor() {
   echo -n "enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
   read -a variInputIndexSlice
   local -a variSelectIndexSlice
-  if [[ ${variInputIndexSlice} -eq 0 ]]; then
+  #「10#${variInputIndexSlice}」将八進制（如：09）轉換至十進制
+  if [[ 10#${variInputIndexSlice} -eq 0 ]]; then
     variSelectIndexSlice=(${variCheckAllSlice})
   else
     variSelectIndexSlice=(${variInputIndexSlice[@]})
@@ -591,14 +594,14 @@ function funcPublicCloudIptableReinit(){
         case ${variEachRegion} in
           "SINGAPORE")
             variLanSlice=(
-              "redis/skeleton/paddlewaver/envi 172.22.0.13 6379"
+              "redis/skeleton/paddlewaver/envi 172.22.0.42 11110"
               "redis/adx/paddlewaver/common 172.22.0.2 11210"
               "redis/adx/paddlewaver/table 172.22.0.96 11220"
               "redis/adx/paddlewaver/snapshot 172.22.0.36 11230"
               "redis/dsp/paddlewaver/common 172.22.0.38 11310"
-              "redis/dsp/paddlewaver/table 172.22.0.48 7379"
+              "redis/dsp/paddlewaver/table 172.22.0.17 11320"
               # ----------
-              "redis/hyperf/yone/envi 172.22.0.34 21110"
+              "redis/skeleton/yone/envi 172.22.0.34 21110"
               "redis/adx/yone/common 172.22.0.14 21210"
               "redis/adx/yone/table 172.22.0.59 21220"
               "redis/adx/yone/snapshot 172.22.0.46 21230"
@@ -612,14 +615,14 @@ function funcPublicCloudIptableReinit(){
             ;;
           "USEAST")
             variLanSlice=(
-              "redis/skeleton/paddlewaver/envi 10.0.0.10 6379"
+              "redis/skeleton/paddlewaver/envi 10.0.0.27 12110"
               "redis/adx/paddlewaver/common 10.0.0.12 12210"
               "redis/adx/paddlewaver/table 10.0.0.5 12220"
               "redis/adx/paddlewaver/snapshot 10.0.0.39 12230"
               "redis/dsp/paddlewaver/common 10.0.0.47 12310"
-              "redis/dsp/paddlewaver/table 10.0.0.4 7379"
+              "redis/dsp/paddlewaver/table 10.0.0.42 12320"
               # ----------
-              "redis/hyperf/yone/common 10.0.0.16 22110"
+              "redis/skeleton/yone/common 10.0.0.16 22110"
               "redis/adx/yone/common 10.0.0.6 22210"
               "redis/adx/yone/common 10.0.0.11 22220"
               "redis/adx/yone/snapshot 10.0.0.13 22230"
@@ -909,13 +912,13 @@ function funcPublicCloudUnicornReinit() {
         mkdir -p ./bin && chmod 777 -R .
         /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
         echo "" > /windows/runtime/${variBinName}.command
-        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
+        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
         (
           while true; do
             if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
               cat /windows/runtime/${variBinName}.log
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
               break
             elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
               cat /windows/runtime/${variBinName}.log
