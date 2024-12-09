@@ -107,7 +107,7 @@ function funcProtectedCloudSeletor() {
   local variPaddlewaverCloudSlice=(
     # ==================================================
     "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
-    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
+    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 --)"
     # ==================================================
     "01 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
     "02 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 --"
@@ -124,11 +124,11 @@ function funcProtectedCloudSeletor() {
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.153.194.242 22 --"
     "03 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 --"
     "04 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 --"
-    "05 DSP BID 01 PADDLEWAVER SINGAPORE 43.134.241.241 22 iptable"
+    "05 DSP BID 01 PADDLEWAVER SINGAPORE 43.134.241.241 22 --"
     "06 DSP BID 02 PADDLEWAVER SINGAPORE 119.28.114.114 22 --"
     "07 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.43.47 22 --"
     "08 DSP BID 04 PADDLEWAVER SINGAPORE 43.133.43.225 22 --"
-    "09 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 iptable"
+    "09 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
     "10 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
     # ==================================================
   )
@@ -835,7 +835,7 @@ function funcPublicCloudUnicornReinit() {
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     # 檢測目標節點環節是否支持當前模塊[START]
     variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
-    if [[ $variEachValueLower != *$variModuleName* ]]; then
+    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
       echo "invalid selection : [ ${variEachValue} ]"
       continue
     fi
