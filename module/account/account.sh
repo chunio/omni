@@ -156,30 +156,39 @@ function funcPublicBackup(){
     "account"
   )
   variDefault=$(date "+%Y%m%d%H%M%S")
-  variSQLVersion=${1:-$variDefault}
-  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql
-  mkdir -p ${variSQLVersionPath}
-  echo "version ：${variSQLVersion}"
+  variSqlVersion=${1:-$variDefault}
+  variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql
+  mkdir -p ${variSqlVersionPath}
+  echo "version ：${variSqlVersion}"
   for variEachDatabase in "${variDatabaseList[@]}"; do
-    variEachSQLUri="${variSQLVersionPath}/${variSQLVersion}.sql"
-    # docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
-    docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} > $variEachSQLUri
+    variLatestSqlVersionUri="${variSqlVersionPath}/${variSqlVersion}.sql"
+    # docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variLatestSqlVersionUri
+    docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} > $variLatestSqlVersionUri
     if [ $? -eq 0 ]; then
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
-      # update [cloud]lastest version[START]
+      echo "${variContainer} -> ${variEachDatabase} >> ${variLatestSqlVersionUri} backup succeeded"
+      # update [cloud]latest version[START]
       cat <<INITSQL > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/00init.sql
 CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
 USE ${variEachDatabase};
 SOURCE /docker-entrypoint-initdb.d/01account.sql;
 INITSQL
       # -----
-      /usr/bin/cp -rf ${variEachSQLUri} ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql
+      /usr/bin/cp -rf ${variLatestSqlVersionUri} ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql
       sed -i '1iCREATE DATABASE IF NOT EXISTS account;\nUSE account;\n' ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql
-      echo ${variSQLVersion} > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version
+      echo ${variSqlVersion} > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version
       echo "${variContainer} -> ${variEachDatabase} >> ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql update succeeded"
-      # update [cloud]lastest version[END]
+      # update [cloud]latest version[END]
+      # version quantity control[START]
+      variAllSqlVersionUriSlice=$(ls -t ${variSqlVersionPath}/*.sql)
+      variKeepSqlVersionUriSlice=$(echo "${variAllSqlVersionUriSlice}" | head -n 10)
+      for variEachSqlVersionUri in $variAllSqlVersionUriSlice; do
+        if ! echo "$variKeepSqlVersionUriSlice" | grep -q "^${variEachSqlVersionUri}$"; then
+          rm -rf ${variEachSqlVersionUri}
+        fi
+      done
+      # version quantity control[END]
     else
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
+      echo "${variContainer} -> ${variEachDatabase} >> ${variLatestSqlVersionUri} backup failed"
     fi
   done
   return 0
