@@ -841,6 +841,7 @@ function funcPublicCloudUnicornReinit() {
       continue
     fi
     # 檢測目標節點環節是否支持當前模塊[END]
+    variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
     rm -rf /root/.ssh/known_hosts
     if [[ ${variScpAble} -eq 1 ]]; then
       if [[ ${variScpSyncOnce} -eq 0 ]]; then
@@ -930,8 +931,7 @@ function funcPublicCloudUnicornReinit() {
         ) # &
         # unicorn[END]
         # supervisor[START]
-        variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
-        if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
+        if grep -Fq "cloudUnicornSupervisor" "${variSlaveCrontabUri}"; then
           sed -i '/cloudUnicornSupervisor/d' "${variSlaveCrontabUri}"
         fi
         echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
@@ -1070,7 +1070,7 @@ function funcPublicFeishu(){
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variLabel=$1
   local variMessage=$2
-  local variFeishuWebhook=$(funcProtectedPullEncryptEnvi "FEISHU_WEBHOOK")
+  local variFeishuWebhook="https://open.feishu.cn/open-apis/bot/v2/hook/c10997f8-7322-452a-b7b7-bc36ded483c2"
   local variBody="{
     \"msg_type\": \"text\",
     \"content\": {
