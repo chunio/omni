@@ -1044,7 +1044,6 @@ function funcPublicCloudUnicornSupervisor(){
         return 1
         ;;
   esac
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "health check failed，${variHost}:${variHttpPort} is xxxx"
   variTimeout=${variTimeout:-1}
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
@@ -1052,6 +1051,7 @@ function funcPublicCloudUnicornSupervisor(){
     echo "[ ${variCurrentDate} / ${variHttpPort} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
   else
     echo "[ ${variCurrentDate} / ${variHttpPort} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HealthCheckFailed"
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
