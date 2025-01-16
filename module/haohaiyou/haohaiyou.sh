@@ -930,7 +930,7 @@ function funcPublicCloudUnicornReinit() {
         ) # &
         # unicorn[END]
         # supervisor[START]
-        local variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
+        variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
         if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
           sed -i '/cloudUnicornSupervisor/d' "${variSlaveCrontabUri}"
         fi
