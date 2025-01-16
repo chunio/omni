@@ -20,6 +20,8 @@ EOF
 # --------------------------------------------------
 # [批量]模糊删除（替換：customKeywork）
 EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*customKeywork*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
+# [導出]HAsh/field/value
+redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-12:SKADNETWORK:ALGORIX > /windows/runtime/temp.txt
 # --------------------------------------------------
 # 擴展存儲[START]
 （1）係統磁盤/擴容
@@ -803,7 +805,7 @@ function funcPublicCloudUnicornReinit() {
   # slave variable[START]
   # systemctl reload crond
   variSlaveCrontabUri="/var/spool/cron/root"
-  variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
+  # variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
   # slave variable[END]
   case ${variModuleName} in
     "adx")
@@ -928,14 +930,14 @@ function funcPublicCloudUnicornReinit() {
         ) # &
         # unicorn[END]
         # supervisor[START]
+        local variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
         if grep -Fq "${variSlaveCrontabTask}" "${variSlaveCrontabUri}"; then
-          echo "[ virtual/supervisor ] crontab is active"
-        else
-          echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-          echo "[ virtual/supervisor ] crontab init succeeded"
+          sed -i '/cloudUnicornSupervisor/d' "${variSlaveCrontabUri}"
         fi
+        echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
         cat "${variSlaveCrontabUri}"
         systemctl reload crond
+        echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # supervisor[END]
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
         #（3）slave main[END]
@@ -1023,26 +1025,26 @@ function funcPublicTailUnicornNotice(){
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
-  local variParameterDescMulti=("module name : dsp，adx")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variModuleName=${1:-"dsp"}
+  local variParameterDescMulti=("module : dsp，adx" "label ：...")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variModuleName=$1
   variHost="localhost"
-  variHttpPort=8000
-  variGrpcPort=9000
   case ${variModuleName} in
     "adx")
+        variLabel="ADX/${2}"
         variHttpPort=8001
         variGrpcPort=9001
         ;;
     "dsp")
+        variLabel="DSP/${2}"
         variHttpPort=8000
         variGrpcPort=9000
         ;;
     *)
-        variHttpPort=8000
-        variGrpcPort=9000
+        return 1
         ;;
   esac
+  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "health check failed，${variHost}:${variHttpPort} is xxxx"
   variTimeout=${variTimeout:-1}
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
@@ -1061,6 +1063,21 @@ function funcPublicCloudUnicornSupervisor(){
   fi
   # check heartbeat[END]
   return 0
+}
+
+function funcPublicFeishu(){
+  local variParameterDescMulti=("label" "message")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variLabel=$1
+  local variMessage=$2
+  local variFeishuWebhook=$(funcProtectedPullEncryptEnvi "FEISHU_WEBHOOK")
+  local variBody="{
+    \"msg_type\": \"text\",
+    \"content\": {
+      \"text\": \"{\\\"label\\\":\\\"${variLabel}\\\",\\\"message\\\":\\\"${variMessage}\\\"}\"
+    }
+  }"
+  echo $(curl -s -X POST -H "Content-Type: application/json" -d "${variBody}" "${variFeishuWebhook}")
 }
 # public function[END]
 # ##################################################
