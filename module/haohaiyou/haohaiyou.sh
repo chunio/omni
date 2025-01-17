@@ -1048,9 +1048,9 @@ function funcPublicCloudUnicornSupervisor(){
   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
-    echo "[ ${variCurrentDate} / ${variHttpPort} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentDate} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
   else
-    echo "[ ${variCurrentDate} / ${variHttpPort} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentDate} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HealthCheckFailed"
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
