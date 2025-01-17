@@ -934,6 +934,8 @@ function funcPublicCloudUnicornReinit() {
         if grep -Fq "cloudUnicornSupervisor" "${variSlaveCrontabUri}"; then
           sed -i '/cloudUnicornSupervisor/d' "${variSlaveCrontabUri}"
         fi
+        # 重置日誌
+        # echo "" >> /windows/runtime/supervisor.log
         echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
         cat "${variSlaveCrontabUri}"
         systemctl reload crond
