@@ -1030,6 +1030,7 @@ function funcPublicCloudUnicornSupervisor(){
   local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variLabel=$1
+  # 使用「/」分割 >> 提取第二的元素 >> 轉至小寫
   variModuleName=$(echo "${variLabel}" | cut -d'/' -f2 | tr 'A-Z' 'a-z')
   variHost="localhost"
   case ${variModuleName} in
