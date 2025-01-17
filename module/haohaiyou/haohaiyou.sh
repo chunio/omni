@@ -848,7 +848,7 @@ function funcPublicCloudUnicornReinit() {
         variScpSyncOnce=1
       fi 
     fi
-    variEachLabelUpper=$(each "${variModuleName}/${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}" | tr 'a-z' 'A-Z')
+    variEachLabelUpper=$(echo "${variModuleName}/${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}" | tr 'a-z' 'A-Z')
     variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
