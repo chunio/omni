@@ -848,7 +848,7 @@ function funcPublicCloudUnicornReinit() {
         variScpSyncOnce=1
       fi 
     fi
-    variEachLabelUpper=$(echo "${variModuleName}/${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}" | tr 'a-z' 'A-Z')
+    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
     variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
@@ -1027,10 +1027,10 @@ function funcPublicTailUnicornNotice(){
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
-  local variParameterDescMulti=("label ：ADX/BID/01/SINGAPORE/PADDLEWAVER")
+  local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variLabel=$1
-  variModuleName=$(echo "${variLabel}" | cut -d'/' -f1 | tr 'A-Z' 'a-z')
+  variModuleName=$(echo "${variLabel}" | cut -d'/' -f2 | tr 'A-Z' 'a-z')
   variHost="localhost"
   case ${variModuleName} in
     "adx")
