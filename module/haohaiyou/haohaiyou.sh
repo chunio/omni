@@ -804,8 +804,7 @@ function funcPublicCloudUnicornReinit() {
   variScpSyncOnce=0
   # slave variable[START]
   # systemctl reload crond
-  variSlaveCrontabUri="/var/spool/cron/root"
-  # variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName}"
+  variCrontabUri="/var/spool/cron/root"
   # slave variable[END]
   case ${variModuleName} in
     "adx")
@@ -841,7 +840,6 @@ function funcPublicCloudUnicornReinit() {
       continue
     fi
     # 檢測目標節點環節是否支持當前模塊[END]
-    variSlaveCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variModuleName} ${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}"
     rm -rf /root/.ssh/known_hosts
     if [[ ${variScpAble} -eq 1 ]]; then
       if [[ ${variScpSyncOnce} -eq 0 ]]; then
@@ -850,6 +848,8 @@ function funcPublicCloudUnicornReinit() {
         variScpSyncOnce=1
       fi 
     fi
+    variEachLabelUpper=$(each "${variModuleName}/${variEachService}/${variEachLabel}/${variEachRegion}/${variEachDomain}" | tr 'a-z' 'A-Z')
+    variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
@@ -931,13 +931,13 @@ function funcPublicCloudUnicornReinit() {
         ) # &
         # unicorn[END]
         # supervisor[START]
-        if grep -Fq "cloudUnicornSupervisor" "${variSlaveCrontabUri}"; then
-          sed -i '/cloudUnicornSupervisor/d' "${variSlaveCrontabUri}"
+        if grep -Fq "cloudUnicornSupervisor" "${variCrontabUri}"; then
+          sed -i '/cloudUnicornSupervisor/d' "${variCrontabUri}"
         fi
         # 重置日誌
         # echo "" >> /windows/runtime/supervisor.log
-        echo "${variSlaveCrontabTask}" >> "${variSlaveCrontabUri}"
-        cat "${variSlaveCrontabUri}"
+        echo "${variEachCrontabTask}" >> "${variCrontabUri}"
+        cat "${variCrontabUri}"
         systemctl reload crond
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # supervisor[END]
@@ -1027,18 +1027,17 @@ function funcPublicTailUnicornNotice(){
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
-  local variParameterDescMulti=("module : dsp，adx" "label ：...")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variModuleName=$1
+  local variParameterDescMulti=("label ：ADX/BID/01/SINGAPORE/PADDLEWAVER")
+  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variLabel=$1
+  variModuleName=$(echo "${variLabel}" | cut -d'/' -f1 | tr 'A-Z' 'a-z')
   variHost="localhost"
   case ${variModuleName} in
     "adx")
-        variLabel="ADX/${2}"
         variHttpPort=8001
         variGrpcPort=9001
         ;;
     "dsp")
-        variLabel="DSP/${2}"
         variHttpPort=8000
         variGrpcPort=9000
         ;;
