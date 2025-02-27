@@ -22,6 +22,8 @@ EOF
 EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*customKeywork*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
 # [導出]HAsh/field/value
 redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-12:SKADNETWORK:ALGORIX > /windows/runtime/temp.txt
+# [統計]文件大小
+du -ch /mnt/volume1/unicorn/runtime/bid-request-20250220* | grep total$
 # --------------------------------------------------
 # 擴展存儲[START]
 （1）係統磁盤/擴容
@@ -126,24 +128,23 @@ function funcProtectedCloudSeletor() {
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.153.194.242 22 --"
     "03 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 --"
     "04 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 --"
-    # "05 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 2C2G"
-    # "06 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 2C2G"
-    # "07 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 2C2G"
-    # "08 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 2C2G"
-    # "09 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 2C2G"
-    # "10 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 2C2G"
-    # "11 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 2C2G"
-    # "12 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 2C2G"
-    "05 DSP BID 01 PADDLEWAVER SINGAPORE 43.128.109.39 22 4C4G"
-    "06 DSP BID 02 PADDLEWAVER SINGAPORE 43.159.61.175 22 4C4G"
-    "07 DSP BID 03 PADDLEWAVER SINGAPORE 43.163.84.60 22 4C4G"
-    "08 DSP BID 04 PADDLEWAVER SINGAPORE 129.226.93.37 22 4C4G"
-    "09 DSP BID 05 PADDLEWAVER SINGAPORE 43.156.134.78 22 4C4G"
+    "05 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 2C2G"
+    "06 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 2C2G"
+    "07 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 2C2G"
+    "08 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 2C2G"
+    "09 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 2C2G"
+    "10 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 2C2G"
+    "11 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 2C2G"
+    "12 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 2C2G"
+    "13 DSP BID 09 PADDLEWAVER SINGAPORE 43.134.27.101 22 2C2G"
+    "14 DSP BID 10 PADDLEWAVER SINGAPORE 43.156.110.205 22 2C2G"
+    "15 DSP BID 11 PADDLEWAVER SINGAPORE 43.156.6.213 22 2C2G"
     # ----------
-    "13 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
-    "14 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
-    "15 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --" 
-    "16 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --" 
+    # ----------
+    "16 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
+    "17 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
+    "18 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --" 
+    "19 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --" 
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -157,9 +158,9 @@ function funcProtectedCloudSeletor() {
     "04 ADX NOTICE 02 YONE USEAST 43.130.132.19 22 --"
     "05 ADX BID 01 YONE SINGAPORE 43.156.0.206 22 --"
     "06 ADX BID 02 YONE SINGAPORE 43.134.87.59 22 --"
-    "07 ADX BID 02 YONE SINGAPORE 43.134.10.168 22 --"
-    "08 ADX BID 02 YONE SINGAPORE 43.163.113.138 22 --"
-    "09 ADX BID 02 YONE SINGAPORE 43.134.57.230 22 --"
+    "07 ADX BID 03 YONE SINGAPORE 43.134.10.168 22 --"
+    "08 ADX BID 04 YONE SINGAPORE 43.163.113.138 22 --"
+    "09 ADX BID 05 YONE SINGAPORE 43.134.57.230 22 --"
     "10 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
     "11 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
     # ==================================================
@@ -614,14 +615,13 @@ function funcPublicCloudIptableReinit(){
               "redis/skeleton/paddlewaver/envi 172.22.0.42 11110"
               "redis/adx/paddlewaver/common 172.22.0.2 11210"
               "redis/adx/paddlewaver/table 172.22.0.96 11220"
-              "redis/adx/paddlewaver/snapshot 172.22.0.36 11230"
               "redis/dsp/paddlewaver/common 172.22.0.38 11310"
               "redis/dsp/paddlewaver/table 172.22.0.17 11320"
+              "redis/dsp/paddlewaver/cluster 172.22.0.33 6379"
               # ----------
               "redis/skeleton/yone/envi 172.22.0.34 21110"
               "redis/adx/yone/common 172.22.0.14 21210"
               "redis/adx/yone/table 172.22.0.59 21220"
-              "redis/adx/yone/snapshot 172.22.0.46 21230"
               "redis/dsp/yone/common 172.22.0.27 21310"
               "redis/dsp/yone/table 172.22.0.82 21320"
               # ----------
@@ -635,14 +635,12 @@ function funcPublicCloudIptableReinit(){
               "redis/skeleton/paddlewaver/envi 10.0.0.27 12110"
               "redis/adx/paddlewaver/common 10.0.0.12 12210"
               "redis/adx/paddlewaver/table 10.0.0.5 12220"
-              "redis/adx/paddlewaver/snapshot 10.0.0.39 12230"
               "redis/dsp/paddlewaver/common 10.0.0.47 12310"
               "redis/dsp/paddlewaver/table 10.0.0.42 12320"
               # ----------
               "redis/skeleton/yone/common 10.0.0.16 22110"
               "redis/adx/yone/common 10.0.0.6 22210"
               "redis/adx/yone/common 10.0.0.11 22220"
-              "redis/adx/yone/snapshot 10.0.0.13 22230"
               "redis/dsp/yone/common 10.0.0.3 22310"
               "redis/dsp/yone/table 10.0.0.2 22320"
             )
