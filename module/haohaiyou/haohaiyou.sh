@@ -1099,7 +1099,7 @@ function funcPublicFeishu(){
 
 function funcPublicArchivedFile(){
   # local variUtc0HourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
-  local variUtc0HourStart=$(date -u -d "3 hours ago" "+%Y%m%d%H")
+  local variUtc0HourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
   local variUtc0HourEnd=$(date -u "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
   local variCommand="tar"
@@ -1130,7 +1130,7 @@ function funcPublicArchivedFile(){
       if [[ "${variCurrentUtc0Hour}" > "${variUtc0HourStart}" && "${variCurrentUtc0Hour}" < "${variUtc0HourEnd}" ]]; then
         variArchivedUri="${variFileUri%.log}.${variSuffix}"
         if [[ ! -f "${variArchivedUri}" ]]; then
-            echo "variArchivedUri >> ${variArchivedUri}"
+            # echo "variArchivedUri >> ${variArchivedUri}"
             ll -lh "${variFileUri}"
         fi
       fi
