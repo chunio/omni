@@ -1099,7 +1099,7 @@ function funcPublicFeishu(){
 
 function funcPublicArchivedFile(){
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variUtc0=$(date -u +"%Y%m%d")
+  local variKeywrod=$(date -u -d '1 hour ago' +'%Y%m%d%H')
   local variCommand="tar"
   case ${variCommand} in
     "tar")
@@ -1114,10 +1114,11 @@ function funcPublicArchivedFile(){
         return 1
         ;;
   esac
-  find "${variPath}" -type f -name "*${variUtc0}*.log" | while read -r variFileUri; do
+  find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
       variArchivedUri="${variFileUri%.log}.${variSuffix}"
       if [[ ! -f "${variArchivedUri}" ]]; then
           ll -lh "${variFileUri}"
+          # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
       fi
   done
   return 0
