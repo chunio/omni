@@ -1129,7 +1129,7 @@ function funcPublicArchivedFile(){
     if [[ $variFilename =~ ([0-9]{10}) ]]; then
       variEachUtc0Hour=${BASH_REMATCH[1]}
       if [[ ${variEachUtc0Hour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
-        if [[ "${variEachUtc0Hour}" > "${variUtc0HourStart}" && "${variEachUtc0Hour}" < "${variUtc0HourEnd}" ]]; then
+        if [[ "${variEachUtc0Hour}" -ge "${variUtc0HourStart}" && "${variEachUtc0Hour}" -lt "${variUtc0HourEnd}" ]]; then
           variArchivedUri="${variFileUri%.log}.${variSuffix}"
           if [[ ! -f "${variArchivedUri}" ]]; then
               # echo "variArchivedUri >> ${variArchivedUri}"
