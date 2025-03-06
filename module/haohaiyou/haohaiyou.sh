@@ -1101,26 +1101,31 @@ function funcPublicArchivedFile(){
   local variPath="/mnt/volume1/unicorn/runtime/"
   local variKeywrod=$(date -u -d '1 hour ago' +'%Y%m%d%H')
   local variCommand="tar"
-  case ${variCommand} in
-    "tar")
-        variOption="czf"
-        variSuffix="tar.gz"
-        ;;
-    "xz")
-        variOption="c"
-        variSuffix="xz"
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  # find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
+  # local variGoroutineActiveLimit=4
+  # local variGoroutineActiveNum=0
+  # 按「文件大小」降序排列
   find "${variPath}" -type f -name "*${variKeywrod}*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
-      variArchivedUri="${variFileUri%.log}.${variSuffix}"
-      if [[ ! -f "${variArchivedUri}" ]]; then
-          ll -lh "${variFileUri}"
-          # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
-      fi
+  # find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
+    variArchivedUri="${variFileUri%.log}.${variSuffix}"
+    echo "variArchivedUri >> ${variArchivedUri}"
+    if [[ ! -f "${variArchivedUri}" ]]; then
+        ll -lh "${variFileUri}"
+        case ${variCommand} in
+          "tar")
+              variOption="czf"
+              variSuffix="tar.gz"
+              # time ${variCommand} -${variOption} ${variArchivedUri} ${variFileUri}
+              ;;
+          "xz")
+              variOption="c"
+              variSuffix="xz"
+              # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
+              ;;
+          *)
+              return 1
+              ;;
+        esac
+    fi
   done
   return 0
 }
