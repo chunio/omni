@@ -1021,17 +1021,17 @@ function funcPublicTailUnicornNotice(){
 #   variHost="localhost"
 #   variPort=9501
 #   timeout=${timeout:-1}
-#   variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
+#   variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
 #   # check heartbeat[START]
 #   if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-#     echo "[ ${variCurrentDate} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
+#     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
 #   else
-#     echo "[ ${variCurrentDate} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
+#     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
 #     # supervisor[START]
 #     /windows/code/backend/chunio/omni/common/docker/docker.sh matchKill unicorn
 #     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
 #     eval "$(cat /windows/runtime/command.variable)"
-#     echo "[ ${variCurrentDate} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
+#     echo "[ ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
 #     # supervisor[END]
 #   fi
 #   # check heartbeat[END]
@@ -1061,12 +1061,12 @@ function funcPublicCloudUnicornSupervisor(){
         ;;
   esac
   variTimeout=${variTimeout:-1}
-  variCurrentDate=$(date -u +"%Y-%m-%d %H:%M:%S")
+  variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
-    echo "[ UTC0 : ${variCurrentDate} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
   else
-    echo "[ UTC0 : ${variCurrentDate} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HealthCheckFailed"
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
@@ -1074,7 +1074,7 @@ function funcPublicCloudUnicornSupervisor(){
     # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/unicorn_${variModuleName}.command)"
-    echo "[ ${variCurrentDate} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
     # supervisor[END]
   fi
   # check heartbeat[END]
@@ -1097,55 +1097,89 @@ function funcPublicFeishu(){
   return 0
 }
 
-function funcPublicArchivedFile(){
-  # local variUtc0HourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
-  local variUtc0HourStart=$(date -u -d "2 hours ago" "+%Y%m%d%H")
-  local variUtc0HourEnd=$(date -u "+%Y%m%d%H")
+function funcPublicCloudSclickArchived(){
+  local variExecuteId="EXECUTE_ID_$(date -u "+%Y%m%d_%H%M%S_%N")"
+  local variKeywordUtc0DatehourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
+  local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
+  # local variKeywordUtc0DatehourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variCommand="tar"
+  local variCommand="xz"
   case ${variCommand} in
-    "tar")
-        variOption="czf"
-        variSuffix="tar.gz"
-        # time ${variCommand} -${variOption} ${variArchivedUri} ${variFileUri}
-        ;;
-    "xz")
-        variOption="c"
-        variSuffix="xz"
-        # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
-        ;;
-    *)
-        return 1
-        ;;
+  "tar")
+      variOption="czf"
+      variSuffix="tar.gz"
+      ;;
+  "xz")
+      variOption="c"
+      variSuffix="xz"
+      ;;
+  *)
+      return 1
+      ;;
   esac
-  # local variGoroutineActiveLimit=4
+  local variArchivedLockUri="/windows/runtime/archived.lock"
+  local variArchivedLogUri="/windows/runtime/archived.log"
+  local variGoroutineActiveLimit=4
   # local variGoroutineActiveNum=0
-  # 按「文件大小」降序排列
-  local variTempUri=$(mktemp)
-  echo ${variTempUri}
-  # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
-  find "${variPath}" -type f -name "*.log" | while read -r variFileUri; do
-    variFilename=$(basename "$variFileUri")
-    if [[ $variFilename =~ ([0-9]{10}) ]]; then
-      variEachUtc0Hour=${BASH_REMATCH[1]}
-      if [[ ${variEachUtc0Hour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
-        if [[ "${variEachUtc0Hour}" -ge "${variUtc0HourStart}" && "${variEachUtc0Hour}" -lt "${variUtc0HourEnd}" ]]; then
-          variArchivedUri="${variFileUri%.log}.${variSuffix}"
-          if [[ ! -f "${variArchivedUri}" ]]; then
-              # echo "variArchivedUri >> ${variArchivedUri}"
-              # ll -lh "${variFileUri}"
-              echo "${variEachUtc0Hour} ${variFileUri}" >> "${variTempUri}"
+  if [ -f "${variArchivedLockUri}" ]; then
+    echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] the last task did not completed" >> "${variArchivedLogUri}"
+    return 0
+  fi
+  touch "${variArchivedLockUri}"
+  echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ACTION" >> "${variArchivedLogUri}"
+  local variOrderByUtc0DatehourDescUri=$(mktemp)
+  # ORDER BY「storage」DESC
+  # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variEachFileUri; do
+  find "${variPath}" -type f -name "*.log" | while read -r variEachFileUri; do
+    variEachFilename=$(basename "${variEachFileUri}")
+    if [[ $variEachFilename =~ ([0-9]{10}) ]]; then
+      variEachUtc0Datehour=${BASH_REMATCH[1]}
+      if [[ ${variEachUtc0Datehour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
+        if [[ "${variEachUtc0Datehour}" -ge "${variKeywordUtc0DatehourStart}" && "${variEachUtc0Datehour}" -lt "${variKeywordUtc0DatehourEnd}" ]]; then
+          variEachArchivedUri="${variEachFileUri%.log}.${variSuffix}"
+          if [[ ! -f "${variEachArchivedUri}" ]]; then
+              # ll -lh "${variEachFileUri}"
+              echo "${variEachUtc0Datehour} ${variEachFileUri} ${variEachArchivedUri}" >> "${variOrderByUtc0DatehourDescUri}"
           fi
         fi
       fi
     fi
   done
-  # ORDER BY「variEachUtc0Hour」DESC[START]
-  sort -r -k1,1 "${variTempUri}" | while read -r variEachUtc0Hour variFileUri; do
-    ll -lh "${variFileUri}"
+  # ORDER BY「variEachUtc0Datehour」DESC[START]
+  sort -r -k1,1 "${variOrderByUtc0DatehourDescUri}" | while read -r variEachUtc0Datehour variEachFileUri variEachArchivedUri; do
+    {
+      variEachStartTime=$(date +%s.%N)
+      # ll -lh "${variEachFileUri}"
+      case ${variCommand} in
+      "tar")
+          echo "time ${variCommand} -${variOption} ${variEachArchivedUri} ${variEachFileUri}"
+          time ${variCommand} -${variOption} ${variEachArchivedUri} ${variEachFileUri}
+          ;;
+      "xz")
+          #「-T0」：啟用多核
+          echo "time ${variCommand} -T0 -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
+          time ${variCommand} -T0 -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
+          ;;
+      *)
+          return 1
+          ;;
+      esac
+      # ll -lh "${variEachArchivedUri}"
+      variEachEndTime=$(date +%s.%N)
+      variEachDuration=$(echo "${variEachEndTime} - ${variEachStartTime}" | bc)
+      variEachFileSize=$(echo "scale=2; $(stat -c%s "${variEachFileUri}")/1048576" | bc)
+      variEachArchivedSize=$(echo "scale=2; $(stat -c%s "${variEachArchivedUri}")/1048576" | bc)
+      echo "-> ${variEachDuration} / ${variEachFileSize}MB >> ${variEachArchivedSize}MB ${variEachArchivedUri}" succeeded >> "${variArchivedLogUri}"
+    } &
+    while [ "$(jobs -r | wc -l)" -ge ${variGoroutineActiveLimit} ]; do
+        sleep 1
+    done
   done
-  # ORDER BY「variEachUtc0Hour」DESC[END]
-  rm -f "${variTempUri}"
+  # 阻塞至「當前進行/所有任務」執行完畢
+  wait
+  # ORDER BY「variEachUtc0Datehour」DESC[END]
+  echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
+  rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}"
   return 0
 }
 # public function[END]
