@@ -1094,6 +1094,33 @@ function funcPublicFeishu(){
     }
   }"
   echo $(curl -s -X POST -H "Content-Type: application/json" -d "${variBody}" "${variFeishuWebhook}")
+  return 0
+}
+
+function funcPublicArchivedFile(){
+  local variPath="/mnt/volume1/unicorn/runtime/"
+  local variUtc0=$(date -u +"%Y%m%d")
+  local variCommand="tar"
+  case ${variCommand} in
+    "tar")
+        variOption="czf"
+        variSuffix="tar.gz"
+        ;;
+    "xz")
+        variOption="c"
+        variSuffix="xz"
+        ;;
+    *)
+        return 1
+        ;;
+  esac
+  find "${variPath}" -type f -name "*${variUtc0}*.log" | while read -r variFileUri; do
+      variArchivedUri="${variFileUri%.log}.${variSuffix}"
+      if [[ ! -f "${variArchivedUri}" ]]; then
+          echo "${variFileUri}"
+      fi
+  done
+  return 0
 }
 # public function[END]
 # ##################################################
