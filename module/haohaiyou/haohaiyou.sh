@@ -1111,11 +1111,11 @@ function funcPublicCloudSclickArchived(){
   local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
   # local variKeywordUtc0DatehourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variCommand="tar"
+  local variCommand="xz"
   case ${variCommand} in
   "tar")
       variOption="czf"
-      variSuffix="tar.gz"
+      variSuffix="tgz"
       ;;
   "xz")
       variOption="c"
