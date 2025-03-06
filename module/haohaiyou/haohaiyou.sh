@@ -1156,9 +1156,9 @@ function funcPublicCloudSclickArchived(){
           time ${variCommand} -${variOption} ${variEachArchivedUri} ${variEachFileUri}
           ;;
       "xz")
-          #「-T0」：啟用多核
-          echo "time ${variCommand} -T0 -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
-          time ${variCommand} -T0 -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
+          #「-T0」：啟用多核（優點：關閉耗時:啟用耗時≈22:09，缺點：關閉負載:啟用耗時≈2.5:11.5）
+          echo "time ${variCommand} -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
+          time ${variCommand} -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
           ;;
       *)
           return 1
