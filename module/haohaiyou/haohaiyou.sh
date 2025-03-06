@@ -1111,14 +1111,21 @@ function funcPublicCloudSclickArchived(){
   local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
   # local variKeywordUtc0DatehourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variCommand="xz"
-  case ${variCommand} in
-  "tar")
+  local variMethod="bzip2"
+  case ${variMethod} in
+  "gzip")
       variOption="czf"
       variSuffix="tgz"
       ;;
+  "bzip2")
+      if ! command -v bzip2 >/dev/null 2>&1; then
+        yum install -y bzip2
+      fi
+      variOption="cjf"
+      variSuffix="bz2"
+      ;;
   "xz")
-      variOption="c"
+      variOption="cJf"
       variSuffix="xz"
       ;;
   *)
@@ -1158,22 +1165,24 @@ function funcPublicCloudSclickArchived(){
   sort -r -k1,1 "${variOrderByUtc0DatehourDescUri}" | while read -r variEachUtc0Datehour variEachFileUri variEachArchivedUri; do
     {
       variEachStartTime=$(date +%s.%N)
-      # ll -lh "${variEachFileUri}"
-      case ${variCommand} in
-      "tar")
-          echo "time ${variCommand} -${variOption} ${variEachArchivedUri} ${variEachFileUri}"
-          time ${variCommand} -${variOption} ${variEachArchivedUri} ${variEachFileUri}
-          ;;
-      "xz")
-          #「-T0」：啟用多核（優點：關閉耗時:啟用耗時≈22:09，缺點：關閉負載:啟用耗時≈2.5:11.5）
-          echo "time ${variCommand} -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
-          time ${variCommand} -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
-          ;;
-      *)
-          return 1
-          ;;
-      esac
-      # ll -lh "${variEachArchivedUri}"
+      # include path
+      echo "time tar -${variOption} ${variEachArchivedUri} -C ${variPath} $(basename ${variEachFileUri})"
+      time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
+      # case ${variCommand} in
+      # "tar")
+      #     echo "time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}"
+      #     time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}
+      #     ;;
+      # "xz")
+      #     #「-T0」：啟用多核（優點：關閉耗時:啟用耗時≈22:09，缺點：關閉負載:啟用耗時≈2.5:11.5）
+      #     echo "time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
+      #     time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
+      #     # xz -d ${variEachArchivedUri}
+      #     ;;
+      # *)
+      #     return 1
+      #     ;;
+      # esac
       variEachEndTime=$(date +%s.%N)
       variEachDuration=$(echo "${variEachEndTime} - ${variEachStartTime}" | bc)
       variEachFileSize=$(echo "scale=2; $(stat -c%s "${variEachFileUri}")/1048576" | bc)
