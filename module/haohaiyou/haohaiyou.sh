@@ -1107,11 +1107,11 @@ function funcPublicFeishu(){
 
 function funcPublicCloudSclickArchived(){
   local variExecuteId="EXECUTE_ID_$(date -u "+%Y%m%d_%H%M%S_%N")"
-  local variKeywordUtc0DatehourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
+  local variKeywordUtc0DatehourStart=$(date -u -d "2 hours ago" "+%Y%m%d%H")
   local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
   # local variKeywordUtc0DatehourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variCommand="xz"
+  local variCommand="tar"
   case ${variCommand} in
   "tar")
       variOption="czf"
@@ -1126,6 +1126,7 @@ function funcPublicCloudSclickArchived(){
       ;;
   esac
   local variArchivedLockUri="/windows/runtime/archived.lock"
+  local variArchivedExitUri="/windows/runtime/archived.exit"
   local variArchivedLogUri="/windows/runtime/archived.log"
   local variGoroutineActiveLimit=4
   # local variGoroutineActiveNum=0
@@ -1180,6 +1181,15 @@ function funcPublicCloudSclickArchived(){
       echo "-> ${variEachDuration} / ${variEachFileSize}MB >> ${variEachArchivedSize}MB ${variEachArchivedUri}" succeeded >> "${variArchivedLogUri}"
     } &
     while [ "$(jobs -r | wc -l)" -ge ${variGoroutineActiveLimit} ]; do
+        # exit signal monitor[START]
+        if [ -f "${variArchivedExitUri}" ]; then
+          echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} EXIT" >> "${variArchivedLogUri}"
+          jobs -p | xargs kill -9
+          wait
+          rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
+          return 0
+        fi
+        # exit signal monitor[END]
         sleep 1
     done
   done
@@ -1187,7 +1197,7 @@ function funcPublicCloudSclickArchived(){
   wait
   # ORDER BY「variEachUtc0Datehour」DESC[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
-  rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}"
+  rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
   return 0
 }
 # public function[END]
