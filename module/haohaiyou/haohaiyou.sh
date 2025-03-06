@@ -1099,7 +1099,7 @@ function funcPublicFeishu(){
 
 function funcPublicArchivedFile(){
   # local variUtc0HourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
-  local variUtc0HourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
+  local variUtc0HourStart=$(date -u -d "2 hours ago" "+%Y%m%d%H")
   local variUtc0HourEnd=$(date -u "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
   local variCommand="tar"
