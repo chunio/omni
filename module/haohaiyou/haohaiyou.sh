@@ -951,6 +951,14 @@ function funcPublicCloudUnicornReinit() {
         # 重置日誌
         # echo "" >> /windows/runtime/supervisor.log
         echo "${variEachCrontabTask}" >> "${variCrontabUri}"
+        # 僅使用於「variEachService=SINGLETON」[START]
+        if [[ ${variEachService} == "SINGLETON" ]]; then
+          if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
+            sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
+          fi
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSclickArchived" >> "${variCrontabUri}"
+        fi
+        # 僅使用於「variEachService=SINGLETON」[END]
         cat "${variCrontabUri}"
         systemctl reload crond
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
