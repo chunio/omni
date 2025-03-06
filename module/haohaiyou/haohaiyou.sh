@@ -1101,6 +1101,21 @@ function funcPublicArchivedFile(){
   local variPath="/mnt/volume1/unicorn/runtime/"
   local variKeywrod=$(date -u -d '1 hour ago' +'%Y%m%d%H')
   local variCommand="tar"
+  case ${variCommand} in
+    "tar")
+        variOption="czf"
+        variSuffix="tar.gz"
+        # time ${variCommand} -${variOption} ${variArchivedUri} ${variFileUri}
+        ;;
+    "xz")
+        variOption="c"
+        variSuffix="xz"
+        # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
+        ;;
+    *)
+        return 1
+        ;;
+  esac
   # local variGoroutineActiveLimit=4
   # local variGoroutineActiveNum=0
   # 按「文件大小」降序排列
@@ -1110,21 +1125,7 @@ function funcPublicArchivedFile(){
     echo "variArchivedUri >> ${variArchivedUri}"
     if [[ ! -f "${variArchivedUri}" ]]; then
         ll -lh "${variFileUri}"
-        case ${variCommand} in
-          "tar")
-              variOption="czf"
-              variSuffix="tar.gz"
-              # time ${variCommand} -${variOption} ${variArchivedUri} ${variFileUri}
-              ;;
-          "xz")
-              variOption="c"
-              variSuffix="xz"
-              # time ${variCommand} -${variOption} ${variFileUri} > ${variArchivedUri}
-              ;;
-          *)
-              return 1
-              ;;
-        esac
+
     fi
   done
   return 0
