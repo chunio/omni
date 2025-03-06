@@ -1098,8 +1098,10 @@ function funcPublicFeishu(){
 }
 
 function funcPublicArchivedFile(){
+  # local variUtc0HourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
+  local variUtc0HourStart=$(date -u -d "3 hours ago" "+%Y%m%d%H")
+  local variUtc0HourEnd=$(date -u "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
-  local variKeywrod=$(date -u -d '1 hour ago' +'%Y%m%d%H')
   local variCommand="tar"
   case ${variCommand} in
     "tar")
@@ -1119,14 +1121,21 @@ function funcPublicArchivedFile(){
   # local variGoroutineActiveLimit=4
   # local variGoroutineActiveNum=0
   # 按「文件大小」降序排列
-  find "${variPath}" -type f -name "*${variKeywrod}*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
+  find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
   # find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
-    variArchivedUri="${variFileUri%.log}.${variSuffix}"
-    echo "variArchivedUri >> ${variArchivedUri}"
-    if [[ ! -f "${variArchivedUri}" ]]; then
-        ll -lh "${variFileUri}"
-
+  variFilename=$(basename "$variFileUri")
+  if [[ $variFilename =~ ([0-9]{10}) ]]; then
+    variCurrentUtc0Hour=${BASH_REMATCH[1]}
+    if [[ ${variCurrentUtc0Hour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
+      if [[ "${variCurrentUtc0Hour}" > "${variUtc0HourStart}" && "${variCurrentUtc0Hour}" < "${variUtc0HourEnd}" ]]; then
+        variArchivedUri="${variFileUri%.log}.${variSuffix}"
+        if [[ ! -f "${variArchivedUri}" ]]; then
+            echo "variArchivedUri >> ${variArchivedUri}"
+            ll -lh "${variFileUri}"
+        fi
+      fi
     fi
+  fi
   done
   return 0
 }
