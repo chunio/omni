@@ -1121,22 +1121,31 @@ function funcPublicArchivedFile(){
   # local variGoroutineActiveLimit=4
   # local variGoroutineActiveNum=0
   # 按「文件大小」降序排列
-  find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
-  # find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
-  variFilename=$(basename "$variFileUri")
-  if [[ $variFilename =~ ([0-9]{10}) ]]; then
-    variCurrentUtc0Hour=${BASH_REMATCH[1]}
-    if [[ ${variCurrentUtc0Hour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
-      if [[ "${variCurrentUtc0Hour}" > "${variUtc0HourStart}" && "${variCurrentUtc0Hour}" < "${variUtc0HourEnd}" ]]; then
-        variArchivedUri="${variFileUri%.log}.${variSuffix}"
-        if [[ ! -f "${variArchivedUri}" ]]; then
-            # echo "variArchivedUri >> ${variArchivedUri}"
-            ll -lh "${variFileUri}"
+  local variTempUri=$(mktemp)
+  echo ${variTempUri}
+  # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
+  find "${variPath}" -type f -name "*.log" | while read -r variFileUri; do
+    variFilename=$(basename "$variFileUri")
+    if [[ $variFilename =~ ([0-9]{10}) ]]; then
+      variEachUtc0Hour=${BASH_REMATCH[1]}
+      if [[ ${variEachUtc0Hour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
+        if [[ "${variEachUtc0Hour}" > "${variUtc0HourStart}" && "${variEachUtc0Hour}" < "${variUtc0HourEnd}" ]]; then
+          variArchivedUri="${variFileUri%.log}.${variSuffix}"
+          if [[ ! -f "${variArchivedUri}" ]]; then
+              # echo "variArchivedUri >> ${variArchivedUri}"
+              # ll -lh "${variFileUri}"
+              echo "${variEachUtc0Hour} ${variFileUri}" >> "${variTempUri}"
+          fi
         fi
       fi
     fi
-  fi
   done
+  # ORDER BY「variEachUtc0Hour」DESC[START]
+  sort -r -k1,1 "${variTempUri}" | while read -r variEachUtc0Hour variFileUri; do
+    ll -lh "${variFileUri}"
+  done
+  # ORDER BY「variEachUtc0Hour」DESC[END]
+  rm -f "${variTempUri}"
   return 0
 }
 # public function[END]
