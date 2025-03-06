@@ -1114,7 +1114,8 @@ function funcPublicArchivedFile(){
         return 1
         ;;
   esac
-  find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
+  # find "${variPath}" -type f -name "*${variKeywrod}*.log" | while read -r variFileUri; do
+  find "${variPath}" -type f -name "*${variKeywrod}*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variFileUri; do
       variArchivedUri="${variFileUri%.log}.${variSuffix}"
       if [[ ! -f "${variArchivedUri}" ]]; then
           ll -lh "${variFileUri}"
