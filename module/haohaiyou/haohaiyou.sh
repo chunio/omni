@@ -1117,7 +1117,7 @@ function funcPublicArchivedFile(){
   find "${variPath}" -type f -name "*${variUtc0}*.log" | while read -r variFileUri; do
       variArchivedUri="${variFileUri%.log}.${variSuffix}"
       if [[ ! -f "${variArchivedUri}" ]]; then
-          echo "${variFileUri}"
+          ll -lh "${variFileUri}"
       fi
   done
   return 0
