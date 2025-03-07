@@ -1107,7 +1107,7 @@ function funcPublicFeishu(){
 
 function funcPublicCloudSclickArchived(){
   local variExecuteId="EXECUTE_ID_$(date -u "+%Y%m%d_%H%M%S_%N")"
-  local variKeywordUtc0DatehourStart=$(date -u -d "2 hours ago" "+%Y%m%d%H")
+  local variKeywordUtc0DatehourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
   local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
   # local variKeywordUtc0DatehourEnd=$(date -u -d "1 hour ago" "+%Y%m%d%H")
   local variPath="/mnt/volume1/unicorn/runtime/"
