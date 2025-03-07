@@ -1202,7 +1202,7 @@ function funcPublicCloudSclickArchived(){
         sleep 1
     done
   done
-  # 阻塞至「當前進行/所有任務」執行完畢
+  # 阻塞至「當前進行/所有任務」執行完畢//
   wait
   # ORDER BY「variEachUtc0Datehour」DESC[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
