@@ -120,9 +120,11 @@ function funcProtectedCloudSeletor() {
     "05 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 --"
     "06 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 --"
     "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 --"
-    "08 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 --"
-    "09 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
-    "10 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
+    "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 --"
+    "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.34.72 22 --"
+    "10 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 --"
+    "11 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
+    "12 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 2C2G"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 2C2G"
@@ -1146,6 +1148,21 @@ function funcPublicCloudSclickArchived(){
   fi
   touch "${variArchivedLockUri}"
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ACTION" >> "${variArchivedLogUri}"
+  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[START]
+  local variBidRequestCustomHour=$(date -u -d "6 hours ago" "+%Y%m%d%H")
+  find "${variPath}" -type f -name "*bid-request*" | while read -r variEachFileUri; do
+    variEachFilename=$(basename "${variEachFileUri}")
+    if [[ ${variEachFilename} =~ ([0-9]{10}) ]]; then
+      variEachUtc0Datehour=${BASH_REMATCH[1]}
+      if [[ ${variEachUtc0Datehour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
+        if [[ "${variEachUtc0Datehour}" -lt "${variBidRequestCustomHour}" ]]; then
+          rm -rf "${variEachFileUri}"
+          echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ${variEachFileUri} DELETED" >> "${variArchivedLogUri}"
+        fi
+      fi 
+    fi
+  done
+  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[START]
   local variOrderByUtc0DatehourDescUri=$(mktemp)
   # ORDER BY「storage」DESC
   # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variEachFileUri; do
