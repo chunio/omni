@@ -444,7 +444,8 @@ function funcPublicVersion() {
     return 0
 }
 
-# v2rayn:10809
+# v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
+# 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP代理，因此PING不通亦正常）
 function funcPublicProxy() {
   local variParameterDescMulti=("port")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
