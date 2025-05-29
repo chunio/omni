@@ -967,6 +967,8 @@ function funcPublicCloudUnicornReinit() {
         systemctl reload crond
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # supervisor[END]
+        cat /etc/hosts
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
         #（3）slave main[END]
         # --------------------------------------------------
@@ -1083,7 +1085,7 @@ function funcPublicCloudHostReinit(){
     "10.0.0.29 us.dsp.paddlewaver.localhost.com"
   )
   local variEtcHostsUri="/etc/hosts"
-  /usr/bin/cp -rf "$variEtcHostsUri" "${variEtcHostsUri}.backup.$(date '+%Y%m%d%H%M%S')"
+  # /usr/bin/cp -rf "$variEtcHostsUri" "${variEtcHostsUri}.backup.$(date '+%Y%m%d%H%M%S')"
   local variEachRecord variDomain variIp
   for variEachRecord in "${variIp2DomainSlice[@]}"; do
     variIp=$(awk '{print $1}' <<< "$variEachRecord")
