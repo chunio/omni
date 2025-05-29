@@ -1008,25 +1008,6 @@ JUMPEREOF
   return 0
 }
 
-
-
-function funcPublicCdUnicornRuntime(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
-  pwd
-  df -h
-  ll -lh
-  return 0
-}
-
-function funcPublicTailUnicornNotice(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
-  pwd
-  df -h
-  echo "tail -f notice-$(date -u +%Y%m%d).log"
-  tail -f notice-$(date -u +%Y%m%d).log
-  return 0
-}
-
 # (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 # function funcPublicCloudSkeletonSupervisor(){
@@ -1094,19 +1075,25 @@ function funcPublicCloudUnicornSupervisor(){
   return 0
 }
 
-function funcPublicFeishu(){
-  local variParameterDescMulti=("label" "message")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variLabel=$1
-  local variMessage=$2
-  local variFeishuWebhook="https://open.feishu.cn/open-apis/bot/v2/hook/c10997f8-7322-452a-b7b7-bc36ded483c2"
-  local variBody="{
-    \"msg_type\": \"text\",
-    \"content\": {
-      \"text\": \"{\\\"label\\\":\\\"${variLabel}\\\",\\\"message\\\":\\\"${variMessage}\\\"}\"
-    }
-  }"
-  echo $(curl -s -X POST -H "Content-Type: application/json" -d "${variBody}" "${variFeishuWebhook}")
+function funcPublicCloudHostReinit(){
+  local variIp2DomainSlice=(
+    "172.22.0.51 sg.adx.paddlewaver.localhost.com"
+    "10.0.0.24 us.adx.paddlewaver.localhost.com"
+    "172.22.0.91 sg.dsp.paddlewaver.localhost.com"
+    "10.0.0.29 us.dsp.paddlewaver.localhost.com"
+  )
+  local variEtcHostsUri="/etc/hosts"
+  /usr/bin/cp -rf "$variEtcHostsUri" "${variEtcHostsUri}.backup.$(date '+%Y%m%d%H%M%S')"
+  local variEachRecord variDomain variIp
+  for variEachRecord in "${variIp2DomainSlice[@]}"; do
+    variIp=$(awk '{print $1}' <<< "$variEachRecord")
+    variDomain=$(awk '{print $2}' <<< "$variEachRecord")
+    if grep -qE "[[:space:]]${variDomain}([[:space:]]|$)" "$variEtcHostsUri"; then
+      sed -i "/[[:space:]]${variDomain}\([[:space:]]\|$\)/d" "$variEtcHostsUri"
+    fi
+    echo "$variIp $variDomain" >> "$variEtcHostsUri"
+    echo "the record ( $variIp $variDomain ) has been successfully added to $variEtcHostsUri"
+  done
   return 0
 }
 
@@ -1227,6 +1214,39 @@ function funcPublicCloudSclickArchived(){
   # ORDER BY「variEachUtc0Datehour」DESC[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
   rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
+  return 0
+}
+
+function funcPublicFeishu(){
+  local variParameterDescMulti=("label" "message")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variLabel=$1
+  local variMessage=$2
+  local variFeishuWebhook="https://open.feishu.cn/open-apis/bot/v2/hook/c10997f8-7322-452a-b7b7-bc36ded483c2"
+  local variBody="{
+    \"msg_type\": \"text\",
+    \"content\": {
+      \"text\": \"{\\\"label\\\":\\\"${variLabel}\\\",\\\"message\\\":\\\"${variMessage}\\\"}\"
+    }
+  }"
+  echo $(curl -s -X POST -H "Content-Type: application/json" -d "${variBody}" "${variFeishuWebhook}")
+  return 0
+}
+
+function funcPublicCdUnicornRuntime(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  pwd
+  df -h
+  ll -lh
+  return 0
+}
+
+function funcPublicTailUnicornNotice(){
+  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  pwd
+  df -h
+  echo "tail -f notice-$(date -u +%Y%m%d).log"
+  tail -f notice-$(date -u +%Y%m%d).log
   return 0
 }
 # public function[END]
