@@ -1093,7 +1093,7 @@ function funcPublicCloudHostReinit(){
       sed -i "/[[:space:]]${variDomain}\([[:space:]]\|$\)/d" "$variEtcHostsUri"
     fi
     echo "$variIp $variDomain" >> "$variEtcHostsUri"
-    echo "the record ( $variIp $variDomain ) has been successfully added to $variEtcHostsUri"
+    echo "$variEtcHostsUri << $variIp $variDomain"
   done
   return 0
 }
