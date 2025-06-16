@@ -1096,6 +1096,8 @@ function funcPublicCloudHostReinit(){
     "10.0.0.24 us.adx.paddlewaver.localhost.com"
     "172.22.0.91 sg.dsp.paddlewaver.localhost.com"
     "10.0.0.29 us.dsp.paddlewaver.localhost.com"
+    "172.22.0.67 sg.dsp.yone.localhost.com"
+    "10.0.0.18 us.dsp.yone.localhost.com"
   )
   # /usr/bin/cp -rf "$variEtcHostsUri" "${variEtcHostsUri}.backup.$(date '+%Y%m%d%H%M%S')"
   local variEachRecord variDomain variIp
