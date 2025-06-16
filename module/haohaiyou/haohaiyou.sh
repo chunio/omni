@@ -770,6 +770,7 @@ function funcPublicCloudSkeletonRinit() {
           expect eof
           '
           #（3）slave main[END]
+          /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
           # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
@@ -980,7 +981,7 @@ function funcPublicCloudUnicornReinit() {
         systemctl reload crond
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # supervisor[END]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+        # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
         #（3）slave main[END]
         # --------------------------------------------------
