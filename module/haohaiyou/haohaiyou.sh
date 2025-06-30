@@ -171,8 +171,10 @@ function funcProtectedCloudSeletor() {
     "07 ADX BID 03 YONE SINGAPORE 43.134.10.168 22 --"
     "08 ADX BID 04 YONE SINGAPORE 43.163.113.138 22 --"
     "09 ADX BID 05 YONE SINGAPORE 43.134.57.230 22 --"
-    "10 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
-    "11 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
+    "10 ADX BID 06 YONE SINGAPORE 43.156.68.83 22 --"
+    "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 --"
+    "12 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
+    "13 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
     # ==================================================
     "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 --"
     "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 --"
@@ -770,7 +772,6 @@ function funcPublicCloudSkeletonRinit() {
           expect eof
           '
           #（3）slave main[END]
-          /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
           # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
@@ -981,7 +982,7 @@ function funcPublicCloudUnicornReinit() {
         systemctl reload crond
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # supervisor[END]
-        # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
         #（3）slave main[END]
         # --------------------------------------------------
