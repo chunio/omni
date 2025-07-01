@@ -787,15 +787,8 @@ function funcPublicCloudSkeletonProxy(){
 server {
     listen 80;
     server_name _;
-    location /report/adx {
-        proxy_pass http://${variCurrentIp}:9501/report/adx;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-    location /download {
-        proxy_pass http://${variCurrentIp}:9501/download;
+    location / {
+        proxy_pass http://${variCurrentIp}:9501;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -1167,7 +1160,7 @@ function funcPublicCloudSclickArchived(){
       fi 
     fi
   done
-  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[START]
+  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[END]
   local variOrderByUtc0DatehourDescUri=$(mktemp)
   # ORDER BY「storage」DESC
   # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variEachFileUri; do
@@ -1230,6 +1223,15 @@ function funcPublicCloudSclickArchived(){
   # 阻塞至「當前進行/所有任務」執行完畢//
   wait
   # ORDER BY「variEachUtc0Datehour」DESC[END]
+  # 處理「imp_streamstate02-*」文件[START]
+  # local variTodayUtc0Date=$(date -u "+%Y%m%d")
+  # local variYesterdayUtc0Date=$(date -u -d "yesterday" +"%Y%m%d")
+  # if [[ ! -f "${variPath}imp_streamstate02-${variYesterdayUtc0Date}.${variSuffix}" ]]; then
+    # 移除{空行 && 雙引號}
+    # sed '/^$/d; s/"//g' ${variPath}imp_streamstate02-${variTodayUtc0Date}.log > ${variPath}imp_streamstate02-${variYesterdayUtc0Date}.log
+    # time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
+  # fi
+  # 處理「imp_streamstate02-*」文件[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
   rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
   return 0
