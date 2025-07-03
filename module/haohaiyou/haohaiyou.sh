@@ -1007,7 +1007,7 @@ function funcPublicCloudUnicornCheck() {
       echo "===================================================================================================="
       rm -rf /root/.ssh/known_hosts
       ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
-        tail -n 50 /windows/runtime/unicorn_*.log
+        tail -n 50 /windows/runtime/unicorn_${variEachModule,,}.log
         # 按「文件大小」倒敘排序，取前10個
         ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 11
         df -h
@@ -1228,6 +1228,7 @@ function funcPublicCloudSclickArchived(){
   # local variYesterdayUtc0Date=$(date -u -d "yesterday" +"%Y%m%d")
   # if [[ ! -f "${variPath}imp_streamstate02-${variYesterdayUtc0Date}.${variSuffix}" ]]; then
     # 移除{空行 && 雙引號}
+    # rm -rf ${variPath}imp_streamstate02-${variYesterdayUtc0Date}.log
     # sed '/^$/d; s/"//g' ${variPath}imp_streamstate02-${variTodayUtc0Date}.log > ${variPath}imp_streamstate02-${variYesterdayUtc0Date}.log
     # time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
   # fi
