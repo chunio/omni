@@ -813,6 +813,7 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker rm -f skeleton-nginx
   docker-compose down -v
   docker-compose -p ${veriModuleName} up --build -d
   docker ps -a | grep ${veriModuleName}
