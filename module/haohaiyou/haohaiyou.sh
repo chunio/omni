@@ -808,15 +808,17 @@ server {
         #「CORS/同源策略」預檢請求[START]
         if (\$request_method = 'OPTIONS') {
             add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Credentials' 'false' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,xauth' always;
             add_header 'Access-Control-Max-Age' 86400 always;
-            add_header 'Content-Length' 0;
+            # add_header 'Content-Length' 0;
             return 204;
         }
         #「CORS/同源策略」預檢請求[END]
         #「CORS/同源策略」響應設置[START]
         add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Credentials' 'false' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,xauth' always;
         # add_header 'Access-Control-Expose-Headers' 'custom' always;
