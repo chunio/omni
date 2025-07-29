@@ -139,6 +139,8 @@ function funcProtectedCloudSeletor() {
     "24 ADX BID 05 PADDLEWAVER USEAST 43.166.244.104 22 --"
     "25 ADX BID 06 PADDLEWAVER USEAST 43.130.119.38 22 --"
     "26 ADX BID 07 PADDLEWAVER USEAST 43.166.132.148 22 --"
+    "27 ADX BID 08 PADDLEWAVER USEAST 43.166.244.252 22 --"
+    "28 ADX BID 09 PADDLEWAVER USEAST 43.166.254.156 22 --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 --"
@@ -803,6 +805,22 @@ server {
     listen 80;
     server_name _;
     location / {
+        #「CORS/同源策略」預檢請求[START]
+        if (\$request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,xauth' always;
+            add_header 'Access-Control-Max-Age' 86400 always;
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+        #「CORS/同源策略」預檢請求[END]
+        #「CORS/同源策略」響應設置[START]
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,xauth' always;
+        # add_header 'Access-Control-Expose-Headers' 'custom' always;
+        #「CORS/同源策略」響應設置[END]
         proxy_pass http://${variCurrentIp}:9501;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;

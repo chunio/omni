@@ -136,6 +136,12 @@ volumes:
       device: ${VARI_GLOBAL["REDIS_DATA_PATH"]}
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  # 徹底重啟[START]
+  docker rm -f account-php
+  docker rm -f account-redis
+  docker rm -f account-mysql
+  docker rm -f account-nginx
+  # 徹底重啟[END]
   docker-compose down -v
   # 強制清除未使用的「volume」
   docker volume prune -f
