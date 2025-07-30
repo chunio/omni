@@ -505,7 +505,7 @@ HTTPPROXYCONF
 # 免費證書 && 自動續簽
 # 如已完成域名解釋，則由服務器端操作證書安裝即可（即：無需二次驗證/解釋）
 #「certbot」是由「Let’s Encrypt」官方提供的一款命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/安裝/續簽
-# [證書測試] curl -I https://domain
+# [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
 # [續簽測試] certbot renew --dry-run
 function funcPublicCerbot() {
   local variParameterDescList=("domain")
