@@ -796,14 +796,34 @@ JUMPEREOF
   return 0
 }
 
-# 將「80」端口轉發至「9501」端口
-function funcPublicCloudSkeletonProxy(){
-  veriModuleName="skeleton"
-  variCurrentIp=$(hostname -I | awk '{print $1}')
+# 將「80/443」端口轉發至「9501」端口
+function funcPublicCloudSkeletonYoneProxy(){
+  # local variParameterDescList=("domain")
+  # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  # local variDomain=${1:-"paddlewaver"}
+  local veriModuleName="skeleton"
+  local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
+# redirect（80->443）[START]
 server {
     listen 80;
-    server_name _;
+    server_name skeleton.y-one.co.jp;
+    return 301 https://\$server_name\$request_uri;
+}
+# redirect（80->443）[END]
+server {
+    listen 443 ssl http2;
+    server_name skeleton.y-one.co.jp;
+    # SSL/TLS[START]
+    # TODO:分支管理
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_prefer_server_ciphers off;
+    # SSL/TLS[END]
     location / {
         #「CORS/同源策略」預檢請求[START]
         if (\$request_method = 'OPTIONS') {
@@ -839,8 +859,93 @@ services:
     volumes:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
     ports:
       - "80:80"
+      - "443:443"
+    networks:
+      - common
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker rm -f skeleton-nginx
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker ps -a | grep ${veriModuleName}
+  return 0
+}
+
+# 將「80」端口轉發至「9501」端口
+function funcPublicCloudSkeletonPaddlewaverProxy(){
+  local variParameterDescList=("domain")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  local variDomain=${1:-"paddlewaver"}
+  local veriModuleName="skeleton"
+  local variCurrentIp=$(hostname -I | awk '{print $1}')
+  cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
+# redirect（80->443）[START]
+server {
+    listen 80;
+    server_name skeleton.y-one.co.jp;
+    return 301 https://\$server_name\$request_uri;
+}
+# redirect（80->443）[END]
+server {
+    listen 443 ssl http2;
+    server_name skeleton.y-one.co.jp;
+    # SSL/TLS[START]
+    # TODO:分支管理
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_prefer_server_ciphers off;
+    # SSL/TLS[END]
+    location / {
+        #「CORS/同源策略」預檢請求[START]
+        if (\$request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Credentials' 'false' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+            add_header 'Access-Control-Max-Age' 86400 always;
+            # add_header 'Content-Length' 0;
+            return 204;
+        }
+        #「CORS/同源策略」預檢請求[END]
+        #「CORS/同源策略」響應設置[START]
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Credentials' 'false' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+        # add_header 'Access-Control-Expose-Headers' 'custom' always;
+        #「CORS/同源策略」響應設置[END]
+        proxy_pass http://${variCurrentIp}:9501;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+LOCALSKELETONCONF
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}-nginx:
+    image: nginx:1.27.0
+    container_name: ${veriModuleName}-nginx
+    volumes:
+      - /windows:/windows
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+    ports:
+      - "80:80"
+      - "443:443"
     networks:
       - common
 networks:

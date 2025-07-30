@@ -501,6 +501,50 @@ HTTPPROXYCONF
   cat /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
+
+# 免費證書 && 自動續簽
+# 如已完成域名解釋，則由服務器端操作證書安裝即可（即：無需二次驗證/解釋）
+#「certbot」是由「Let’s Encrypt」官方提供的一款命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/安裝/續簽
+# [證書測試] curl -I https://domain
+# [續簽測試] certbot renew --dry-run
+function funcPublicCerbot() {
+  local variParameterDescList=("domain")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variDomain=${1}
+  # 證書目錄（[成功安裝]示例：/usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp）
+  local variAbsolutePath=/usr/local/nginx/certbot/
+  mkdir -p ${variAbsolutePath}
+  chown root:root ${variAbsolutePath}
+  chmod 755 ${variAbsolutePath}
+  yum install -y certbot
+  # required : 80/port is in an idle state
+  /windows/code/backend/chunio/omni/init/system/system.sh showPort 80 confirm
+  # 證書目錄:
+  certbot certonly \
+    --standalone \
+    --preferred-challenges http \
+    -d ${variDomain}\
+    --agree-tos \
+    --email zengweitao@msn.com \
+    --non-interactive \
+    --config-dir ${variAbsolutePath}/config \
+    --work-dir ${variAbsolutePath}/work  \
+    --logs-dir ${variAbsolutePath}/logs
+  local variRenewScriptUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot_renew_${variDomain}.sh
+  cat <<ENTRYPOINTSH > ${variRenewScriptUri}
+#!/bin/bash
+/usr/bin/certbot renew --quiet --webroot -w ${variAbsolutePath}
+if [ $? -eq 0 ]; then
+  # TODO : restart the service
+  echo "..."
+fi
+return 0
+ENTRYPOINTSH
+  # 自動續簽定時任務
+  echo "0 * * * * ${variRenewScriptUri}" >> /var/spool/cron/root
+  # TODO:重啟服務（如：nginx)
+  return 0
+}
 # public function[END]
 # ##################################################
 
