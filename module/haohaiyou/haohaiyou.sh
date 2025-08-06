@@ -127,20 +127,11 @@ function funcProtectedCloudSeletor() {
     "12 ADX BID 08 PADDLEWAVER SINGAPORE 43.156.45.125 22 --"
     "13 ADX BID 09 PADDLEWAVER SINGAPORE 43.163.87.23 22 --"
     "14 ADX BID 10 PADDLEWAVER SINGAPORE 43.163.88.142 22 --"
-    "15 ADX BID 11 PADDLEWAVER SINGAPORE 43.134.63.29 22 --"
-    "16 ADX BID 12 PADDLEWAVER SINGAPORE 43.163.118.98 22 --"
-    "17 ADX BID 13 PADDLEWAVER SINGAPORE 150.109.21.111 22 --"
-    "18 ADX BID 14 PADDLEWAVER SINGAPORE 43.156.31.190 22 --"
-    "19 ADX BID 15 PADDLEWAVER SINGAPORE 43.163.100.201 22 --"
-    "20 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 --"
-    "21 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
-    "22 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
-    "23 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 --"
-    "24 ADX BID 05 PADDLEWAVER USEAST 43.166.244.104 22 --"
-    "25 ADX BID 06 PADDLEWAVER USEAST 43.130.119.38 22 --"
-    "26 ADX BID 07 PADDLEWAVER USEAST 43.166.132.148 22 --"
-    "27 ADX BID 08 PADDLEWAVER USEAST 43.166.244.252 22 --"
-    "28 ADX BID 09 PADDLEWAVER USEAST 43.166.254.156 22 --"
+    "15 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 --"
+    "16 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
+    "17 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
+    "18 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 --"
+    "19 ADX BID 05 PADDLEWAVER USEAST 43.130.111.18 22 --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 --"
@@ -166,11 +157,10 @@ function funcProtectedCloudSeletor() {
     "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 --"
     "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 --"
     "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 --"
-    "25 DSP BID 19 PADDLEWAVER SINGAPORE 129.226.154.237 22 --"
-    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
-    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
-    "28 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --" 
-    "29 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --" 
+    "25 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
+    "26 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
+    "27 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --" 
+    "28 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --" 
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -191,7 +181,6 @@ function funcProtectedCloudSeletor() {
     "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 --"
     "12 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
     "13 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
-    "14 ADX BID 03 YONE USEAST 43.166.246.116 22 --"
     # ==================================================
     "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 --"
     "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 --"
@@ -873,8 +862,10 @@ server {
     location / {
         # [CORS/同源策略]預檢響應[START]
         if (\$request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' '*' always;
-            add_header 'Access-Control-Allow-Credentials' 'false' always;
+            # add_header 'Access-Control-Allow-Origin' '*' always;
+            # add_header 'Access-Control-Allow-Credentials' 'false' always;
+            add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
             add_header 'Access-Control-Max-Age' 86400 always;
@@ -883,8 +874,10 @@ server {
         }
         # [CORS/同源策略]預檢響應[END]
         # [CORS/同源策略]標準響應[START]
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Allow-Credentials' 'false' always;
+        # add_header 'Access-Control-Allow-Origin' '*' always;
+        # add_header 'Access-Control-Allow-Credentials' 'false' always;
+        add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
         # add_header 'Access-Control-Expose-Headers' 'custom' always;

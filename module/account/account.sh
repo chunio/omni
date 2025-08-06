@@ -137,10 +137,10 @@ volumes:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   # 徹底重啟[START]
-  docker rm -f account-php
-  docker rm -f account-redis
-  docker rm -f account-mysql
-  docker rm -f account-nginx
+  docker rm -f account-php 2> /dev/null
+  docker rm -f account-redis 2> /dev/null
+  docker rm -f account-mysql 2> /dev/null
+  docker rm -f account-nginx 2> /dev/null
   # 徹底重啟[END]
   docker-compose down -v
   # 強制清除未使用的「volume」
