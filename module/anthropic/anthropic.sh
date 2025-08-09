@@ -46,24 +46,28 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # 依賴：
 # 1，glibc2.25+（centos7.9/[原生]glibc2.17）
 function funcPublicClaudeCodeReinit(){
-  # 構建鏡像[START]
-  variParameterDescList=("image pattern（example ：chunio/go:1.22.4）")
-  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variImagePattern=${1-"chunio/go:1.22.4"}
-  variContainerName="go1224Environment"
-  docker builder prune --all -f
-  docker rm -f ${variContainerName} 2> /dev/null
-  docker rmi -f $variImagePattern 2> /dev/null
-  # 鏡像不存在時自動執行：docker pull $variImageName
-  docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9.2009 /sbin/init
-  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1224EnvironmentInit;"
-  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
-  echo "docker commit $variContainerId $variImagePattern"
-  docker commit $variContainerId $variImagePattern
-  docker ps --filter "name=${variContainerName}"
-  docker images --filter "reference=${variImagePattern}"
-  echo "${FUNCNAME} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo "docker exec -it ${variContainerName} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  cat <<DOCKERCOMPOSEYML > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"/docker-compose.yml
+services:
+  centos:
+    image: centos:8.4.2105
+    container_name: claude-code
+    command: >
+        bash -lc "
+            sleep infinity
+        "
+    volumes:
+      - /windows:/windows:rw
+    networks:
+      - common
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker-compose down -v
+  docker-compose -p claude-code up --build -d
+  docker update --restart=always claude-code
+  docker ps -a | grep claude-code
   return 0
 }
 # public function[END]

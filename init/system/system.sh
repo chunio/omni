@@ -29,106 +29,7 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-  # 更新倉庫(1)[START]
-  #「centos7.9」已停止維護（截止2024/06/30），官方倉庫 ：mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
-  sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
-  sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
-  local variCentosVersion="${1:-7.9.2009}"
-  local variRepositoryPath="/etc/yum.repos.d"
-  # 僅適用於：centos7
-  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
-    return 0
-  fi
-  # 是否相關[START]
-  if [ "${variBackupStatus:-0}" == "1" ]; then
-    local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
-    echo "backup : $variBackupPath"
-    sudo mkdir -p "$variBackupPath"
-    sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
-  fi 
-  # 是否備份[END]
-  # ----------
-  echo "update : CentOS-Base.repo ..."
-  sudo tee "$variRepositoryPath/CentOS-Base.repo" >/dev/null <<EOF
-[base]
-name=CentOS-7.9 - Base
-baseurl=http://vault.centos.org/$variCentosVersion/os/\$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-
-[updates]
-name=CentOS-7.9 - Updates
-baseurl=http://vault.centos.org/$variCentosVersion/updates/\$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-
-[extras]
-name=CentOS-7.9 - Extras
-baseurl=http://vault.centos.org/$variCentosVersion/extras/\$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-
-[centosplus]
-name=CentOS-7.9 - CentOSPlus
-baseurl=http://vault.centos.org/$variCentosVersion/centosplus/\$basearch/
-enabled=0
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-EOF
-  # ----------
-  echo "update : CentOS-SCLo.repo ..."
-  sudo tee "$variRepositoryPath/CentOS-SCLo.repo" >/dev/null <<EOF
-[centos-sclo-rh]
-name=CentOS-7.9 - SCLo rh
-baseurl=http://vault.centos.org/$variCentosVersion/sclo/\$basearch/rh/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-
-[centos-sclo-sclo]
-name=CentOS-7.9 - SCLo sclo
-baseurl=http://vault.centos.org/$variCentosVersion/sclo/\$basearch/sclo/
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-EOF
-  # ----------
-  echo "update : CentOS-Sources.repo ..."
-  sudo tee "$variRepositoryPath/CentOS-Sources.repo" >/dev/null <<EOF
-[sources]
-name=CentOS-7 - Sources
-baseurl=http://vault.centos.org/$variCentosVersion/os/Source/
-enabled=0
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-skip_if_unavailable=1
-EOF
-  # ----------
-  echo "update : CentOS-Debuginfo.repo ..."
-  sudo tee "$variRepositoryPath/CentOS-Debuginfo.repo" >/dev/null <<'EOF'
-[debuginfo]
-name=CentOS-7 - Debuginfo
-baseurl=http://debuginfo.centos.org/7/$basearch/
-enabled=0
-gpgcheck=1
-skip_if_unavailable=1
-EOF
-  # ----------
-  #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
-  sudo yum-config-manager --disable docker-ce-stable || true
-  sudo yum clean all
-  sudo yum makecache fast
-  sudo yum repolist
-  # 更新倉庫(1)[END]
+  funcProtectedCento7YumRepositoryReinit
   rm -f /var/run/yum.pid
   variPackageList=(
     epel-release
@@ -213,6 +114,217 @@ EOF
   return 0
 }
 
+# 更新倉庫(x9)
+#「centos7.9」已停止維護（截止2024/06/30），[官方倉庫]mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
+funcProtectedCento7YumRepositoryReinit(){
+  # 僅適用於「centos7」[START]
+  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
+    return 0
+  fi
+  # 僅適用於「centos7」[END]
+  # 是否備份[START]
+  if [ "${variBackupStatus:-0}" == "1" ]; then
+    local variRepositoryPath="/etc/yum.repos.d"
+    local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
+    sudo mkdir -p "$variBackupPath"
+    sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
+  else 
+    rm -rf "$variRepositoryPath"/CentOS-*.repo
+  fi 
+  # 是否備份[END]
+  # local variCentosVersion="${1:-7.9.2009}"
+  sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+
+  # DEBUG_LABEL[START]
+  sed -i 's|#mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  # return 0
+  # DEBUG_LABEL[END]
+
+  # ----------
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Base.repo
+# 作用說明：核心倉庫，提供係統安裝時的「base/基礎軟件」，「updates/更新軟件」，「extras/額外工具」，「centosplus/功能增強」
+# 啟用狀態：--
+
+[base]
+name=CentOS-7.9 - Base
+baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[updates]
+name=CentOS-7.9 - Updates
+baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/updates/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[extras]
+name=CentOS-7.9 - Extras
+baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/extras/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[centosplus]
+name=CentOS-7.9 - CentOSPlus
+baseurl=http://vault.centos.org/7.9.2009/centosplus/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/centosplus/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Cr.repo
+# 作用說明：continuous release/持續釋出，使用於正式版本發布之前，提前獲得補丁等
+# 啟用狀態：--
+
+[cr]
+name=CentOS-7.9 - Cr
+baseurl=http://vault.centos.org/7.9.2009/cr/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/cr/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Sclo.repo
+# 作用說明：（1）「Software Collections/SCL」是「redhat/centos」提供的一種機制（不影響係統當前版本的基礎上，兼容較新的開發工具），(2)「SCLo」是「centos社區」的特別興趣小組
+# 啟用狀態：--
+
+[centos-sclo-rh]
+name=CentOS-7.9 - Sclo rh
+baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/rh/
+enabled=1
+gpgcheck=0
+metadata_expire=never
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[centos-sclo-sclo]
+name=CentOS-7.9 - Sclo sclo
+baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/sclo/
+enabled=1
+gpgcheck=0
+metadata_expire=never
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Media.repo
+# 作用說明：離線安裝
+# 啟用狀態：--
+
+[c7-media]
+name=CentOS-7 - Media
+baseurl=file:///media/CentOS/
+        file:///media/cdrom/
+        file:///media/cdrecorder/
+gpgcheck=0
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Vault.repo
+# 作用說明：歸檔倉庫，使用於已終止支援的係統版本
+# 啟用狀態：預設禁用（原因：避免與「CentOS-Base.repo/Updates」衝突）
+
+[C7.9.2009-base]
+name=CentOS-7.9.2009 - Base (vault - disabled)
+baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+
+[C7.9.2009-updates]
+name=CentOS-7.9.2009 - Updates (vault - disabled)
+baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Sources.repo
+# 作用說明：提供原碼套件（SRPM），方便開發者檢視源碼/重新編譯
+# 啟用狀態：--
+
+[sources]
+name=CentOS-7.9 - Sources
+baseurl=http://vault.centos.org/7.9.2009/os/Source/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/Source/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Fasttrack.repo
+# 作用說明：提供{緊急修補/特定套件}的快速更新（注意：並非完整的更新流程），使用於需要第一時間獲取特定修補的環境
+# 啟用狀態：預設關閉
+
+[fasttrack]
+name=CentOS-7.9 - Fasttrack
+baseurl=http://vault.centos.org/7.9.2009/fasttrack/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/fasttrack/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Debuginfo.repo
+# 作用說明：提供包含除錯符號的套件（如：gdb/...，如需「debug key」，則保持禁用）
+# 啟用狀態：--
+
+[debuginfo]
+name=CentOS-7 - Debuginfo
+baseurl=http://debuginfo.centos.org/7/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Debug-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-x86_64-kernel.repo
+# 作用說明：內核倉庫，但於「centos 7 EOL」之後已無法通過「[官方]mirrorlist」獲取（注意：歸檔倉庫亦無獨立的內核倉庫）
+# 啟用狀態：預設關閉
+
+[centos-kernel]
+name=CentOS 7 - LTS Kernel (disabled; EOL)
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+MARK
+  # ----------
+  # /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/repository/* ${variRepositoryPath}/
+   /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
+  chmod -R 644 ${variRepositoryPath}
+  #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
+  sudo yum-config-manager --disable docker-ce-stable || true
+  sudo yum clean all
+  # sudo yum makecache fast
+  # sudo yum repolist
+  return 0
+}
+
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
   local variEtcBashrcReloadStatus=0
@@ -238,6 +350,7 @@ function funcProtectedCommandInit(){
   done
   return 0
 }
+
 function funcProtectedOptionInit(){
   local variAbleUnitFileURIList=${1}
   # 隔斷符號（echo $COMP_WORDBREAKS）"'><=;|&(:
