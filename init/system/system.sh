@@ -30,9 +30,104 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # protected function[START]
 function funcProtectedCloudInit() {
   # 更新倉庫(1)[START]
-  #「centos7.9」已停止維護（截止2024/06/30），官方倉庫 ：mirrorlist.centos.org >> vault.centos.org
+  #「centos7.9」已停止維護（截止2024/06/30），官方倉庫 ：mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
   sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
   sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
+  local variCentosVersion="${1:-7.9.2009}"
+  local variRepositoryPath="/etc/yum.repos.d"
+  # 僅適用於：centos7
+  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
+    return 0
+  fi
+  # 是否相關[START]
+  if [ "${variBackupStatus:-0}" == "1" ]; then
+    local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
+    echo "backup : $variBackupPath"
+    sudo mkdir -p "$variBackupPath"
+    sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
+  fi 
+  # 是否備份[END]
+  # ----------
+  echo "update : CentOS-Base.repo ..."
+  sudo tee "$variRepositoryPath/CentOS-Base.repo" >/dev/null <<EOF
+[base]
+name=CentOS-7.9 - Base
+baseurl=http://vault.centos.org/$variCentosVersion/os/\$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[updates]
+name=CentOS-7.9 - Updates
+baseurl=http://vault.centos.org/$variCentosVersion/updates/\$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[extras]
+name=CentOS-7.9 - Extras
+baseurl=http://vault.centos.org/$variCentosVersion/extras/\$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[centosplus]
+name=CentOS-7.9 - CentOSPlus
+baseurl=http://vault.centos.org/$variCentosVersion/centosplus/\$basearch/
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+EOF
+  # ----------
+  echo "update : CentOS-SCLo.repo ..."
+  sudo tee "$variRepositoryPath/CentOS-SCLo.repo" >/dev/null <<EOF
+[centos-sclo-rh]
+name=CentOS-7.9 - SCLo rh
+baseurl=http://vault.centos.org/$variCentosVersion/sclo/\$basearch/rh/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[centos-sclo-sclo]
+name=CentOS-7.9 - SCLo sclo
+baseurl=http://vault.centos.org/$variCentosVersion/sclo/\$basearch/sclo/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+EOF
+  # ----------
+  echo "update : CentOS-Sources.repo ..."
+  sudo tee "$variRepositoryPath/CentOS-Sources.repo" >/dev/null <<EOF
+[sources]
+name=CentOS-7 - Sources
+baseurl=http://vault.centos.org/$variCentosVersion/os/Source/
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+EOF
+  # ----------
+  echo "update : CentOS-Debuginfo.repo ..."
+  sudo tee "$variRepositoryPath/CentOS-Debuginfo.repo" >/dev/null <<'EOF'
+[debuginfo]
+name=CentOS-7 - Debuginfo
+baseurl=http://debuginfo.centos.org/7/$basearch/
+enabled=0
+gpgcheck=1
+skip_if_unavailable=1
+EOF
+  # ----------
+  #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
+  sudo yum-config-manager --disable docker-ce-stable || true
+  sudo yum clean all
+  sudo yum makecache fast
+  sudo yum repolist
   # 更新倉庫(1)[END]
   rm -f /var/run/yum.pid
   variPackageList=(

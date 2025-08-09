@@ -42,6 +42,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
+
+# 依賴：
+# 1，glibc2.25+（centos7.9/[原生]glibc2.17）
 function funcPublicClaudeCodeReinit(){
   # 構建鏡像[START]
   variParameterDescList=("image pattern（example ：chunio/go:1.22.4）")
