@@ -123,8 +123,8 @@ funcProtectedCento7YumRepositoryReinit(){
   fi
   # 僅適用於「centos7」[END]
   # 是否備份[START]
+  local variRepositoryPath="/etc/yum.repos.d"
   if [ "${variBackupStatus:-0}" == "1" ]; then
-    local variRepositoryPath="/etc/yum.repos.d"
     local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
     sudo mkdir -p "$variBackupPath"
     sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
@@ -318,7 +318,7 @@ MARK
    /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
   chmod -R 644 ${variRepositoryPath}
   #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
-  sudo yum-config-manager --disable docker-ce-stable || true
+  sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
   sudo yum clean all
   # sudo yum makecache fast
   # sudo yum repolist

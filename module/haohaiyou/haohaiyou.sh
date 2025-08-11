@@ -298,6 +298,12 @@ services:
   ${veriModuleName}:
     image: ${variImagePattern}
     container_name: ${veriModuleName}
+    # environment:
+    #   HTTP_PROXY:  http://192.168.255.1:10809
+    #   HTTPS_PROXY: http://192.168.255.1:10809
+    #   NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
     volumes:
       - /windows:/windows
       - /mnt:/mnt
@@ -1370,6 +1376,52 @@ function funcPublicTailUnicornNotice(){
   tail -f notice-$(date -u +%Y%m%d).log
   return 0
 }
+
+
+# gcloud auth activate-service-account --key-file=/windows/runtime/protectedmedia-468207-afb588ea4c73.json
+# gsutil ls gs://1001069.reports.protected.media/2025/08/10
+# gsutil cp gs://1001069.reports.protected.media/2025/08/10/hourly-report-by-levels-1001069-20250810-13.csv /windows/runtime
+function funcPublicPullProtectedMediaHourlyReport(){
+#   cat <<EOF > /etc/yum.repos.d/google-cloud-sdk.repo
+# [google-cloud-sdk]
+# name=Google Cloud SDK
+# baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+# EOF
+  # chmod -R 644 /etc/yum.repos.d
+  # yum install -y google-cloud-sdk
+  variParameterDescList=("utc0 date（example ：2025-01-01）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variUtc0Date="${1:-$(date -u +%Y-%m-%d)}"
+  local variBucketId="1001069"
+  local variBucketName="${variBucketId}.reports.protected.media"
+  local variPrivateKeyUri="/windows/runtime/protectedmedia-468207-afb588ea4c73.json"
+  local variDownloadPath="/windows/runtime"
+  gcloud auth activate-service-account --key-file="${variPrivateKeyUri}" 
+  local variYear="${variUtc0Date:0:4}"
+  local variMonth="${variUtc0Date:5:2}"
+  local variDay="${variUtc0Date:8:2}"
+  local variUtc0DateShortName="${variYear}${variMonth}${variDay}"
+  mkdir -p "$variDownloadPath"
+  for variEachIndex in $(seq 0 23); do
+    variEachHour=$(printf "%02d" "$variEachIndex")
+    variEachFilename="hourly-report-by-levels-${variBucketId}-${variUtc0DateShortName}-${variEachHour}.csv"
+    variEachFileUri="gs://${variBucketName}/${variYear}/${variMonth}/${variDay}/${variEachFilename}"
+    if ! gsutil -q stat "$variEachFileUri"; then
+      echo "[ MISS ] ${variYear}/${variMonth}/${variDay}/${variEachFilename}"
+      continue
+    fi
+    echo "gsutil cp ${variEachFileUri} ${variDownloadPath}/"
+    gsutil cp "$variEachFileUri" "$variDownloadPath"/
+  done
+  ls -lh $variDownloadPath/hourly-report-by-levels-*
+  return 0
+}
+
 # public function[END]
 # ##################################################
 
