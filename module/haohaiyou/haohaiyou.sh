@@ -179,8 +179,9 @@ function funcProtectedCloudSeletor() {
     "09 ADX BID 05 YONE SINGAPORE 43.134.57.230 22 --"
     "10 ADX BID 06 YONE SINGAPORE 43.156.68.83 22 --"
     "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 --"
-    "12 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
-    "13 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
+    "12 ADX BID 08 YONE SINGAPORE 129.226.152.214 22 --"
+    "13 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
+    "14 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
     # ==================================================
     "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 --"
     "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 --"
@@ -1401,7 +1402,7 @@ function funcPublicPullProtectedMediaHourlyReport(){
   local variUtc0Date="${1:-$(date -u +%Y-%m-%d)}"
   local variBucketId="1001069"
   local variBucketName="${variBucketId}.reports.protected.media"
-  local variPrivateKeyUri="/windows/runtime/protectedmedia-468207-afb588ea4c73.json"
+  local variPrivateKeyUri=${VARI_GLOBAL['BUILTIN_UNIT_CLOUD_PATH']}/protectedmedia-468207-afb588ea4c73.json
   local variDownloadPath="/windows/runtime"
   gcloud auth activate-service-account --key-file="${variPrivateKeyUri}" 
   local variYear="${variUtc0Date:0:4}"

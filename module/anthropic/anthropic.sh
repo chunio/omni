@@ -43,7 +43,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # ##################################################
 # public function[START]
 
-# 依賴：
+# docker exec -it claude-code /bin/bash
+# 環境要求：
 # 1，glibc2.25+（centos7.9/[原生]glibc2.17）
 function funcPublicClaudeCodeReinit(){
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
@@ -74,17 +75,18 @@ services:
   centos:
     image: quay.io/centos/centos:stream9
     container_name: claude-code
+    # 開啟VPN/代理[START]
     environment:
       HTTP_PROXY:  http://192.168.255.1:10809
       HTTPS_PROXY: http://192.168.255.1:10809
       NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # 開啟VPN/代理[END]
     #「sleep infinity」保持運行，防止退出
-    command: bash -lc "/usr/local/bin/entrypoint.sh || true; sleep infinity"
+    command: bash -lc "sleep infinity"
     volumes:
       - /windows:/windows:rw
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
     networks:
       - common
 networks:
@@ -92,7 +94,7 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker rm -f claude-code
+  docker rm -f claude-code 2> /dev/null
   docker-compose down -v
   docker-compose -p claude-code up --build -d
   docker update --restart=always claude-code
