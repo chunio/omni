@@ -28,89 +28,63 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # ##################################################
 # protected function[START]
-function funcProtectedCloudInit() {
-  funcProtectedCento7YumRepositoryReinit
-  rm -f /var/run/yum.pid
-  variPackageList=(
-    epel-release
-    git
-    lsof
-    tree
-    wget
-    expect
-    telnet
-    dos2unix
-    net-tools
-    # 含：nslookup（用以測試域名解析等）
-    bind-utils
-    docker
-    docker-compose
-    bash-completion
-  )
-  variCloudInitSucceeded=1
-  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
-  [ $? -eq 0 ] && return 0
-  local variRetry=2
-  declare -A variCloudInstallResult
-  for variEachPackage in "${variPackageList[@]}"; do
-    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
-    # 安裝狀態，值：0/已安裝，1/未安裝
-    variInstalled=$?
-    case ${variEachPackage} in
-      "docker")
-        if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        else
-          # https://docs.docker.com/engine/install/centos/
-          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
-          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-          yum install -y yum-utils device-mapper-persistent-data lvm2
-          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-          yum install -y docker-ce docker-ce-cli containerd.io
-          systemctl enable docker
-          systemctl restart docker
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        fi
-        ;;
-      "docker-compose")
-        if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        else
-          # https://github.com/docker/compose/releases
-          # docker-compose-linux-x86_64
-          variDockerComposeUri=$(which docker-compose)
-          [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
-          curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        fi
-        ;;
-      *)
-        local variCount=0
-        while [ $variCount -lt $variRetry ]; do
-          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
-            if [ ${variInstalled} != 0 ]; then
-              echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
-            fi
-            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-            break
-          else
-            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
-            ((variCount++))
-          fi
-        done
-        ;;
-    esac
-  done
-  # --------------------------------------------------
-  for variEachPackage in "${!variCloudInstallResult[@]}"; do
-    echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
-  done
-  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
-  # --------------------------------------------------
+# 要求：基於純淨係統（centos7.9）
+function funcProtectedSystemInitMark(){
+  #（1）設置網絡
+  # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
+  vim /etc/default/grub
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+  reboot
+  nmcli connection add type ethernet ifname eth0 con-name eth0
+  # 保留「{$NICName}==eth0」的，其餘全部分別刪除
+  nmcli connection delete {$NICName1}
+  nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.255.130/24 ipv4.gateway 192.168.255.254 ipv4.dns 114.114.114.114 connection.autoconnect yes
+  nmcli connection up eth0
+  cat <<IFCFGETH0 > /etc/sysconfig/network-scripts/ifcfg-eth0
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=eth0
+UUID=276a668b-6904-4c68-9479-263547f40fa6
+DEVICE=eth0
+ONBOOT=yes
+IPADDR=192.168.255.130
+PREFIX=24
+GATEWAY=192.168.255.254
+DNS1=114.114.114.114
+IFCFGETH0
+  systemctl restart network.service
+  systemctl disable firewalld
+  systemctl stop firewalld
+  systemctl status firewalld
+  # SELINUX=enforcing >> SELINUX=disabled
+  vi /etc/sysconfig/selinux
+  source /etc/sysconfig/selinux
+  # SELINUX=enforcing >> SELINUX=disabled
+  vi /etc/selinux/config
+  source /etc/selinux/config
+  reboot
+  # [selinux]查看狀態
+  sestatus
+  local variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
+  loacl variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
+  #（2）掛載目錄
+cat <<FSTAB >> /etc/fstab
+//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
+FSTAB
+cat <<PROFILE >> /etc/bashrc
+alias omni.centos="source /windows/code/backend/chunio/omni/init/centos/centos.sh"
+PROFILE
+  source /etc/bashrc
+  # TODO:echo 'set nu' >> ~/.vimrc
   return 0
 }
 
@@ -128,9 +102,9 @@ funcProtectedCento7YumRepositoryReinit(){
     local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
     sudo mkdir -p "$variBackupPath"
     sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
-  else 
+  else
     rm -rf "$variRepositoryPath"/CentOS-*.repo
-  fi 
+  fi
   # 是否備份[END]
   # local variCentosVersion="${1:-7.9.2009}"
   sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
@@ -325,6 +299,92 @@ MARK
   return 0
 }
 
+function funcProtectedCloudInit() {
+  funcProtectedCento7YumRepositoryReinit
+  rm -f /var/run/yum.pid
+  variPackageList=(
+    epel-release
+    git
+    lsof
+    tree
+    wget
+    expect
+    telnet
+    dos2unix
+    net-tools
+    # 含：nslookup（用以測試域名解析等）
+    bind-utils
+    docker
+    docker-compose
+    bash-completion
+  )
+  variCloudInitSucceeded=1
+  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+  [ $? -eq 0 ] && return 0
+  local variRetry=2
+  declare -A variCloudInstallResult
+  for variEachPackage in "${variPackageList[@]}"; do
+    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+    # 安裝狀態，值：0/已安裝，1/未安裝
+    variInstalled=$?
+    case ${variEachPackage} in
+      "docker")
+        if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://docs.docker.com/engine/install/centos/
+          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
+          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce docker-ce-cli containerd.io
+          systemctl enable docker
+          systemctl restart docker
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
+      "docker-compose")
+        if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://github.com/docker/compose/releases
+          # docker-compose-linux-x86_64
+          variDockerComposeUri=$(which docker-compose)
+          [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
+          curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
+      *)
+        local variCount=0
+        while [ $variCount -lt $variRetry ]; do
+          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
+            if [ ${variInstalled} != 0 ]; then
+              echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+            fi
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+            break
+          else
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+            ((variCount++))
+          fi
+        done
+        ;;
+    esac
+  done
+  # --------------------------------------------------
+  for variEachPackage in "${!variCloudInstallResult[@]}"; do
+    echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
+  done
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
+  # --------------------------------------------------
+  return 0
+}
+
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
   local variEtcBashrcReloadStatus=0
@@ -390,7 +450,7 @@ function funcProtectedOptionInit(){
     grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
     funcProtectedComplete "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
     # report2/3[START]
-    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
+    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'centos' ]; then
       # 置頂
       variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
     else
@@ -444,67 +504,6 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
 function funcProtectedEchoGreen(){
   echo -e "\033[32m$1\033[0m"
 }
-
-# 要求：基於純淨係統（centos7.9）
-function funcProtectedSystemInitMark(){
-  # step1：設置網絡
-  variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
-  variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
-  # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
-  vim /etc/default/grub
-  grub2-mkconfig -o /boot/grub2/grub.cfg
-  reboot
-  nmcli connection add type ethernet ifname eth0 con-name eth0
-  # 保留「{$NICName}==eth0」的，其餘全部分別刪除
-  nmcli connection delete {$NICName1}
-  nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.255.130/24 ipv4.gateway 192.168.255.254 ipv4.dns 114.114.114.114 connection.autoconnect yes
-  nmcli connection up eth0
-  cat <<IFCFGETH0 > /etc/sysconfig/network-scripts/ifcfg-eth0
-TYPE=Ethernet
-PROXY_METHOD=none
-BROWSER_ONLY=no
-BOOTPROTO=none
-DEFROUTE=yes
-IPV4_FAILURE_FATAL=no
-IPV6INIT=yes
-IPV6_AUTOCONF=yes
-IPV6_DEFROUTE=yes
-IPV6_FAILURE_FATAL=no
-IPV6_ADDR_GEN_MODE=stable-privacy
-NAME=eth0
-UUID=276a668b-6904-4c68-9479-263547f40fa6
-DEVICE=eth0
-ONBOOT=yes
-IPADDR=192.168.255.130
-PREFIX=24
-GATEWAY=192.168.255.254
-DNS1=114.114.114.114
-IFCFGETH0
-  systemctl restart network.service
-  systemctl disable firewalld
-  systemctl stop firewalld
-  systemctl status firewalld
-  # SELINUX=enforcing >> SELINUX=disabled
-  vi /etc/sysconfig/selinux
-  source /etc/sysconfig/selinux
-  # SELINUX=enforcing >> SELINUX=disabled
-  vi /etc/selinux/config
-  source /etc/selinux/config
-  reboot
-  # [selinux]查看狀態
-  sestatus
-cat <<FSTAB >> /etc/fstab
-//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
-FSTAB
-cat <<PROFILE >> /etc/bashrc
-export http_proxy="http://${variProxy}"
-export https_proxy="http://${variProxy}"
-alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
-PROFILE
-  source /etc/bashrc
-  # TODO:echo 'set nu' >> ~/.vimrc
-  return 0
-}
 # protected function[END]
 # ##################################################
 
@@ -516,7 +515,7 @@ function funcPublicInit(){
   variRefreshCache=${1:-0}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
-    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
+    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/centos'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
   # pull *.sh list[START]
@@ -561,8 +560,8 @@ function funcPublicSaveUnit(){
   done
   # flush the useless data[END]
   echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/centos/centos.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# omni.centos version" >> ${variArchivePath}/README.md
   echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
   tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
   rm -rf ${variSaveToThePath}/${variArchiveCommand}
@@ -754,7 +753,7 @@ return 0
 WEBROOTRENEWSHELL
     ;;
     "standalone")
-      /windows/code/backend/chunio/omni/init/system/system.sh showPort 80 confirm
+      /windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
       certbot certonly \
         --standalone \
         --preferred-challenges http \
@@ -768,7 +767,7 @@ WEBROOTRENEWSHELL
       variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
       cat <<STANDALONERENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
-/windows/code/backend/chunio/omni/init/system/system.sh showPort 80 confirm
+/windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
 certbot renew --quiet --standalone
 if [ $? -eq 0 ]; then
   # TODO : restart the service

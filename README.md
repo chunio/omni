@@ -3,8 +3,8 @@
 ```
 [root@localhost /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [root@localhost /]# git clone https://github.com/chunio/omni.git
-[root@localhost /]# cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-[root@localhost /]# omni.system version
+[root@localhost /]# chmod 777 -R ./omni && ./omni/init/centos/centos.sh init && source /etc/bashrc && omni.centos version
+[root@localhost /]# chmod 777 -R ./omni && ./omni/init/ubuntu/ubuntu.sh init && source /etc/bash.bashrc && omni.ubuntu version
 ```
 ## New Unit
 ```
