@@ -865,10 +865,10 @@ server {
 }
 # 80[END]
 # 443[START]
-server {
-    listen 443 ssl; # http2;
-    server_name ${variDomain};
-    # 證書配置[START]
+#server {
+#    listen 443 ssl http2;
+#    server_name ${variDomain};
+#    # 證書配置[START]
 #    ssl_certificate /etc/nginx/ssl/fullchain.pem;
 #    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 #    ssl_protocols TLSv1.2 TLSv1.3;
@@ -876,37 +876,37 @@ server {
 #    ssl_session_cache shared:SSL:10m;
 #    ssl_session_timeout 10m;
 #    ssl_prefer_server_ciphers off;
-    # 證書配置[END]
-    location / {
-        # [CORS/同源策略]預檢響應[START]
-        if (\$request_method = 'OPTIONS') {
-            # add_header 'Access-Control-Allow-Origin' '*' always;
-            # add_header 'Access-Control-Allow-Credentials' 'false' always;
-            add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
-            add_header 'Access-Control-Allow-Credentials' 'true' always;
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
-            add_header 'Access-Control-Max-Age' 86400 always;
-            # add_header 'Content-Length' 0;
-            return 204;
-        }
-        # [CORS/同源策略]預檢響應[END]
-        # [CORS/同源策略]標準響應[START]
-        # add_header 'Access-Control-Allow-Origin' '*' always;
-        # add_header 'Access-Control-Allow-Credentials' 'false' always;
-        add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
-        add_header 'Access-Control-Allow-Credentials' 'true' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
-        # add_header 'Access-Control-Expose-Headers' 'custom' always;
-        # [CORS/同源策略]標準響應[END]
-        proxy_pass http://${variCurrentIp}:9501;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
+#    # 證書配置[END]
+#    location / {
+#        # [CORS/同源策略]預檢響應[START]
+#        if (\$request_method = 'OPTIONS') {
+#            # add_header 'Access-Control-Allow-Origin' '*' always;
+#            # add_header 'Access-Control-Allow-Credentials' 'false' always;
+#            add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+#            add_header 'Access-Control-Allow-Credentials' 'true' always;
+#            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+#            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+#            add_header 'Access-Control-Max-Age' 86400 always;
+#            # add_header 'Content-Length' 0;
+#            return 204;
+#        }
+#        # [CORS/同源策略]預檢響應[END]
+#        # [CORS/同源策略]標準響應[START]
+#        # add_header 'Access-Control-Allow-Origin' '*' always;
+#        # add_header 'Access-Control-Allow-Credentials' 'false' always;
+#        add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+#        add_header 'Access-Control-Allow-Credentials' 'true' always;
+#        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+#        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+#        # add_header 'Access-Control-Expose-Headers' 'custom' always;
+#        # [CORS/同源策略]標準響應[END]
+#        proxy_pass http://${variCurrentIp}:9501;
+#        proxy_set_header Host \$host;
+#        proxy_set_header X-Real-IP \$remote_addr;
+#        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+#        proxy_set_header X-Forwarded-Proto \$scheme;
+#    }
+#}
 # 443[END]
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
