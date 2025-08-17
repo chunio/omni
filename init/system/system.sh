@@ -850,6 +850,8 @@ STANDALONERENEWSHELL
   chmod +x ${variRenewShellUri}
   if ! grep -q "${variRenewShellUri}" /var/spool/cron/root; then
     echo "0 0 * * 1 ${variRenewShellUri}" >> /var/spool/cron/root
+    systemctl reload crond
+    crontab -l
   fi
   return 0
 }
