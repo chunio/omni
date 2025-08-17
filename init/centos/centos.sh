@@ -721,15 +721,16 @@ HTTPPROXYCONF
 # [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
 function funcPublicCertbot() {
-  local variParameterDescList=("domain" "model : webroot/standalone")
-  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variParameterDescList=("domain, example : baichuan.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
+  funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   if ! command -v certbot &> /dev/null; then
     yum install -y certbot
   fi
   local variDomain=${1}
   local variModel=${2}
+  local variCertbotPath=${3-"/usr/local/nginx/certbot"}
+  local variServiceName=${4-"nginx"}
   local variEmail="zengweitao@msn.com"
-  local variCertbotPath="/usr/local/nginx/certbot/"
   local variRenewShellUri=""
   # 備份證書[START]
   if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
@@ -761,8 +762,7 @@ certbot renew --quiet \
   --config-dir ${variCertbotPath}/config \
   --work-dir ${variCertbotPath}/work \
   --logs-dir ${variCertbotPath}/logs \
-  --deploy-hook "systemctl reload nginx.service"
-return 0
+  --deploy-hook "systemctl reload ${variServiceName}.service"
 WEBROOTRENEWSHELL
     ;;
     "standalone")
@@ -785,9 +785,8 @@ certbot renew --quiet \
   --config-dir ${variCertbotPath}/config \
   --work-dir ${variCertbotPath}/work \
   --logs-dir ${variCertbotPath}/logs \
-  --pre-hook "systemctl stop nginx1170.service" \
-  --deploy-hook "systemctl restart nginx1170.service"
-return 0
+  --pre-hook "systemctl stop ${variServiceName}.service" \
+  --deploy-hook "systemctl restart ${variServiceName}.service"
 STANDALONERENEWSHELL
     ;;
   *)
