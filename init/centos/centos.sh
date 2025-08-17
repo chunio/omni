@@ -731,6 +731,7 @@ function funcPublicCertbot() {
   local variModel=${2}
   local variCertbotPath=${3-"/usr/local/nginx/certbot"}
   local variServiceName=${4-"nginx"}
+  echo ${variDomain} ${variModel} ${variCertbotPath} ${variServiceName}
   local variEmail="zengweitao@msn.com"
   local variRenewShellUri=""
   # 備份證書[START]
