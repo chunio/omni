@@ -724,9 +724,59 @@ HTTPPROXYCONF
 # [證書評分] https://www.ssllabs.com/ssltest/
 # git fetch origin
 # git reset --hard origin/feature/zengweitao/ubuntu
-# omni.centos certbot "baichuan.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
+# omni.centos certbot "example.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
+# [nginx]示例模板[START]
+# server {
+#    listen 80;
+#    server_name example.wiki;
+#    #「Let’s Encrypt」挑戰認證[START]
+#    location ^~ /.well-known/acme-challenge/ {
+#        root /usr/local/nginx1170/certbot/webroot;
+#        default_type "text/plain";
+#        allow all;
+#        auth_basic off;
+#        try_files $uri =404;
+#    }
+#    #「Let’s Encrypt」挑戰認證[END]
+#    # return 301 https://$host$request_uri;
+# }
+# server {
+#    listen 443 ssl http2;
+#    server_name example.wiki;
+#    # SSL[START]
+#    ssl_certificate /usr/local/nginx1170/certbot/config/live/example.wiki/fullchain.pem;
+#    ssl_certificate_key /usr/local/nginx1170/certbot/config/live/example.wiki/privkey.pem;
+#    #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+#    ssl_protocols TLSv1.2 TLSv1.3;
+#    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+#    ssl_prefer_server_ciphers on;
+#    ssl_session_timeout 1d;
+#    ssl_session_cache shared:SSL:50m;
+#    ssl_session_tickets off;
+#    ssl_stapling on;
+#    ssl_stapling_verify on;
+#    add_header Strict-Transport-Security "max-age=63072000" always;
+#    add_header X-Frame-Options "SAMEORIGIN" always;
+#    add_header X-Content-Type-Options "nosniff" always;
+#    # SSL[END]
+#    root /v2ray/webside;
+#    index module/signIn/signIn.html;
+#    location /temp {
+#        proxy_redirect off;
+#        proxy_pass http://127.0.0.1:10703;
+#        proxy_http_version 1.1;
+#        proxy_set_header Upgrade $http_upgrade;
+#        proxy_set_header Connection "upgrade";
+#        proxy_set_header Host $host;
+#        proxy_set_header X-Real-IP $remote_addr;
+#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#    }
+#    # error_log /usr/local/src/log/example.wiki.error.log;
+#    # access_log /usr/local/src/log/example.wiki.access.log;
+# }
+# [nginx]示例模板[END]
 function funcPublicCertbot() {
-  local variParameterDescList=("domain, example : baichuan.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
+  local variParameterDescList=("domain, example : xxxx.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
   funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   if ! command -v certbot &> /dev/null; then
     yum install -y certbot
