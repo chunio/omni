@@ -861,57 +861,53 @@ server {
     #「Let’s Encrypt」挑戰認證[END]
     # return 301 https://\$server_name\$request_uri;
     location / {
-        # 临时返回200，或重定向到HTTPS
-        return 200 "HTTP service is running. SSL certificate pending...";
-        add_header Content-Type text/plain;
-        # 获取证书后可改为：
-        # return 301 https://\$server_name\$request_uri;
+        return 301 https://\$server_name\$request_uri;
     }
 }
 # 80[END]
 # 443[START]
-#server {
-#    listen 443 ssl http2;
-#    server_name ${variDomain};
-#    # 證書配置[START]
-#    ssl_certificate /etc/nginx/ssl/fullchain.pem;
-#    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
-#    ssl_protocols TLSv1.2 TLSv1.3;
-#    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256;
-#    ssl_session_cache shared:SSL:10m;
-#    ssl_session_timeout 10m;
-#    ssl_prefer_server_ciphers off;
-#    # 證書配置[END]
-#    location / {
-#        # [CORS/同源策略]預檢響應[START]
-#        if (\$request_method = 'OPTIONS') {
-#            # add_header 'Access-Control-Allow-Origin' '*' always;
-#            # add_header 'Access-Control-Allow-Credentials' 'false' always;
-#            add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
-#            add_header 'Access-Control-Allow-Credentials' 'true' always;
-#            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-#            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
-#            add_header 'Access-Control-Max-Age' 86400 always;
-#            # add_header 'Content-Length' 0;
-#            return 204;
-#        }
-#        # [CORS/同源策略]預檢響應[END]
-#        # [CORS/同源策略]標準響應[START]
-#        # add_header 'Access-Control-Allow-Origin' '*' always;
-#        # add_header 'Access-Control-Allow-Credentials' 'false' always;
-#        add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
-#        add_header 'Access-Control-Allow-Credentials' 'true' always;
-#        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-#        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
-#        # add_header 'Access-Control-Expose-Headers' 'custom' always;
-#        # [CORS/同源策略]標準響應[END]
-#        proxy_pass http://${variCurrentIp}:9501;
-#        proxy_set_header Host \$host;
-#        proxy_set_header X-Real-IP \$remote_addr;
-#        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-#        proxy_set_header X-Forwarded-Proto \$scheme;
-#    }
-#}
+server {
+    listen 443 ssl http2;
+    server_name ${variDomain};
+    # 證書配置[START]
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_prefer_server_ciphers off;
+    # 證書配置[END]
+    location / {
+        # [CORS/同源策略]預檢響應[START]
+        if (\$request_method = 'OPTIONS') {
+            # add_header 'Access-Control-Allow-Origin' '*' always;
+            # add_header 'Access-Control-Allow-Credentials' 'false' always;
+            add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+            add_header 'Access-Control-Max-Age' 86400 always;
+            # add_header 'Content-Length' 0;
+            return 204;
+        }
+        # [CORS/同源策略]預檢響應[END]
+        # [CORS/同源策略]標準響應[START]
+        # add_header 'Access-Control-Allow-Origin' '*' always;
+        # add_header 'Access-Control-Allow-Credentials' 'false' always;
+        add_header 'Access-Control-Allow-Origin' 'https://www.y-one.co.jp' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Xauth' always;
+        # add_header 'Access-Control-Expose-Headers' 'custom' always;
+        # [CORS/同源策略]標準響應[END]
+        proxy_pass http://${variCurrentIp}:9501;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
 # 443[END]
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
@@ -923,8 +919,8 @@ services:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
       - /usr/local/nginx/certbot/webroot:/etc/nginx/webroot:rw
-#      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
-#      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
     ports:
       - "80:80"
       - "443:443"
