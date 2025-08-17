@@ -866,7 +866,7 @@ server {
 # 80[END]
 # 443[START]
 server {
-    listen 443 ssl http2;
+    listen 443 ssl; # http2;
     server_name ${variDomain};
     # 證書配置[START]
 #    ssl_certificate /etc/nginx/ssl/fullchain.pem;
