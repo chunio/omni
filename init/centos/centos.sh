@@ -738,7 +738,6 @@ HTTPPROXYCONF
 #        try_files $uri =404;
 #    }
 #    #「Let’s Encrypt」挑戰認證[END]
-#    # return 301 https://$host$request_uri;
 # }
 # server {
 #    listen 443 ssl http2;
@@ -771,8 +770,6 @@ HTTPPROXYCONF
 #        proxy_set_header X-Real-IP $remote_addr;
 #        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 #    }
-#    # error_log /usr/local/src/log/example.wiki.error.log;
-#    # access_log /usr/local/src/log/example.wiki.access.log;
 # }
 # [nginx]示例模板[END]
 function funcPublicCertbot() {
