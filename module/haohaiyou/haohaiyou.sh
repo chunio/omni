@@ -852,7 +852,16 @@ function funcPublicCloudSkeletonYoneProxy(){
 server {
     listen 80;
     server_name ${variDomain};
-    return 301 https://\$server_name\$request_uri;
+    #「Let’s Encrypt」挑戰認證[START]
+    location ^~ /.well-known/acme-challenge/ {
+        root /usr/local/nginx/certbot/webroot;
+        default_type "text/plain";
+        allow all;
+        auth_basic off;
+        try_files $uri =404;
+    }
+    #「Let’s Encrypt」挑戰認證[END]
+    # return 301 https://\$server_name\$request_uri;
 }
 # 80[END]
 # 443[START]
