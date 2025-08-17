@@ -29,7 +29,8 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # ##################################################
 # protected function[START]
 # 要求：基於純淨係統（ubuntu24.04）
-function funcProtectedSystemInitMark(){
+# 人工執行
+function funcProtectedManualInit(){
   #（1）設置網絡
   ip a
   sudo tee /etc/netplan/01-netcfg.yaml > /dev/null <<EOF
@@ -64,7 +65,6 @@ FSTAB
   sudo mkdir -p /windows
   sudo mount -a
   sudo systemctl daemon-reload
-  #（3）
   cat <<'PROFILE' >> /etc/bash.bashrc
 alias omni.ubuntu="source /windows/code/backend/chunio/omni/init/ubuntu/ubuntu.sh"
 PROFILE
