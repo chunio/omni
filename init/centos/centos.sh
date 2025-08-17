@@ -720,6 +720,7 @@ HTTPPROXYCONF
 # [證書目錄] /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp
 # [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
+# omni.centos certbot "baichuan.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
 function funcPublicCertbot() {
   local variParameterDescList=("domain, example : baichuan.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
   funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
