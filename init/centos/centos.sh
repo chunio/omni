@@ -722,6 +722,7 @@ HTTPPROXYCONF
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
 # omni.centos certbot "baichuan.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
 function funcPublicCertbot() {
+  echo "[0]" $1 $2 $3 $4
   local variParameterDescList=("domain, example : baichuan.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
   funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   if ! command -v certbot &> /dev/null; then
@@ -731,7 +732,7 @@ function funcPublicCertbot() {
   local variModel=${2}
   local variCertbotPath=${3-"/usr/local/nginx/certbot"}
   local variServiceName=${4-"nginx"}
-  echo ${variDomain} ${variModel} ${variCertbotPath} ${variServiceName}
+  echo "[1]" ${variDomain} ${variModel} ${variCertbotPath} ${variServiceName}
   local variEmail="zengweitao@msn.com"
   local variRenewShellUri=""
   # 備份證書[START]
