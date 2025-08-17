@@ -860,6 +860,13 @@ server {
     }
     #「Let’s Encrypt」挑戰認證[END]
     # return 301 https://\$server_name\$request_uri;
+    location / {
+        # 临时返回200，或重定向到HTTPS
+        return 200 "HTTP service is running. SSL certificate pending...";
+        add_header Content-Type text/plain;
+        # 获取证书后可改为：
+        # return 301 https://\$server_name\$request_uri;
+    }
 }
 # 80[END]
 # 443[START]
