@@ -858,7 +858,7 @@ server {
         default_type "text/plain";
         allow all;
         auth_basic off;
-        try_files $uri =404;
+        try_files \$uri \$uri/ =404;
     }
     #「Let’s Encrypt」挑戰認證[END]
     # return 301 https://\$server_name\$request_uri;
