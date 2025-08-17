@@ -715,14 +715,17 @@ HTTPPROXYCONF
 #「certbot」是由「Let’s Encrypt」官方提供的命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/續簽（有效期：90天）
 #「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口，推薦）
 #「standalone」將啟動一個臨時的HTTP服務來影響權限驗證（必需：讓出80端口）
+#「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
 # --post-hook「certbot命令」執行結束觸發的勾子
 # --deploy-hook 證書內容成功更新觸發的勾子
 # [證書目錄] /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp
 # [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
+# [證書評分] https://www.ssllabs.com/ssltest/
+# git fetch origin
+# git reset --hard origin/feature/zengweitao/ubuntu
 # omni.centos certbot "baichuan.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
 function funcPublicCertbot() {
-  echo "[0]" $1 $2 $3 $4
   local variParameterDescList=("domain, example : baichuan.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
   funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   if ! command -v certbot &> /dev/null; then
@@ -732,7 +735,6 @@ function funcPublicCertbot() {
   local variModel=${2}
   local variCertbotPath=${3-"/usr/local/nginx/certbot"}
   local variServiceName=${4-"nginx"}
-  echo "[1]" ${variDomain} ${variModel} ${variCertbotPath} ${variServiceName}
   local variEmail="zengweitao@msn.com"
   local variRenewShellUri=""
   # 備份證書[START]
