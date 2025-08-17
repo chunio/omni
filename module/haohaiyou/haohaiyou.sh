@@ -301,7 +301,7 @@ services:
     container_name: ${veriModuleName}
     # 開啟VPN/代理[START]
     # environment:
-    #   HTTP_PROXY:  http://192.168.255.1:10809
+    #   HTTP_PROXY: http://192.168.255.1:10809
     #   HTTPS_PROXY: http://192.168.255.1:10809
     #   NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
     # extra_hosts:
@@ -463,13 +463,17 @@ DOCKERCOMPOSEYML
 }
 
 # from : funcPublicRebuildImage()
+# 運行於容器內部
 function funcPublic1224EnvironmentInit(){
-  # 更新倉庫[START]
-  #「centos7.9」已停止維護（截止2024/06/30），官方倉庫 ：mirrorlist.centos.org >> vault.centos.org
-  sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
-  sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
-  # 更新倉庫[END]
-  yum install -y git make graphviz
+  # 處理警告[START]
+  export DEBIAN_FRONTEND=noninteractive
+  # invoke-rc.d: could not determine current runlevel
+  # invoke-rc.d: policy-rc.d denied execution of start.
+  # No schema files found: doing nothing.
+  # 處理警告[END]
+  apt update
+  apt install -y --no-install-recommends dialog apt-utils ca-certificates
+  apt install -y git make graphviz
   # wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.22.4.linux-amd64.tar.gz
   tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.22.4.linux-amd64.tar.gz -C /usr/local
   variWorkPath="/windows/code/backend"
@@ -505,13 +509,14 @@ function funcPublicRebuildImage(){
   # 構建鏡像[START]
   variParameterDescList=("image pattern（example ：chunio/go:1.22.4）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variImagePattern=${1-"chunio/go:1.22.4"}
-  variContainerName="go1224Environment"
+  variImagePattern=${1-"chunio/go:1.22.4.ubuntu.24.04"}
+  variContainerName="go1224Ubuntu"
   docker builder prune --all -f
   docker rm -f ${variContainerName} 2> /dev/null
   docker rmi -f $variImagePattern 2> /dev/null
   # 鏡像不存在時自動執行：docker pull $variImageName
-  docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9.2009 /sbin/init
+  # docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 ubuntu:24.04 /sbin/init
+  docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
   docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1224EnvironmentInit;"
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"

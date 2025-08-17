@@ -6,6 +6,7 @@
 :<<'MARK'
 /etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶，弊端：執行「source /etc/profile」亦無法加載最新變更至當前終端））
 /etc/bash.bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
+find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
 
 declare -A VARI_GLOBAL
@@ -81,6 +82,10 @@ function funcProtectedCloudInit() {
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
   apt update
   variPackageList=(
+    # ubuntu[START]
+    dialog
+    apt-utils
+    # ubuntu[END]
     ca-certificates
     git
     lsof
