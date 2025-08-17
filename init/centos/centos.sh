@@ -735,9 +735,12 @@ HTTPPROXYCONF
 #        default_type "text/plain";
 #        allow all;
 #        auth_basic off;
-#        try_files $uri =404;
+#        try_files $uri $uri/ =404;
 #    }
 #    #「Let’s Encrypt」挑戰認證[END]
+#    location / {
+#        return 301 https://$host$request_uri;
+#    }
 # }
 # server {
 #    listen 443 ssl http2;
@@ -752,8 +755,6 @@ HTTPPROXYCONF
 #    ssl_session_timeout 1d;
 #    ssl_session_cache shared:SSL:50m;
 #    ssl_session_tickets off;
-#    ssl_stapling on;
-#    ssl_stapling_verify on;
 #    add_header Strict-Transport-Security "max-age=63072000" always;
 #    add_header X-Frame-Options "SAMEORIGIN" always;
 #    add_header X-Content-Type-Options "nosniff" always;
@@ -849,6 +850,8 @@ STANDALONERENEWSHELL
   chmod +x ${variRenewShellUri}
   if ! grep -q "${variRenewShellUri}" /var/spool/cron/root; then
     echo "0 0 * * 1 ${variRenewShellUri}" >> /var/spool/cron/root
+    systemctl reload crond
+    crontab -l
   fi
   return 0
 }
