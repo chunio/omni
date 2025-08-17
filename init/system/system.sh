@@ -714,47 +714,112 @@ HTTPPROXYCONF
 # 如已完成域名解釋，則由服務器端操作證書安裝即可（即：無需二次驗證/解釋）
 # 權限驗證（即：證書頒發機構確認申請者是否對域名擁有控制權的一種方法）：DNS‑01/HTTP‑01/...
 #「certbot」是由「Let’s Encrypt」官方提供的命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/續簽（有效期：90天）
-#「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口）
+#「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口，推薦）
 #「standalone」將啟動一個臨時的HTTP服務來影響權限驗證（必需：讓出80端口）
+#「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+# --post-hook「certbot命令」執行結束觸發的勾子
+# --deploy-hook 證書內容成功更新觸發的勾子
 # [證書目錄] /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp
 # [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
-# [續簽測試] certbot renew --dry-run
+# [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
+# [證書評分] https://www.ssllabs.com/ssltest/
+# git fetch origin
+# git reset --hard origin/feature/zengweitao/ubuntu
+# omni.centos certbot "example.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
+# [nginx]示例模板[START]
+# server {
+#    listen 80;
+#    server_name example.wiki;
+#    #「Let’s Encrypt」挑戰認證[START]
+#    location ^~ /.well-known/acme-challenge/ {
+#        root /usr/local/nginx1170/certbot/webroot;
+#        default_type "text/plain";
+#        allow all;
+#        auth_basic off;
+#        try_files $uri =404;
+#    }
+#    #「Let’s Encrypt」挑戰認證[END]
+# }
+# server {
+#    listen 443 ssl http2;
+#    server_name example.wiki;
+#    # SSL[START]
+#    ssl_certificate /usr/local/nginx1170/certbot/config/live/example.wiki/fullchain.pem;
+#    ssl_certificate_key /usr/local/nginx1170/certbot/config/live/example.wiki/privkey.pem;
+#    #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+#    ssl_protocols TLSv1.2 TLSv1.3;
+#    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+#    ssl_prefer_server_ciphers on;
+#    ssl_session_timeout 1d;
+#    ssl_session_cache shared:SSL:50m;
+#    ssl_session_tickets off;
+#    ssl_stapling on;
+#    ssl_stapling_verify on;
+#    add_header Strict-Transport-Security "max-age=63072000" always;
+#    add_header X-Frame-Options "SAMEORIGIN" always;
+#    add_header X-Content-Type-Options "nosniff" always;
+#    # SSL[END]
+#    root /v2ray/webside;
+#    index module/signIn/signIn.html;
+#    location /temp {
+#        proxy_redirect off;
+#        proxy_pass http://127.0.0.1:10703;
+#        proxy_http_version 1.1;
+#        proxy_set_header Upgrade $http_upgrade;
+#        proxy_set_header Connection "upgrade";
+#        proxy_set_header Host $host;
+#        proxy_set_header X-Real-IP $remote_addr;
+#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#    }
+# }
+# [nginx]示例模板[END]
 function funcPublicCertbot() {
-  local variParameterDescList=("domain" "model : webroot/standalone")
-  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variParameterDescList=("domain, example : xxxx.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
+  funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  if ! command -v certbot &> /dev/null; then
+    yum install -y certbot
+  fi
   local variDomain=${1}
   local variModel=${2}
+  local variCertbotPath=${3-"/usr/local/nginx/certbot"}
+  local variServiceName=${4-"nginx"}
   local variEmail="zengweitao@msn.com"
-  local variAbsolutePath="/usr/local/nginx/certbot/"
   local variRenewShellUri=""
-  rm -rf ${variAbsolutePath} && mkdir -p ${variAbsolutePath}/webroot/.well-known/acme-challenge
-  chown root:root ${variAbsolutePath}
-  chmod 755 ${variAbsolutePath}
-  yum install -y certbot
+  # 備份證書[START]
+  if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
+    local variBackupPath="${variCertbotPath}/backup/$(date +%Y%m%d%H%M%S)"
+    mkdir -p "${variBackupPath}"
+    /usr/bin/cp -rf "${variCertbotPath}/config/live/${variDomain}" "${variBackupPath}/"
+    echo "successful backup : ${variBackupPath}"
+  fi
+  # 備份證書[END]
+  mkdir -p ${variCertbotPath}/webroot/.well-known/acme-challenge
+  chown root:root ${variCertbotPath}
+  chmod 755 ${variCertbotPath}
   case ${variModel} in
     "webroot")
       certbot certonly \
         --webroot \
-        -w ${variAbsolutePath}/webroot \
+        -w ${variCertbotPath}/webroot \
         -d ${variDomain} \
         --agree-tos \
         --email ${variEmail} \
         --non-interactive \
-        --config-dir ${variAbsolutePath}/config \
-        --work-dir ${variAbsolutePath}/work \
-        --logs-dir ${variAbsolutePath}/logs
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs
       variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
       cat <<WEBROOTRENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
 certbot renew --quiet \
-  --webroot -w ${variAbsolutePath}/webroot \
-  --deploy-hook "docker exec skeleton-nginx nginx -s reload"
-  # TODO : restart the service
-return 0
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --deploy-hook "systemctl reload ${variServiceName}.service"
 WEBROOTRENEWSHELL
     ;;
     "standalone")
-      /windows/code/backend/chunio/omni/init/system/system.sh showPort 80 confirm
+      /windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
       certbot certonly \
         --standalone \
         --preferred-challenges http \
@@ -762,29 +827,29 @@ WEBROOTRENEWSHELL
         --agree-tos \
         --email ${variEmail} \
         --non-interactive \
-        --config-dir ${variAbsolutePath}/config \
-        --work-dir ${variAbsolutePath}/work \
-        --logs-dir ${variAbsolutePath}/logs
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs
       variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
       cat <<STANDALONERENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
-/windows/code/backend/chunio/omni/init/system/system.sh showPort 80 confirm
-certbot renew --quiet --standalone
-if [ $? -eq 0 ]; then
-  # TODO : restart the service
-  echo "restart the service"
-fi
-return 0
+certbot renew --quiet \
+  --standalone \
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --pre-hook "systemctl stop ${variServiceName}.service" \
+  --deploy-hook "systemctl restart ${variServiceName}.service"
 STANDALONERENEWSHELL
     ;;
   *)
-   echo "Unknown Mode : ${variModel}"; 
+   echo "Unknown Mode : ${variModel}";
    return 1
   ;;
   esac
   chmod +x ${variRenewShellUri}
   if ! grep -q "${variRenewShellUri}" /var/spool/cron/root; then
-    echo "0 * * * * ${variRenewShellUri}" >> /var/spool/cron/root
+    echo "0 0 * * 1 ${variRenewShellUri}" >> /var/spool/cron/root
   fi
   return 0
 }
