@@ -309,10 +309,10 @@ function funcPublicRebuildImage(){
 # from : funcPublicRebuildImage()
 # 運行於容器內部
 function funcPublic1250EnvironmentInit(){
-  # 處理警告[START]
-  # 禁止彈出交互窗口，一律選擇默認配置完成安裝
+  # 減少容器特有/安全性的警告信息[START]
+  # 禁止彈出交互窗口，默認配置完成安裝
   export DEBIAN_FRONTEND=noninteractive
-  # [invoke-rc.d]一個用於啟動/停止/管理係統服務的腳本，依賴運行級別
+  #「invoke-rc.d」依賴運行級別，一個使用於啟動/停止/管理係統服務的腳本
   # invoke-rc.d: could not determine current runlevel
   # invoke-rc.d: policy-rc.d denied execution of start.
   cat <<EOF > /usr/sbin/policy-rc.d
@@ -320,15 +320,20 @@ function funcPublic1250EnvironmentInit(){
 exit 101
 EOF
   chmod +x /usr/sbin/policy-rc.d
-  # No schema files found: doing nothing.（支持：[安全]忽略）
-  # 處理警告[END]
+  # No schema files found: doing nothing.
+  # 減少容器特有/安全性的警告信息[END]
   apt update
-  # dialog：1支持文本界面 (TUI/text-based user interface) 對話框體
-  # apt-utils：1減少警告信息，2提供apt (advanced package tool) 使用的輔助工具
+  #「dialog」支持文本界面對話框體 (TUI/text-based user interface)
+  #「apt-utils」提供「apt」使用的輔助工具
   apt install -y --no-install-recommends dialog apt-utils ca-certificates
-  apt install -y git wget make graphviz
+  apt install -y git wget curl make graphviz
   # claude code install[START]
-  # apt install -y npm && npm install -g @anthropic-ai/claude-code
+  # 允許安裝「man」幫助手冊[START]
+  # 解决警告x22：update-alternatives: warning: skip creation of /usr/share/man/man1/js.1.gz because associated file /usr/share/man/man1/nodejs.1.gz (of link group js) doesn't exist
+  sed -i 's/^path-exclude=\/usr\/share\/man/#path-exclude=\/usr\/share\/man/' /etc/dpkg/dpkg.cfg.d/excludes || true
+  sed -i 's/^path-exclude=\/usr\/share\/doc/#path-exclude=\/usr\/share\/doc/' /etc/dpkg/dpkg.cfg.d/excludes || true
+  # 允許安裝「man」幫助手冊[END]
+  apt install -y npm && npm install -g @anthropic-ai/claude-code
   # claude code install[END]
   # wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz
   tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz -C /usr/local
@@ -451,6 +456,9 @@ services:
     image: chunio/go:1.25.0
     container_name: ${veriModuleName}
     environment:
+      - HTTP_PROXY=http://192.168.255.1:10809
+      - HTTPS_PROXY=http://192.168.255.1:10809
+      - NO_PROXY=localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       - GOENV=/go.env.linux
       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
     volumes:
@@ -462,6 +470,8 @@ services:
     working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
     networks:
       - common
+    extra_hosts:
+      - "host.docker.internal:192.168.255.1"
     ports:
       - "2345:2345"
       - "8000:8000"
@@ -1410,9 +1420,10 @@ function funcPublicTailUnicornNotice(){
 
 
 # gcloud auth activate-service-account --key-file=/windows/runtime/protectedmedia-468207-afb588ea4c73.json
-# gsutil ls gs://1001069.reports.protected.media/2025/08/10
-# gsutil cp gs://1001069.reports.protected.media/2025/08/10/hourly-report-by-levels-1001069-20250810-13.csv /windows/runtime
+# gsutil ls -lh gs://1001069.reports.protected.media/2025/08/17
+# gsutil cp gs://1001069.reports.protected.media/2025/08/17/hourly-report-by-levels-1001069-20250817-00.csv /windows/runtime
 function funcPublicPullProtectedMediaHourlyReport(){
+# 注意：每行頂格
 #   cat <<EOF > /etc/yum.repos.d/google-cloud-sdk.repo
 # [google-cloud-sdk]
 # name=Google Cloud SDK
