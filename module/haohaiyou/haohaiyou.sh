@@ -27,12 +27,19 @@ du -ch /mnt/volume1/unicorn/runtime/bid-request-20250220* | grep total$
 # --------------------------------------------------
 # 擴展存儲[START]
 （1）係統磁盤/擴容
+----------
+//paddlewaver/係統磁盤
 [ext4]
 lsblk
 yum install -y cloud-utils-growpart
 growpart /dev/vda 1
 resize2fs /dev/vda1
-df -h /dev/vda1
+----------
+//yone/數據磁盤
+lsblk
+resize2fs /dev/vdb
+df -h /mnt/datadisk0
+----------
 （2）數據磁盤/掛載
 mkdir -p /mnt/datadisk0/unicorn/runtime && mkdir -p /mnt/volume1/unicorn/runtime
 mount --bind /mnt/datadisk0/unicorn/runtime /mnt/volume1/unicorn/runtime
