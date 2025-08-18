@@ -281,56 +281,83 @@ function funcProtectedCloudSeletor() {
 
 # ##################################################
 # public function[START]
-function funcPublicSkeleton(){
-  # [MASTER]persistence
-  variMasterPath="/windows/code/backend/haohaiyou"
-  # [DOCKER]temporary
-  variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  veriModuleName="skeleton"
-  # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:8.3.12"}
-  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
-# 會被「docker run」中指定命令覆蓋
-return 0
-ENTRYPOINTSH
-  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-services:
-  ${veriModuleName}:
-    image: ${variImagePattern}
-    container_name: ${veriModuleName}
-    # 開啟VPN/代理[START]
-    # environment:
-    #   HTTP_PROXY: http://192.168.255.1:10809
-    #   HTTPS_PROXY: http://192.168.255.1:10809
-    #   NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
-    # 開啟VPN/代理[END]
-    volumes:
-      - /windows:/windows
-      - /mnt:/mnt
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
-    networks:
-      - common
-    ports:
-      - "9501:9501"
-    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
-    # 啟動進程關閉時，則容器退出
-    command: ["tail", "-f", "/dev/null"]
-networks:
-  common:
-    driver: bridge
-DOCKERCOMPOSEYML
-  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker rm -f skeleton 2> /dev/null
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
-  docker update --restart=always ${veriModuleName}
-  docker ps -a | grep ${veriModuleName}
-  cd ${variMasterPath}/gopath/src/${veriModuleName}
-  docker exec -it ${veriModuleName} /bin/bash
+function funcPublicRebuildImage(){
+  # 構建鏡像[START]
+  variParameterDescList=("image pattern（example ：chunio/go:1.25.0（<namespace>/<repository>:<tag>））")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variImagePattern=${1-"chunio/go:1.25.0"}
+  # 習慣:中間橫線，原因：兼容DNS/主機名稱
+  variContainerName="chunio-go-1.25.0"
+  docker builder prune --all -f
+  docker rm -f ${variContainerName} 2> /dev/null
+  docker rmi -f $variImagePattern 2> /dev/null
+  docker stop $(docker ps -aq)
+  # 鏡像不存在時自動執行：docker pull $variImageName
+  # docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 ubuntu:24.04 /sbin/init
+  docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
+  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1250EnvironmentInit;"
+  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
+  echo "docker commit $variContainerId $variImagePattern"
+  docker commit $variContainerId $variImagePattern
+  docker ps --filter "name=${variContainerName}"
+  docker images --filter "reference=${variImagePattern}"
+  echo "${FUNCNAME} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "docker exec -it ${variContainerName} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  return 0
+}
+
+# from : funcPublicRebuildImage()
+# 運行於容器內部
+function funcPublic1250EnvironmentInit(){
+  # 處理警告[START]
+  # 禁止彈出交互窗口，一律選擇默認配置完成安裝
+  export DEBIAN_FRONTEND=noninteractive
+  # [invoke-rc.d]一個用於啟動/停止/管理係統服務的腳本，依賴運行級別
+  # invoke-rc.d: could not determine current runlevel
+  # invoke-rc.d: policy-rc.d denied execution of start.
+  cat <<EOF > /usr/sbin/policy-rc.d
+#!/bin/sh
+exit 101
+EOF
+  chmod +x /usr/sbin/policy-rc.d
+  # No schema files found: doing nothing.（支持：[安全]忽略）
+  # 處理警告[END]
+  apt update
+  # dialog：1支持文本界面 (TUI/text-based user interface) 對話框體
+  # apt-utils：1減少警告信息，2提供apt (advanced package tool) 使用的輔助工具
+  apt install -y --no-install-recommends dialog apt-utils ca-certificates
+  apt install -y git wget make graphviz
+  # claude code install[START]
+  # apt install -y npm && npm install -g @anthropic-ai/claude-code
+  # claude code install[END]
+  # wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz
+  tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz -C /usr/local
+  variWorkPath="/windows/code/backend"
+  mkdir -p ${variWorkPath}
+  mkdir -p ${variWorkPath}/golang/{gopath,gocache.linux,gocache.windows}
+  mkdir -p ${variWorkPath}/golang/gopath{/bin,/pkg,/src}
+  cat <<GOENVLINUX > ${variWorkPath}/golang/go.env.linux
+CGO_ENABLED=0
+GO111MODULE=on
+GOBIN=${variWorkPath}/golang/gopath/bin
+GOCACHE=${variWorkPath}/golang/gocache.linux
+GOMODCACHE=${variWorkPath}/golang/gopath/pkg/mod
+GOPATH=${variWorkPath}/golang/gopath
+GOPROXY=https://goproxy.cn,direct
+GOROOT=/usr/local/go
+GOSUMDB=sum.golang.google.cn
+GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
+GOENVLINUX
+  cat <<ETCBASHRC >> /etc/bashrc
+export PATH=$PATH:/usr/local/go/bin:${variWorkPath}/golang/gopath/bin
+export GOENV=${variWorkPath}/golang/go.env.linux
+ETCBASHRC
+  #  mkdir -p ${variWorkPath}/chunio
+  #  git clone https://github.com/chunio/omni.git
+  #  cd ${variWorkPath}/chunio/omni
+  #  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+  cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bin/* ${variWorkPath}/golang/gopath/bin/
+  ulimit -n 102400
   return 0
 }
 
@@ -421,7 +448,7 @@ GOENVLINUX
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   ${veriModuleName}:
-    image: chunio/go:1.22.4
+    image: chunio/go:1.25.0
     container_name: ${veriModuleName}
     environment:
       - GOENV=/go.env.linux
@@ -462,69 +489,56 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-# from : funcPublicRebuildImage()
-# 運行於容器內部
-function funcPublic1224EnvironmentInit(){
-  # 處理警告[START]
-  export DEBIAN_FRONTEND=noninteractive
-  # invoke-rc.d: could not determine current runlevel
-  # invoke-rc.d: policy-rc.d denied execution of start.
-  # No schema files found: doing nothing.
-  # 處理警告[END]
-  apt update
-  apt install -y --no-install-recommends dialog apt-utils ca-certificates
-  apt install -y git make graphviz
-  # wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.22.4.linux-amd64.tar.gz
-  tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.22.4.linux-amd64.tar.gz -C /usr/local
-  variWorkPath="/windows/code/backend"
-  mkdir -p ${variWorkPath}
-  mkdir -p ${variWorkPath}/golang/{gopath,gocache.linux,gocache.windows}
-  mkdir -p ${variWorkPath}/golang/gopath{/bin,/pkg,/src}
-  cat <<GOENVLINUX > ${variWorkPath}/golang/go.env.linux
-CGO_ENABLED=0
-GO111MODULE=on
-GOBIN=${variWorkPath}/golang/gopath/bin
-GOCACHE=${variWorkPath}/golang/gocache.linux
-GOMODCACHE=${variWorkPath}/golang/gopath/pkg/mod
-GOPATH=${variWorkPath}/golang/gopath
-GOPROXY=https://goproxy.cn,direct
-GOROOT=/usr/local/go
-GOSUMDB=sum.golang.google.cn
-GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
-GOENVLINUX
-  cat <<ETCBASHRC >> /etc/bashrc
-export PATH=$PATH:/usr/local/go/bin:${variWorkPath}/golang/gopath/bin
-export GOENV=${variWorkPath}/golang/go.env.linux
-ETCBASHRC
-  #  mkdir -p ${variWorkPath}/chunio
-  #  git clone https://github.com/chunio/omni.git
-  #  cd ${variWorkPath}/chunio/omni
-  #  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-  cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bin/* ${variWorkPath}/golang/gopath/bin/
-  ulimit -n 102400
-  return 0
-}
-
-function funcPublicRebuildImage(){
-  # 構建鏡像[START]
-  variParameterDescList=("image pattern（example ：chunio/go:1.22.4）")
-  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variImagePattern=${1-"chunio/go:1.22.4.ubuntu.24.04"}
-  variContainerName="go1224Ubuntu"
-  docker builder prune --all -f
-  docker rm -f ${variContainerName} 2> /dev/null
-  docker rmi -f $variImagePattern 2> /dev/null
-  # 鏡像不存在時自動執行：docker pull $variImageName
-  # docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 ubuntu:24.04 /sbin/init
-  docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
-  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1224EnvironmentInit;"
-  variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
-  echo "docker commit $variContainerId $variImagePattern"
-  docker commit $variContainerId $variImagePattern
-  docker ps --filter "name=${variContainerName}"
-  docker images --filter "reference=${variImagePattern}"
-  echo "${FUNCNAME} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo "docker exec -it ${variContainerName} /bin/bash" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+function funcPublicSkeleton(){
+  # [MASTER]persistence
+  variMasterPath="/windows/code/backend/haohaiyou"
+  # [DOCKER]temporary
+  variDockerWorkSpace="/windows/code/backend/haohaiyou"
+  veriModuleName="skeleton"
+  # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
+  variImagePattern=${1:-"chunio/php:8.3.12"}
+  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+#!/bin/bash
+# 會被「docker run」中指定命令覆蓋
+return 0
+ENTRYPOINTSH
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${veriModuleName}:
+    image: ${variImagePattern}
+    container_name: ${veriModuleName}
+    # 開啟VPN/代理[START]
+    # environment:
+    #   HTTP_PROXY: http://192.168.255.1:10809
+    #   HTTPS_PROXY: http://192.168.255.1:10809
+    #   NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # 開啟VPN/代理[END]
+    volumes:
+      - /windows:/windows
+      - /mnt:/mnt
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    networks:
+      - common
+    ports:
+      - "9501:9501"
+    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    # 啟動進程關閉時，則容器退出
+    command: ["tail", "-f", "/dev/null"]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker rm -f skeleton 2> /dev/null
+  docker-compose down -v
+  docker-compose -p ${veriModuleName} up --build -d
+  docker update --restart=always ${veriModuleName}
+  docker ps -a | grep ${veriModuleName}
+  cd ${variMasterPath}/gopath/src/${veriModuleName}
+  docker exec -it ${veriModuleName} /bin/bash
   return 0
 }
 

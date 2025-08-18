@@ -44,8 +44,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # public function[START]
 
 # docker exec -it claude-code /bin/bash
-# 環境要求：
-# 1，glibc2.25+（centos7.9/[原生]glibc2.17）
+# 環境依賴：glibc2.25+（centos7.9/[原生]glibc2.17）
+#「claude code」僅支持「HTTP/HTTPS」VPN/代理，不支持「SOCKS」VPN/代理（原因：底層使用「node.js」的HTTP客戶端，默认僅識別「HTTP_PROXY/HTTPS_PROXY」環境變量）
 function funcPublicClaudeCodeReinit(){
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
