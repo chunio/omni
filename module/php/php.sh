@@ -22,7 +22,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # global variable[START]
 VARI_GLOBAL["BIN_NAME"]="php8324"
 VARI_GLOBAL["SERVICE_NAME"]="php8324"
-VARI_GLOBAL["CONTAINER_NAME"]="php8324environment"
+VARI_GLOBAL["CONTAINER_NAME"]="chunio-php-8.3.24"
 # global variable[END]
 # ##################################################
 
@@ -77,8 +77,9 @@ function funcProtected8324CloudInit() {
       libjpeg-dev # 支持：gd-jpeg
       libwebp-dev # 支持：gd-webp
       libmagic-dev # 支持：fileinfo
+      libsqlite3-dev # 支持：sqlite（默認：開啟）
       libfreetype6-dev # 支持：gd-font
-      libmaxminddb-dev # 支持：geoip2（maxmind已轉至「[composer]geoip2/geoip2/libmaxminddb」）
+      libmaxminddb-dev # 支持：geoip2（maxmind已轉至「[composer]geoip2/geoip2 && libmaxminddb」）
       libonig-dev # 支持：mbstring
       libkrb5-dev # 支持：ldap/sasl kerberos
       libxslt1-dev # 支持：xslt
