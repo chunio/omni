@@ -90,6 +90,7 @@ function funcProtected8324CloudInit() {
       libyaml-dev # yaml
       libgeoip-dev # geoip
       libmcrypt-dev # mcrypt
+      liburing-dev # swoole
       libbrotli-dev # swoole
       libc-ares-dev # swoole
       libnghttp2-dev # swoole
@@ -404,6 +405,7 @@ swoole.use_shortname = off
 ;啟用內置函數
 swoole.enable_library = on
 swoole.enable_coroutine = on
+;啟用搶佔調度
 swoole.enable_preemptive_scheduler = on
 ;設置擴展
 ;「zend_extension/核心擴展」應於「extension/普通擴展」之前加載
@@ -557,10 +559,16 @@ SYSTEMCTLPHPFPM8324SERVICE
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                --enable-brotli \
                 --enable-openssl \
                 --enable-sockets \
                 --enable-mysqlnd \
                 --enable-swoole-curl
+                # 已廢棄的[START]
+                # --enable-http2
+                # --enable-iouring
+                # --enable-swoole-json
+                # 已廢棄的[END]
                 make -j$(nproc) && make install
                 echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
                 # swoole[END]
@@ -706,14 +714,6 @@ function funcPublic8324Main(){
   funcProtected8324EnviDestruct
   return 0
 }
-
-#function funcPublicReleaseImage(){
-#  variParameterDescList=("image pattern（example：chunio/php:8324）")
-#  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-#  variImagePattern=${1}
-#  omni.docker releaseImage $variImagePattern
-#  return 0
-#}
 
 function funcPublicExec(){
   if ! docker ps | grep -q "${VARI_GLOBAL["CONTAINER_NAME"]}"; then

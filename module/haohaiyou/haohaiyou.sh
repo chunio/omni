@@ -308,7 +308,7 @@ function funcPublicRebuildImage(){
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     systemd.ubuntu /sbin/init
   # DEBUG_LABEL[END]
-  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1250EnvironmentInit;"
+  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") Go1250Main;"
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
@@ -321,7 +321,7 @@ function funcPublicRebuildImage(){
 
 # from : funcPublicRebuildImage()
 # 運行於容器內部
-function funcPublic1250EnvironmentInit(){
+function funcPublicGo1250Main(){
   # 減少容器特有/安全性的警告信息[START]
   # 禁止彈出交互窗口，默認配置完成安裝
   export DEBIAN_FRONTEND=noninteractive

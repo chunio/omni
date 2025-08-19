@@ -33,7 +33,7 @@ VARI_GLOBAL["SEPARATOR_LINE"]="-------------------------------------------------
 # public function[START]
 # 網絡不佳:「Head "https://registry-1.docker.io/v2/chunio/php/blobs/sha256:fa89db0e0fce3d0c80948c0b4c13e53da6ea4e33c89a4c1013ac2b1cc1b4b6ce": EOF」
 function funcPublicReleaseImage(){
-  variParameterDescList=("image pattern（example : chunio/php:8370）")
+  variParameterDescList=("image pattern（example : chunio/php:8.3.24）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1}
   variDockerUsername=$(funcProtectedPullEncryptEnvi "DOCKER_USERNAME")
