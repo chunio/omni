@@ -49,6 +49,7 @@ function funcProtected8411CloudInit() {
       curl
       unzip
       ca-certificates
+      bash-completion
       # 係統輔助[END]
       # 核心依賴[START]
       gcc
