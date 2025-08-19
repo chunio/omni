@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # author : zengweitao@gmail.com
-# datetime : 2024/10/07
+# datetime : 2025/08/18
 
 :<<'MARK'
-https://www.php.net/distributions/php-8.4.11.tar.gz
+https://www.php.net/distributions/php-8.3.24.tar.gz
 擴展列表 : php -m
 擴展詳情 : php --ri ${extensionName}
 編譯參數 : php -i | grep configure
@@ -20,20 +20,19 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["BIN_NAME"]="php8411"
-VARI_GLOBAL["SERVICE_NAME"]="php8411"
-VARI_GLOBAL["CONTAINER_NAME"]="php8411environment"
+VARI_GLOBAL["BIN_NAME"]="php8324"
+VARI_GLOBAL["SERVICE_NAME"]="php8324"
+VARI_GLOBAL["CONTAINER_NAME"]="php8324environment"
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-  # funcProtectedSyncQiniu
-  return 0
+    return 0
 }
 
-function funcProtected8411CloudInit() {
+function funcProtected8324CloudInit() {
     export DEBIAN_FRONTEND=noninteractive
     # 允許安裝「man」幫助手冊[START]
     # 解决警告xN：update-alternatives: warning: skip creation of /usr/share/man/man1/js.1.gz because associated file /usr/share/man/man1/nodejs.1.gz (of link group js) doesn't exist
@@ -70,27 +69,29 @@ function funcProtected8411CloudInit() {
       libxml2-dev # --with-libxml
       libldap2-dev # --with-ldap
       libsasl2-dev # --with-ldap-sasl
+      libpcre3-dev # 优化：正則性能
+      libargon2-dev  # 支持：密碼哈希
       libcurl4-openssl-dev # --with-curl
       libgd-dev # 支持：gd
       libpng-dev # 支持：gd-png
       libjpeg-dev # 支持：gd-jpeg
-      libxpm-dev # 支持：gd-xpm
       libwebp-dev # 支持：gd-webp
+      libmagic-dev # 支持：fileinfo
       libfreetype6-dev # 支持：gd-font
       libmaxminddb-dev # 支持：geoip2（maxmind已轉至「[composer]geoip2/geoip2/libmaxminddb」）
       libonig-dev # 支持：mbstring
       libkrb5-dev # 支持：ldap/sasl kerberos
       libxslt1-dev # 支持：xslt
       libsodium-dev # 支持：sodium
-      libsqlite3-dev # 支持：sqlite
       libreadline-dev # 支持：readline
       # 核心依賴[END]
       # 擴展依賴[START]
       libyaml-dev # yaml
-      libmcrypt-dev # mcrypt
       libgeoip-dev # geoip
+      libmcrypt-dev # mcrypt
       libbrotli-dev # swoole
       libc-ares-dev # swoole
+      libnghttp2-dev # swoole
       # 擴展依賴[END]
     )
     local variRetry=3
@@ -116,14 +117,14 @@ function funcProtected8411CloudInit() {
     return 0
 }
 
-function funcProtected8411LocalInit(){
+function funcProtected8324LocalInit(){
     # --------------------------------------------------
     echo "${FUNCNAME} finished" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     # --------------------------------------------------
     return 0
 }
 
-function funcProtected8411Main(){
+function funcProtected8324KernelCompile(){
     # php process user[START]
     if ! id www > /dev/null 2>&1; then
         useradd -s /bin/false -M www
@@ -135,16 +136,16 @@ function funcProtected8411Main(){
     local variPart2Button=true
     if [ "${variPart1Button}" = true ]; then
       {
-        rm -rf /usr/local/src/php-8.4.11
-        cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.4.11.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.4.11
+        rm -rf /usr/local/src/php-8.3.24
+        cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf php-8.3.24.tar.gz -C /usr/local/src && cd /usr/local/src/php-8.3.24
         ./configure \
         --prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
         --exec-prefix=/usr/local/${VARI_GLOBAL["BIN_NAME"]} \
         --bindir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin \
+        --mandir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/man \
+        --libdir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib \
         --sbindir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/sbin \
         --includedir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/include \
-        --libdir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib \
-        --mandir=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/man \
         --with-fpm-user=www \
         --with-fpm-group=www \
         --with-config-file-path=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc \
@@ -154,7 +155,6 @@ function funcProtected8411Main(){
         --with-libxml \
         --with-openssl \
         --with-bz2 \
-        --with-xpm \
         --with-zlib \
         --with-webp \
         --with-jpeg \
@@ -168,10 +168,9 @@ function funcProtected8411Main(){
         --with-sodium \
         --with-gettext \
         --without-gdbm \
-        --without-pear \
         --enable-gd \
-        --enable-ftp \
         --enable-xml \
+        --enable-ftp \
         --enable-fpm \
         --enable-soap \
         --enable-shmop \
@@ -183,16 +182,12 @@ function funcProtected8411Main(){
         --enable-mysqlnd \
         --enable-sockets \
         --enable-opcache \
+        --enable-opcache-jit \
         --enable-session \
         --enable-mbstring \
         --enable-calendar \
         --disable-debug \
-        --disable-rpath \
-        --disable-fileinfo
-         # 已廢棄的[START]
-        # --with-mhash
-        # --enable-inline-optimization
-        # 已廢棄的[END]
+        --disable-rpath
         make -j$(nproc) && make install
         mkdir -p /usr/local/${VARI_GLOBAL["BIN_NAME"]}/{log,runtime,session}
         chown -R www:www /usr/local/${VARI_GLOBAL["BIN_NAME"]}
@@ -203,11 +198,11 @@ function funcProtected8411Main(){
         # ----------
         touch /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
         chmod 777 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/xdebug.log
-        # cp /usr/local/src/php-8.4.11/php.ini-production /usr/local/src/php-8.4.11/etc/php.ini
-        # cp /usr/local/php8411/etc/php-fpm.conf.default /usr/local/src/php-8.4.11/etc/php-fpm.conf
-        # cp /usr/local/php8411/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.4.11/etc/php-fpm.d/www.conf
+        # cp /usr/local/src/php-8.3.24/php.ini-production /usr/local/src/php-8.3.24/etc/php.ini
+        # cp /usr/local/php8324/etc/php-fpm.conf.default /usr/local/src/php-8.3.24/etc/php-fpm.conf
+        # cp /usr/local/php8324/etc/php-fpm.d/www.conf.default /usr/local/src/php-8.3.24/etc/php-fpm.d/www.conf
         # --------------------------------------------------
-        # /usr/local/php8411/etc/php.ini
+        # /usr/local/php8324/etc/php.ini
   cat <<PHPINI > /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
 [PHP]
 ;禁止信息暴露至「http header」
@@ -405,18 +400,20 @@ opcache.validate_timestamps = 0
 opcache.memory_consumption = 128
 [swoole]
 swoole.use_shortname = off
+;啟用內置函數
+swoole.enable_library = on
 swoole.enable_coroutine = on
 swoole.enable_preemptive_scheduler = on
 ;設置擴展
 ;「zend_extension/核心擴展」應於「extension/普通擴展」之前加載
-extension_dir = "/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib/extensions/no-debug-non-zts-20240924"
+extension_dir = "/usr/local/${VARI_GLOBAL["BIN_NAME"]}/lib/extensions/no-debug-non-zts-20230831"
 ;zend_extension = xdebug.so
 zend_extension = opcache.so
 extension = mysqli.so
 extension = pdo_mysql.so
 PHPINI
         # --------------------------------------------------
-        # /usr/local/php8411/etc/php-fpm.conf
+        # /usr/local/php8324/etc/php-fpm.conf
 cat <<PHPFPMCONF > /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php-fpm.conf
 pid = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/runtime/php-fpm.pid
 error_log = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/php-fpm-error.log
@@ -448,19 +445,19 @@ request_terminate_timeout = 0
 slowlog = /usr/local/${VARI_GLOBAL["BIN_NAME"]}/log/php-fpm-slow.log
 PHPFPMCONF
         # --------------------------------------------------
-        # /lib/systemd/system/php-fpm-8411.service（官方模板/8411：/usr/local/src/php-8.4.11/sapi/fpm/php-fpm.service）
-cat <<'SYSTEMCTLPHPFPM8411SERVICE' > /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
+        # /lib/systemd/system/php-fpm-8324.service（官方模板/8324：/usr/local/src/php-8.3.24/sapi/fpm/php-fpm.service）
+cat <<'SYSTEMCTLPHPFPM8324SERVICE' > /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
 [Unit]
 Description=The PHP FastCGI Process Manager
 After=network.target
 [Service]
 Type=simple
-PIDFile=/usr/local/php8411/runtime/php-fpm.pid
-ExecStart=/usr/local/php8411/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php8411/etc/php-fpm.conf
+PIDFile=/usr/local/php8324/runtime/php-fpm.pid
+ExecStart=/usr/local/php8324/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php8324/etc/php-fpm.conf
 ExecReload=/bin/kill -USR2 $MAINPID
 ProtectedTmp=true
-# 錯誤信息 ：systemctl status php-fpm-8411.service >> ERROR: failed to open error_log (/usr/local/php8411/log/php-fpm-error.log): Read-only file system (30)
-# 原因分析 ：/usr/lib/systemd/system/php-fpm-8411.service >> ProtectSystem={true || full（default）}，「php-fpm」將[只讀]掛載目錄：/boot，/usr，/etc
+# 錯誤信息 ：systemctl status php-fpm-8324.service >> ERROR: failed to open error_log (/usr/local/php8324/log/php-fpm-error.log): Read-only file system (30)
+# 原因分析 ：/usr/lib/systemd/system/php-fpm-8324.service >> ProtectSystem={true || full（default）}，「php-fpm」將[只讀]掛載目錄：/boot，/usr，/etc
 # 解决方法 ：1/ProtectSystem=false（but:unsafe），2/php-fpm.conf >> 「error_log」等選項調整至非「/boot，/usr，/etc」
 ProtectSystem=false
 ProtectedDevices=true
@@ -472,7 +469,7 @@ RestrictAddressFamilies=AF_INET AF_INET6 AF_NETLINK AF_UNIX
 RestrictNamespaces=true
 [Install]
 WantedBy=multi-user.target
-SYSTEMCTLPHPFPM8411SERVICE
+SYSTEMCTLPHPFPM8324SERVICE
         chmod 745 /lib/systemd/system/${VARI_GLOBAL["SERVICE_NAME"]}.service
         systemctl enable ${VARI_GLOBAL["SERVICE_NAME"]}.service
         systemctl restart ${VARI_GLOBAL["SERVICE_NAME"]}.service
@@ -492,8 +489,8 @@ SYSTEMCTLPHPFPM8411SERVICE
               # example："extensionPackageFullName extensionPackageShortName extionsionName"
               "zip-1.22.5.tgz zip-1.22.5 zip"
               "apcu-5.1.25.tgz apcu-5.1.25 apcu"
-              #「php 8.4.11」僅支持「mcrypt 1.0.9+」
-              "mcrypt-1.0.9.tgz mcrypt-1.0.9 mcrypt"
+              # 已廢棄的
+              # "mcrypt-1.0.7.tgz mcrypt-1.0.7 mcrypt"
               "mongodb-2.1.1.tgz mongodb-2.1.1 mongodb"
               #「igbinary」應於「redis」之前加載
               "igbinary-3.2.15.tgz igbinary-3.2.15 igbinary"
@@ -522,23 +519,7 @@ SYSTEMCTLPHPFPM8411SERVICE
             mkdir -p /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
             echo ';custom external extension' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
             {
-                # swoole[START]
-                variExtensionInstallResult["swoole"]="swoole"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-6.0.2.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-6.0.2
-                /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
-                ./configure \
-                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                --enable-http2 \
-                --enable-openssl \
-                --enable-sockets \
-                --enable-mysqlnd \
-                --enable-swoole-curl \
-                --enable-swoole-json
-                make -j$(nproc) && make install
-                echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
-            }
-            {
-                # amqp[start]
+                # amqp[START]
                 # rabbitmq-c : https://github.com/alanxz/rabbitmq-c/releases
                 # amqp : http://pecl.php.net/package/amqp
                 variExtensionInstallResult["amqp"]="amqp"
@@ -555,6 +536,7 @@ SYSTEMCTLPHPFPM8411SERVICE
                 --with-amqp
                 make -j$(nproc) && make install
                 echo 'extension = amqp.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                # amqp[EMD]
             }
             {
                 # yaml[START]
@@ -565,33 +547,22 @@ SYSTEMCTLPHPFPM8411SERVICE
                 --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
                 make -j$(nproc) && make install
                 echo 'extension = yaml.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                # yaml[END]
             }
             {
-                # geoip[START]
-                # ip database file : /usr/share/GeoIP
-                variExtensionInstallResult["geoip"]="geoip"
-                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf geoip-1.1.1.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/geoip-1.1.1
-                # 「PHP7+」安全機制已調整至 ：不再需要{TSRMLS_CC && TSRMLS_DC}
-                sed -i 's/ TSRMLS_CC//g' geoip.c
-                sed -i 's/ TSRMLS_DC//g' geoip.c
+                # swoole[START]
+                variExtensionInstallResult["swoole"]="swoole"
+                cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf swoole-5.1.8.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/swoole-5.1.8
                 /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                 ./configure \
-                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
+                --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                --enable-openssl \
+                --enable-sockets \
+                --enable-mysqlnd \
+                --enable-swoole-curl
                 make -j$(nproc) && make install
-                echo 'extension = geoip.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
-            }
-            {
-                # inotify[START]
-                if [[ ${variInotifyButton:-false} == true ]]; then
-                  variExtensionInstallResult["inotify"]="inotify"
-                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
-                  /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
-                  ./configure \
-                  --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
-                  --enable-inotify
-                  make -j$(nproc) && make install
-                  echo 'extension = inotify.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
-                fi
+                echo 'extension = swoole.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                # swoole[END]
             }
             {
                 # xdebug[START]
@@ -606,26 +577,21 @@ SYSTEMCTLPHPFPM8411SERVICE
                   # echo 'zend_extension = xdebug.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
                   sed -i 's/;zend_extension = xdebug.so/zend_extension = xdebug.so/' /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
                 fi
+                # xdebug[END]
             }
             {
-                # sodium[START]
-                # 加密算法
-                if false; then
-                  variExtensionInstallResult["sodium"]="sodium"
-                  # 安裝依賴 : libsodium
-                  # https://download.libsodium.org/libsodium/releases
-                  # cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf libsodium-1.0.20-stable.tar.gz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
-                  # mv /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-stable /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.20
-                  # cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/libsodium-1.0.20
-                  # ./configure --prefix=/usr/local
-                  # make -j$(nproc) && make install
-                  cd /usr/local/src/php-8.4.11/ext/sodium
+                # inotify[START]
+                if [[ ${variInotifyButton:-false} == true ]]; then
+                  variExtensionInstallResult["inotify"]="inotify"
+                  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} && tar -xvf inotify-3.0.0.tgz -C /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]} && cd /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}/inotify-3.0.0
                   /usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/phpize
                   ./configure \
-                  --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config
+                  --with-php-config=/usr/local/${VARI_GLOBAL["BIN_NAME"]}/bin/php-config \
+                  --enable-inotify
                   make -j$(nproc) && make install
-                  echo 'extension = sodium.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
+                  echo 'extension = inotify.so;' >> /usr/local/${VARI_GLOBAL["BIN_NAME"]}/etc/php.ini
                 fi
+                # inotify[END]
             }
             # custom install[END]
             # --------------------------------------------------
@@ -668,7 +634,7 @@ SYSTEMCTLPHPFPM8411SERVICE
             # php composer-setup.php --install-dir=/usr/local/bin --filename=composer
             # php -r "unlink('composer-setup.php');"
             cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
-            /usr/bin/cp -rf composer.phar /usr/local/bin/composer
+            /usr/bin/cp -rf composer-2.8.10.phar /usr/local/bin/composer
             chmod +x /usr/local/bin/composer
             # 更新環境變量[START]
             # 關閉提示「Continue as root/super user [yes]?」
@@ -682,7 +648,6 @@ SYSTEMCTLPHPFPM8411SERVICE
             composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/
             variGithubCommonToken=$(funcProtectedPullEncryptEnvi "GITHUB_COMMON_TOKEN")
             composer config --global --auth github-oauth.github.com ${variGithubCommonToken}
-            # composer update --prefer-source
           }
         }
     fi
@@ -692,7 +657,7 @@ SYSTEMCTLPHPFPM8411SERVICE
     return 0
 }
 
-function funcProtected8411Destruct(){
+function funcProtected8324EnviDestruct(){
   rm -rf /usr/local/src/extension/${VARI_GLOBAL["BIN_NAME"]}
   return 0
 }
@@ -701,53 +666,28 @@ function funcProtected8411Destruct(){
 
 # ##################################################
 # public function[START]
-function funcPublic8411EnvironmentInit(){
-  # funcProtected8411CloudInit
-  funcProtected8411LocalInit
-  funcProtected8411Main
-  funcProtected8411Destruct
-  return 0
-}
-
 function funcPublicRebuildImage(){
   # 構建鏡像[START]
-  variParameterDescList=("image pattern（example ：chunio/php:8.4.11）")
+  variParameterDescList=("image pattern（example ：chunio/php:8.3.24）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=$1
   docker rm -f ${VARI_GLOBAL["CONTAINER_NAME"]} 2> /dev/null
   # 當本地鏡像不存在時，則自動執行 ：docker pull $variImageName（from : hub.docker.com）
   #「-v /sys/fs/cgroup:/sys/fs/cgroup:rw ---tmpfs /tmp --tmpfs /run --tmpfs /run/lock --cgroupns=host」表示支持「systemctl」
-
-  # DEBUG_LABEL[START]
-
-#  omni.docker buildSystemdUbuntuImage
-#  docker run -d \
-#  --privileged \
-#  --name ${VARI_GLOBAL["CONTAINER_NAME"]} \
-#  --tmpfs /tmp \
-#  --tmpfs /run \
-#  --tmpfs /run/lock \
-#  --cgroupns=host \
-#  -v /windows:/windows \
-#  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-#  systemd.ubuntu /sbin/init
-
+  omni.docker buildSystemdUbuntuImage
   docker run -d \
-  --privileged \
-  --name ${VARI_GLOBAL["CONTAINER_NAME"]} \
-  --tmpfs /tmp \
-  --tmpfs /run \
-  --tmpfs /run/lock \
-  --cgroupns=host \
-  -v /windows:/windows \
-  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-  chunio/php:8.4.11.2 /sbin/init
-
-  # DEBUG_LABEL[END]
-
+    --privileged \
+    --name ${VARI_GLOBAL["CONTAINER_NAME"]} \
+    --tmpfs /tmp \
+    --tmpfs /run \
+    --tmpfs /run/lock \
+    --cgroupns=host \
+    -v /windows:/windows \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+    systemd.ubuntu /sbin/init
   # 執行命令，並停留至遠端窗口，示例：
-  # docker exec -it php8411 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php.sh funcPublicBuiltinMain; exec /bin/bash" 
-  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename ${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}) 8411EnvironmentInit;"
+  # docker exec -it php8324 /bin/bash -c "cd /windows/code/backend/chunio/automatic/docker/php && ./php.sh funcPublicBuiltinMain; exec /bin/bash" 
+  docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename ${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}) 8324Main;"
   variContainerId=$(docker ps --filter "name=${VARI_GLOBAL["CONTAINER_NAME"]}" --format "{{.ID}}")
   echo "docker commit ${variContainerId} ${variImagePattern} ..."
   docker commit ${variContainerId} ${variImagePattern}
@@ -758,13 +698,21 @@ function funcPublicRebuildImage(){
   return 0
 }
 
-function funcPublicReleaseImage(){
-  variParameterDescList=("image pattern（example：chunio/php:8411）")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variImagePattern=${1}
-  omni.docker releaseImage $variImagePattern
+function funcPublic8324Main(){
+  funcProtected8324CloudInit
+  funcProtected8324LocalInit
+  funcProtected8324KernelCompile
+  funcProtected8324EnviDestruct
   return 0
 }
+
+#function funcPublicReleaseImage(){
+#  variParameterDescList=("image pattern（example：chunio/php:8324）")
+#  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+#  variImagePattern=${1}
+#  omni.docker releaseImage $variImagePattern
+#  return 0
+#}
 
 function funcPublicExec(){
   if ! docker ps | grep -q "${VARI_GLOBAL["CONTAINER_NAME"]}"; then
@@ -781,12 +729,11 @@ function funcPublicExec(){
       -v /windows:/windows \
       -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
       -p 9501:9501 \
-      chunio/php:8411 /sbin/init
+      chunio/php:8324 /sbin/init
   fi
   docker exec -it ${VARI_GLOBAL["CONTAINER_NAME"]} /bin/bash -c "cd /windows/code/backend/haohaiyou/gopath/src/skeleton; exec /bin/bash"
   return 0
 }
-
 # public function[END]
 # ##################################################
 

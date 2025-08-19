@@ -519,7 +519,7 @@ function funcPublicSkeleton(){
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   veriModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:8.4.11"}
+  variImagePattern=${1:-"chunio/php:8.3.24"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
