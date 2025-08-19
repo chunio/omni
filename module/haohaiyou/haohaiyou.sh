@@ -293,8 +293,21 @@ function funcPublicRebuildImage(){
   docker rmi -f $variImagePattern 2> /dev/null
   docker stop $(docker ps -aq)
   # 鏡像不存在時自動執行：docker pull $variImageName
-  # docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 ubuntu:24.04 /sbin/init
-  docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
+  # DEBUG_LABEL[START]
+  # [unsystemd] docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
+  # [centos] docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9 /sbin/init
+  omni.docker buildSystemdUbuntuImage
+  docker run -d \
+    --privileged \
+    --name ${variContainerName} \
+    --tmpfs /tmp \
+    --tmpfs /run \
+    --tmpfs /run/lock \
+    --cgroupns=host \
+    -v /windows:/windows \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+    systemd.ubuntu /sbin/init
+  # DEBUG_LABEL[END]
   docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") 1250EnvironmentInit;"
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
