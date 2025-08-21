@@ -1399,19 +1399,19 @@ function funcPublicTailUnicornNotice(){
 
 
 # gcloud auth activate-service-account --key-file=/windows/runtime/protectedmedia-468207-afb588ea4c73.json
-# gsutil ls gs://1001069.reports.protected.media/2025/08/10
-# gsutil cp gs://1001069.reports.protected.media/2025/08/10/hourly-report-by-levels-1001069-20250810-13.csv /windows/runtime
+# gsutil ls gs://1001069.reports.protected.media/2025/08/21
+# gsutil cp gs://1001069.reports.protected.media/2025/08/21/hourly-report-by-levels-1001069-20250821-11.csv /windows/runtime
 function funcPublicPullProtectedMediaHourlyReport(){
 #   cat <<EOF > /etc/yum.repos.d/google-cloud-sdk.repo
-# [google-cloud-sdk]
-# name=Google Cloud SDK
-# baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
-# enabled=1
-# gpgcheck=1
-# repo_gpgcheck=1
-# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-# EOF
+#[google-cloud-sdk]
+#name=Google Cloud SDK
+#baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
+#enabled=1
+#gpgcheck=1
+#repo_gpgcheck=1
+#gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#      https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+#EOF
   # chmod -R 644 /etc/yum.repos.d
   # yum install -y google-cloud-sdk
   variParameterDescList=("utc0 date（example ：2025-01-01）")
