@@ -1094,9 +1094,9 @@ function funcPublicCloudUnicornReinit() {
           git clone git@github.com:chunio/unicorn.git && cd unicorn
           git checkout ${variBranchName}
         fi
-        /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
-        /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
-        # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+        /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+        /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+        # /windows/code/backend/chunio/omni/init/system/system.sh killMatchProcess unicorn
         mkdir -p ./bin && chmod 777 -R .
         /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
         echo "" > /windows/runtime/${variBinName}.command
@@ -1190,7 +1190,7 @@ JUMPEREOF
 #   else
 #     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
 #     # supervisor[START]
-#     /windows/code/backend/chunio/omni/common/docker/docker.sh matchKill unicorn
+#     /windows/code/backend/chunio/omni/common/docker/docker.sh killMatchProcess unicorn
 #     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
 #     eval "$(cat /windows/runtime/command.variable)"
 #     echo "[ ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
@@ -1231,10 +1231,10 @@ function funcPublicCloudUnicornSupervisor(){
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HealthCheckFailed"
     # supervisor[START]
-    /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variHttpPort} confirm
-    /windows/code/backend/chunio/omni/init/system/system.sh showPort ${variGrpcPort} confirm
+    /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+    /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
     /usr/bin/cp -rf /windows/runtime/unicorn_${variModuleName}.log /windows/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
-    # /windows/code/backend/chunio/omni/init/system/system.sh matchKill unicorn
+    # /windows/code/backend/chunio/omni/init/system/system.sh killMatchProcess unicorn
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/unicorn_${variModuleName}.command)"
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
