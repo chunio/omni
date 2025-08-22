@@ -29,7 +29,7 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # ##################################################
 # protected function[START]
-function funcPublicOsDistroInit() {
+function funcProtectedOsDistroInit() {
   local variOsType=$(uname)
   local variOsDistro="UNKNOWN"
   local variSourceUri=""
@@ -56,7 +56,7 @@ function funcPublicOsDistroInit() {
 }
 
 function funcProtectedCloudInit() {
-  funcPublicOsDistroInit
+  funcProtectedOsDistroInit
   case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
       "MACOS")
           # TODO:...
@@ -464,7 +464,7 @@ MARK
   chmod -R 644 ${variRepositoryPath}
   #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
   sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
-  sudo yum clean all
+  sudo yum clean all > /dev/null
   # sudo yum makecache fast
   # sudo yum repolist
   return 0
