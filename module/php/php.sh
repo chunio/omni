@@ -11,7 +11,7 @@ https://www.php.net/distributions/php-8.3.24.tar.gz
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="SLAVE"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"

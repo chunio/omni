@@ -5,12 +5,12 @@
 
 :<<'MARK'
 /etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶，弊端：執行「source /etc/profile」亦無法加載最新變更至當前終端））
-/etc/bash.bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
+/etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））
 find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
@@ -29,52 +29,79 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # ##################################################
 # protected function[START]
-# 要求：基於純淨係統（ubuntu24.04）
-# 人工執行
-function funcProtectedManualInit(){
-  #（1）設置網絡
-  ip a
-  sudo tee /etc/netplan/01-netcfg.yaml > /dev/null <<EOF
-network:
-  version: 2
-  renderer: networkd
-  ethernets:
-    ens33:
-      dhcp4: no
-      addresses:
-        - 192.168.255.140/24
-      routes:
-        - to: default
-          via: 192.168.255.254
-      nameservers:
-        addresses: [114.114.114.114, 8.8.8.8]
-EOF
-  sudo chmod 600 /etc/netplan/01-netcfg.yaml
-  sudo netplan apply
-  sudo systemctl disable ufw
-  sudo systemctl stop ufw
-  sudo systemctl status ufw
-  sudo systemctl stop apparmor || true
-  sudo systemctl disable apparmor || true
-  aa-status || apparmor_status || true
-  #（2）掛載目錄
-  local variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
-  loacl variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
-  grep -qF '//192.168.255.1/mount /windows' /etc/fstab || cat <<FSTAB >> /etc/fstab
-//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
-FSTAB
-  sudo mkdir -p /windows
-  sudo mount -a
-  sudo systemctl daemon-reload
-  cat <<'PROFILE' >> /etc/bash.bashrc
-alias omni.ubuntu="source /windows/code/backend/chunio/omni/init/ubuntu/ubuntu.sh"
-PROFILE
-  source /etc/bash.bashrc
-  # TODO:echo 'set nu' >> ~/.vimrc
+function funcPublicDistroInit() {
+  local variOsType=$(uname)
+  local variOsDistro="unknown"
+  if [ "$variOsType" = "Darwin" ]; then
+      variOsDistro="macos"
+  elif [ "$variOsType" = "Linux" ]; then
+      if [ -f /etc/os-release ]; then
+          . /etc/os-release
+          variOsDistro=$(echo $ID | tr '[:upper:]' '[:lower:]')
+      elif [ -f /etc/centos-release ]; then
+          variOsDistro="centos"
+      elif [ -f /etc/redhat-release ]; then
+          variOsDistro="centos"
+      elif [ -f /etc/debian_version ]; then
+          variOsDistro="ubuntu"
+      fi
+  fi
+  case $variOsDistro in
+      "centos"|"rhel"|"redhat")
+          echo "centos"
+          ;;
+      "ubuntu"|"debian")
+          echo "ubuntu"
+          ;;
+      "macos")
+          echo "macos"
+          ;;
+      *)
+          echo "unknown"
+          ;;
+  esac
+  echo $variOsDistro
   return 0
 }
 
 function funcProtectedCloudInit() {
+  local variOsType=$(uname)
+  local variOsDistro="unknown"
+  if [ "$variOsType" = "Darwin" ]; then
+      variOsDistro="macos"
+  elif [ "$variOsType" = "Linux" ]; then
+      if [ -f /etc/debian_version ]; then
+          variOsDistro="ubuntu"
+      elif [ -f /etc/os-release ]; then
+          . /etc/os-release
+          variOsDistro=$(echo $ID | tr '[:upper:]' '[:lower:]')
+      elif [ -f /etc/centos-release ]; then
+          variOsDistro="centos"
+      elif [ -f /etc/redhat-release ]; then
+          variOsDistro="centos"
+      fi
+  fi
+  case $variOsDistro in
+      "macos")
+          # macos
+          # TODO:...
+          ;;
+      "ubuntu"|"debian")
+          # ubuntu
+          funcProtectedUbuntuInit
+          ;;
+      "centos"|"rhel"|"redhat")
+          # centos
+          funcProtectedCentosInit
+          ;;
+      *)
+          echo "unknown"
+          ;;
+  esac
+  return 0
+}
+
+function funcProtectedUbuntuInit(){
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[START]
   rm -f /var/lib/dpkg/lock-frontend
   rm -f /var/lib/dpkg/lock
@@ -173,6 +200,304 @@ function funcProtectedCloudInit() {
   return 0
 }
 
+function funcProtectedCentosInit(){
+  funcProtectedCentos7YumRepositoryUpdater
+  rm -f /var/run/yum.pid
+  variPackageList=(
+    epel-release
+    git
+    lsof
+    tree
+    wget
+    expect
+    telnet
+    dos2unix
+    net-tools
+    # 含：nslookup（用以測試域名解析等）
+    bind-utils
+    docker
+    docker-compose
+    bash-completion
+  )
+  variCloudInitSucceeded=1
+  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+  [ $? -eq 0 ] && return 0
+  local variRetry=2
+  declare -A variCloudInstallResult
+  for variEachPackage in "${variPackageList[@]}"; do
+    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+    # 安裝狀態，值：0/已安裝，1/未安裝
+    variInstalled=$?
+    case ${variEachPackage} in
+      "docker")
+        if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://docs.docker.com/engine/install/centos/
+          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
+          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce docker-ce-cli containerd.io
+          systemctl enable docker
+          systemctl restart docker
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
+      "docker-compose")
+        if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          # https://github.com/docker/compose/releases
+          # docker-compose-linux-x86_64
+          variDockerComposeUri=$(which docker-compose)
+          [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
+          curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
+      *)
+        local variCount=0
+        while [ $variCount -lt $variRetry ]; do
+          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
+            if [ ${variInstalled} != 0 ]; then
+              echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
+            fi
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+            break
+          else
+            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+            ((variCount++))
+          fi
+        done
+        ;;
+    esac
+  done
+  # --------------------------------------------------
+  for variEachPackage in "${!variCloudInstallResult[@]}"; do
+    echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
+  done
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
+  # --------------------------------------------------
+  return 0
+}
+
+# 更新倉庫(x9)
+#「centos7.9」已停止維護（截止2024/06/30），[官方倉庫]mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
+function funcProtectedCentos7YumRepositoryUpdater(){
+  # 僅適用於「centos7」[START]
+  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
+    return 0
+  fi
+  # 僅適用於「centos7」[END]
+  # 是否備份[START]
+  local variRepositoryPath="/etc/yum.repos.d"
+  if [ "${variBackupStatus:-0}" == "1" ]; then
+    local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
+    sudo mkdir -p "$variBackupPath"
+    sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
+  else
+    rm -rf "$variRepositoryPath"/CentOS-*.repo
+  fi
+  # 是否備份[END]
+  # local variCentosVersion="${1:-7.9.2009}"
+  sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+
+  # DEBUG_LABEL[START]
+  sed -i 's|#mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  # return 0
+  # DEBUG_LABEL[END]
+
+  # ----------
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Base.repo
+# 作用說明：核心倉庫，提供係統安裝時的「base/基礎軟件」，「updates/更新軟件」，「extras/額外工具」，「centosplus/功能增強」
+# 啟用狀態：--
+
+[base]
+name=CentOS-7.9 - Base
+baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[updates]
+name=CentOS-7.9 - Updates
+baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/updates/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[extras]
+name=CentOS-7.9 - Extras
+baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/extras/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=1
+metadata_expire=never
+skip_if_unavailable=1
+
+[centosplus]
+name=CentOS-7.9 - CentOSPlus
+baseurl=http://vault.centos.org/7.9.2009/centosplus/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/centosplus/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Cr.repo
+# 作用說明：continuous release/持續釋出，使用於正式版本發布之前，提前獲得補丁等
+# 啟用狀態：--
+
+[cr]
+name=CentOS-7.9 - Cr
+baseurl=http://vault.centos.org/7.9.2009/cr/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/cr/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Sclo.repo
+# 作用說明：（1）「Software Collections/SCL」是「redhat/centos」提供的一種機制（不影響係統當前版本的基礎上，兼容較新的開發工具），(2)「SCLo」是「centos社區」的特別興趣小組
+# 啟用狀態：--
+
+[centos-sclo-rh]
+name=CentOS-7.9 - Sclo rh
+baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/rh/
+enabled=1
+gpgcheck=0
+metadata_expire=never
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+
+[centos-sclo-sclo]
+name=CentOS-7.9 - Sclo sclo
+baseurl=http://vault.centos.org/7.9.2009/sclo/$basearch/sclo/
+enabled=1
+gpgcheck=0
+metadata_expire=never
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Media.repo
+# 作用說明：離線安裝
+# 啟用狀態：--
+
+[c7-media]
+name=CentOS-7 - Media
+baseurl=file:///media/CentOS/
+        file:///media/cdrom/
+        file:///media/cdrecorder/
+gpgcheck=0
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Vault.repo
+# 作用說明：歸檔倉庫，使用於已終止支援的係統版本
+# 啟用狀態：預設禁用（原因：避免與「CentOS-Base.repo/Updates」衝突）
+
+[C7.9.2009-base]
+name=CentOS-7.9.2009 - Base (vault - disabled)
+baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+
+[C7.9.2009-updates]
+name=CentOS-7.9.2009 - Updates (vault - disabled)
+baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Sources.repo
+# 作用說明：提供原碼套件（SRPM），方便開發者檢視源碼/重新編譯
+# 啟用狀態：--
+
+[sources]
+name=CentOS-7.9 - Sources
+baseurl=http://vault.centos.org/7.9.2009/os/Source/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/Source/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Fasttrack.repo
+# 作用說明：提供{緊急修補/特定套件}的快速更新（注意：並非完整的更新流程），使用於需要第一時間獲取特定修補的環境
+# 啟用狀態：預設關閉
+
+[fasttrack]
+name=CentOS-7.9 - Fasttrack
+baseurl=http://vault.centos.org/7.9.2009/fasttrack/$basearch/
+# [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/fasttrack/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Debuginfo.repo
+# 作用說明：提供包含除錯符號的套件（如：gdb/...，如需「debug key」，則保持禁用）
+# 啟用狀態：--
+
+[debuginfo]
+name=CentOS-7 - Debuginfo
+baseurl=http://debuginfo.centos.org/7/$basearch/
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Debug-7
+enabled=0
+metadata_expire=never
+skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-x86_64-kernel.repo
+# 作用說明：內核倉庫，但於「centos 7 EOL」之後已無法通過「[官方]mirrorlist」獲取（注意：歸檔倉庫亦無獨立的內核倉庫）
+# 啟用狀態：預設關閉
+
+[centos-kernel]
+name=CentOS 7 - LTS Kernel (disabled; EOL)
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+skip_if_unavailable=1
+MARK
+  # ----------
+  # /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/repository/* ${variRepositoryPath}/
+   /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
+  chmod -R 644 ${variRepositoryPath}
+  #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
+  sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
+  sudo yum clean all
+  # sudo yum makecache fast
+  # sudo yum repolist
+  return 0
+}
+
+
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
   local variEtcBashrcReloadStatus=0
@@ -180,15 +505,15 @@ function funcProtectedCommandInit(){
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri}; then
-        # 基於當前環境的命令（即：vim /etc/bash.bashrc）[START]
+    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
+        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
         pattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        if ! $(grep -qF "$pattern" /etc/bash.bashrc); then
-          echo $pattern >> /etc/bash.bashrc
-          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bash.bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+        if ! $(grep -qF "$pattern" /etc/bashrc); then
+          echo $pattern >> /etc/bashrc
+          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
           variEtcBashrcReloadStatus=1
         fi
-        # 基於當前環境的命令（即：vim /etc/bash.bashrc）[END]
+        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
         # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -235,10 +560,10 @@ function funcProtectedOptionInit(){
     done
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
-    funcProtectedComplete "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
+    funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
     # report2/3[START]
-    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'ubuntu' ]; then
+    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
       # 置頂
       variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
     else
@@ -263,7 +588,7 @@ function funcProtectedOptionInit(){
   return 0
 }
 
-function funcProtectedComplete(){
+function funcProtectedBashCompletion(){
   variCommand=$1
   variOptionList=$2
 # 添加當前腳本的命令補全邏輯
@@ -289,21 +614,19 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
   return 0
 }
 
-function funcProtectedEchoGreen(){
-  echo -e "\033[32m$1\033[0m"
-}
 # protected function[END]
 # ##################################################
 
 # ##################################################
 # public function[START]
+
 function funcPublicInit(){
   local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   variRefreshCache=${1:-0}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
-    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/ubuntu'}"
+    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
   # pull *.sh list[START]
@@ -348,8 +671,8 @@ function funcPublicSaveUnit(){
   done
   # flush the useless data[END]
   echo "[root@localhost /]# tar -xvf ${variArchiveCommand}.tgz" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# ./${variArchiveCommand}/init/ubuntu/ubuntu.sh init && source /etc/bash.bashrc" >> ${variArchivePath}/README.md
-  echo "[root@localhost /]# omni.ubuntu version" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# ./${variArchiveCommand}/init/system/system.sh init && source /etc/bashrc" >> ${variArchivePath}/README.md
+  echo "[root@localhost /]# omni.system version" >> ${variArchivePath}/README.md
   echo '[root@localhost /]# # example : [ input ] '${variArchiveCommand}' >> \table' >> ${variArchivePath}/README.md
   tar -czvf ${variSaveToThePath}/${variArchiveCommand}.tgz ${variArchivePath}
   rm -rf ${variSaveToThePath}/${variArchiveCommand}
@@ -448,49 +771,40 @@ function funcPublicProxy() {
   variProxy="192.168.255.1:${variPort}"
   if [ ${variPort} -gt 0 ]; then
     # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bash.bashrc; then
-        sed -i '/http_proxy="http/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-        sed -i '/https_proxy="http/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
+    if grep -q 'export http_proxy="http' /etc/bashrc; then
+        sed -i '/http_proxy="http/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+        sed -i '/https_proxy="http/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
     else
-        echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bash.bashrc
-        echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bash.bashrc
+        echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bashrc
+        echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bashrc
     fi
     # common proxy[END]
-    # apt proxy[START]
-    cat > /etc/apt/apt.conf.d/80proxy <<APT_CONF_D
-Acquire::http::Proxy "http://${variProxy}";
-Acquire::https::Proxy "http://${variProxy}";
-APT_CONF_D
-    # apt proxy[END]
     # docker proxy[START]
     mkdir -p /etc/systemd/system/docker.service.d
-    cat <<HTTP_PROXY_CONF > /etc/systemd/system/docker.service.d/http-proxy.conf
+    cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
 [Service]
 Environment="HTTP_PROXY=http://${variProxy}"
 Environment="HTTPS_PROXY=http://${variProxy}"
-HTTP_PROXY_CONF
+HTTPPROXYCONF
     # docker proxy[END]
   else
     # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bash.bashrc; then
-        sed -i '/http_proxy="http/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-        sed -i '/https_proxy="http/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
+    if grep -q 'export http_proxy="http' /etc/bashrc; then
+        sed -i '/http_proxy="http/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
+        sed -i '/https_proxy="http/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
     else
-        echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bash.bashrc
-        echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bash.bashrc
+        echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
+        echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
     fi
     unset http_proxy
     unset https_proxy
     # common proxy[END]
-    # apt proxy[START]
-    rm -f /etc/apt/apt.conf.d/80proxy 2>/dev/null
-    # apt proxy[END]
     # docker proxy[START]
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
     # docker proxy[END]
   fi
   # systemctl restart network.service
-  source /etc/bash.bashrc
+  source /etc/bashrc
   systemctl daemon-reload
   systemctl restart docker
   # [臨時]禁用代理
@@ -498,7 +812,7 @@ HTTP_PROXY_CONF
   # [臨時]啟用代理
   # curl -x http://192.168.255.1:10809 https://www.google.com
   # ICMP（如：ping）流量不經過HTTP/SOCKS代理
-  echo '/etc/bash.bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo '/etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo 'http_proxy = '${http_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo 'https_proxy = '${https_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo '/etc/systemd/system/docker.service.d/http-proxy.conf' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
@@ -510,47 +824,113 @@ HTTP_PROXY_CONF
 # 如已完成域名解釋，則由服務器端操作證書安裝即可（即：無需二次驗證/解釋）
 # 權限驗證（即：證書頒發機構確認申請者是否對域名擁有控制權的一種方法）：DNS‑01/HTTP‑01/...
 #「certbot」是由「Let’s Encrypt」官方提供的命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/續簽（有效期：90天）
-#「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口）
+#「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口，推薦）
 #「standalone」將啟動一個臨時的HTTP服務來影響權限驗證（必需：讓出80端口）
+#「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+# --post-hook「certbot命令」執行結束觸發的勾子
+# --deploy-hook 證書內容成功更新觸發的勾子
 # [證書目錄] /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp
 # [證書測試] curl -vI https://skeleton.y-one.co.jp/cookie?status=1
-# [續簽測試] certbot renew --dry-run
+# [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
+# [證書評分] https://www.ssllabs.com/ssltest/
+# git fetch origin
+# git reset --hard origin/feature/zengweitao/ubuntu
+# omni.centos certbot "example.wiki" "webroot" "/usr/local/nginx1170/certbot" "nginx1170"
+# [nginx]示例模板[START]
+# server {
+#    listen 80;
+#    server_name example.wiki;
+#    #「Let’s Encrypt」挑戰認證[START]
+#    location ^~ /.well-known/acme-challenge/ {
+#        root /usr/local/nginx1170/certbot/webroot;
+#        default_type "text/plain";
+#        allow all;
+#        auth_basic off;
+#        try_files $uri $uri/ =404;
+#    }
+#    #「Let’s Encrypt」挑戰認證[END]
+#    location / {
+#        return 301 https://$host$request_uri;
+#    }
+# }
+# server {
+#    listen 443 ssl http2;
+#    server_name example.wiki;
+#    # SSL[START]
+#    ssl_certificate /usr/local/nginx1170/certbot/config/live/example.wiki/fullchain.pem;
+#    ssl_certificate_key /usr/local/nginx1170/certbot/config/live/example.wiki/privkey.pem;
+#    #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+#    ssl_protocols TLSv1.2 TLSv1.3;
+#    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+#    ssl_prefer_server_ciphers on;
+#    ssl_session_timeout 1d;
+#    ssl_session_cache shared:SSL:50m;
+#    ssl_session_tickets off;
+#    add_header Strict-Transport-Security "max-age=63072000" always;
+#    add_header X-Frame-Options "SAMEORIGIN" always;
+#    add_header X-Content-Type-Options "nosniff" always;
+#    # SSL[END]
+#    root /v2ray/webside;
+#    index module/signIn/signIn.html;
+#    location /temp {
+#        proxy_redirect off;
+#        proxy_pass http://127.0.0.1:10703;
+#        proxy_http_version 1.1;
+#        proxy_set_header Upgrade $http_upgrade;
+#        proxy_set_header Connection "upgrade";
+#        proxy_set_header Host $host;
+#        proxy_set_header X-Real-IP $remote_addr;
+#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#    }
+# }
+# [nginx]示例模板[END]
 function funcPublicCertbot() {
-  local variParameterDescList=("domain" "model : webroot/standalone")
-  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variParameterDescList=("domain, example : xxxx.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
+  funcProtectedCheckRequiredParameter 4 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  if ! command -v certbot &> /dev/null; then
+    yum install -y certbot
+  fi
   local variDomain=${1}
   local variModel=${2}
+  local variCertbotPath=${3-"/usr/local/nginx/certbot"}
+  local variServiceName=${4-"nginx"}
   local variEmail="zengweitao@msn.com"
-  local variAbsolutePath="/usr/local/nginx/certbot/"
   local variRenewShellUri=""
-  rm -rf ${variAbsolutePath} && mkdir -p ${variAbsolutePath}/webroot/.well-known/acme-challenge
-  chown root:root ${variAbsolutePath}
-  chmod 755 ${variAbsolutePath}
-  yum install -y certbot
+  # 備份證書[START]
+  if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
+    local variBackupPath="${variCertbotPath}/backup/$(date +%Y%m%d%H%M%S)"
+    mkdir -p "${variBackupPath}"
+    /usr/bin/cp -rf "${variCertbotPath}/config/live/${variDomain}" "${variBackupPath}/"
+    echo "successful backup : ${variBackupPath}"
+  fi
+  # 備份證書[END]
+  mkdir -p ${variCertbotPath}/webroot/.well-known/acme-challenge
+  chown root:root ${variCertbotPath}
+  chmod 755 ${variCertbotPath}
   case ${variModel} in
     "webroot")
       certbot certonly \
         --webroot \
-        -w ${variAbsolutePath}/webroot \
+        -w ${variCertbotPath}/webroot \
         -d ${variDomain} \
         --agree-tos \
         --email ${variEmail} \
         --non-interactive \
-        --config-dir ${variAbsolutePath}/config \
-        --work-dir ${variAbsolutePath}/work \
-        --logs-dir ${variAbsolutePath}/logs
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs
       variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
       cat <<WEBROOTRENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
 certbot renew --quiet \
-  --webroot -w ${variAbsolutePath}/webroot \
-  --deploy-hook "docker exec skeleton-nginx nginx -s reload"
-  # TODO : restart the service
-return 0
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --deploy-hook "systemctl reload ${variServiceName}.service"
 WEBROOTRENEWSHELL
     ;;
     "standalone")
-      /windows/code/backend/chunio/omni/init/ubuntu/ubuntu.sh showPort 80 confirm
+      /windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
       certbot certonly \
         --standalone \
         --preferred-challenges http \
@@ -558,29 +938,31 @@ WEBROOTRENEWSHELL
         --agree-tos \
         --email ${variEmail} \
         --non-interactive \
-        --config-dir ${variAbsolutePath}/config \
-        --work-dir ${variAbsolutePath}/work \
-        --logs-dir ${variAbsolutePath}/logs
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs
       variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
       cat <<STANDALONERENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
-/windows/code/backend/chunio/omni/init/ubuntu/ubuntu.sh showPort 80 confirm
-certbot renew --quiet --standalone
-if [ $? -eq 0 ]; then
-  # TODO : restart the service
-  echo "restart the service"
-fi
-return 0
+certbot renew --quiet \
+  --standalone \
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --pre-hook "systemctl stop ${variServiceName}.service" \
+  --deploy-hook "systemctl restart ${variServiceName}.service"
 STANDALONERENEWSHELL
     ;;
   *)
-   echo "Unknown Mode : ${variModel}"; 
+   echo "Unknown Mode : ${variModel}";
    return 1
   ;;
   esac
   chmod +x ${variRenewShellUri}
   if ! grep -q "${variRenewShellUri}" /var/spool/cron/root; then
-    echo "0 * * * * ${variRenewShellUri}" >> /var/spool/cron/root
+    echo "0 0 * * 1 ${variRenewShellUri}" >> /var/spool/cron/root
+    systemctl reload crond
+    crontab -l
   fi
   return 0
 }

@@ -8,7 +8,7 @@
 1.21+，「go.mod >> toolchain ${go1.21.x}」表示指定版本，於模块目錄下執行「go version」則會顯示「${go1.21.x}」（即使：係統存在其他版本，禁止：export GOTOOLCHAIN=local）
 MARK
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"

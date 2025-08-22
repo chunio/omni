@@ -45,7 +45,7 @@ scp root@170.106.165.51:/windows/runtime/profile001.svg .
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
@@ -62,7 +62,7 @@ VARI_GLOBAL["JUMPER_PORT"]=""
 # 2 declare -A 關聯數組
 # 2 declare -p 打印變量
 # 2 declare -P 用於打印關聯數組
-# 使用隨機名稱以避免「VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"」時，變量衝突
+# 使用隨機名稱以避免「VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"」時，變量衝突
 declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 # global variable[END]
 # local variable[START]
@@ -71,10 +71,10 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 
 # ##################################################
 # protected function[START]
-function funcProtectedCloudSeletor() {
+function funcProtectedCloudSelector() {
   # --------------------------------------------------
   # call example :
-  # funcProtectedCloudSeletor
+  # funcProtectedCloudSelector
   # local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   # local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   # local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
@@ -566,7 +566,7 @@ DOCKERCOMPOSEYML
 }
 
 function funcPublicCloudIndex(){
-  funcProtectedCloudSeletor
+  funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
@@ -626,7 +626,7 @@ MARK
 }
 
 function funcPublicCloudIptableReinit(){
-  funcProtectedCloudSeletor
+  funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
@@ -746,7 +746,7 @@ function funcPublicCloudSkeletonRinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variBranchName=${1}
-  funcProtectedCloudSeletor
+  funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
@@ -1005,7 +1005,7 @@ function funcPublicCloudUnicornReinit() {
         return 1
         ;;
   esac
-  funcProtectedCloudSeletor
+  funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
@@ -1146,7 +1146,7 @@ JUMPEREOF
 }
 
 function funcPublicCloudUnicornCheck() {
-  funcProtectedCloudSeletor
+  funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")

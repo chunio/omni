@@ -104,7 +104,7 @@ declare -A VARI_ENCRYPT
 ENCRYPTENVI
   fi
   # 禁止：於當前環境執行（如：source interface.sh）
-  if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
+  if [[ ${VARI_GLOBAL["BUILTIN_BASH_ENVI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
       echo "the run mode is prohibited"
       echo "example : "'${symbolLink}'" | /${VARI_GLOBAL["BASH_NAME"]} | ./${VARI_GLOBAL["BASH_NAME"]} | bash ${VARI_GLOBAL["BASH_NAME"]}"
       return 1
@@ -290,6 +290,11 @@ function funcProtectedTodo(){
   return 0
 }
 
+function funcProtectedEchoGreen(){
+  echo -e "\033[32m$1\033[0m"
+  return 0
+}
+
 function funcProtectedUpdateVariGlobalBuiltinValue() {
   local variIndex=${1}
   local variValue=${2}
@@ -303,7 +308,6 @@ function funcProtectedUpdateVariGlobalBuiltinValue() {
   sed -i "/^VARI_GLOBAL\[\"BUILTIN_OMNI_ROOT_PATH\"\]=/c$variNewRecord" ${variBuiltinUri}
   return 0
 }
-
 # protected function[END]
 # ##################################################
 
