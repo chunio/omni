@@ -29,73 +29,46 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # ##################################################
 # protected function[START]
-function funcPublicDistroInit() {
+function funcPublicOsDistroInit() {
   local variOsType=$(uname)
-  local variOsDistro="unknown"
+  local variOsDistro="UNKNOWN"
+  local variSourceUri=""
   if [ "$variOsType" = "Darwin" ]; then
-      variOsDistro="macos"
+      variOsDistro="MACOS"
   elif [ "$variOsType" = "Linux" ]; then
-      if [ -f /etc/os-release ]; then
-          . /etc/os-release
-          variOsDistro=$(echo $ID | tr '[:upper:]' '[:lower:]')
+      if [ -f /etc/debian_version ]; then
+          variOsDistro="UBUNTU"
+          variSourceUri="/etc/bash.bashrc"
+      # elif [ -f /etc/os-release ]; then
+      #   . /etc/os-release
+      #   variOsDistro=$(echo $ID | tr '[:lower:]' '[:upper:]')
       elif [ -f /etc/centos-release ]; then
-          variOsDistro="centos"
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/bashrc"
       elif [ -f /etc/redhat-release ]; then
-          variOsDistro="centos"
-      elif [ -f /etc/debian_version ]; then
-          variOsDistro="ubuntu"
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/bashrc"
       fi
   fi
-  case $variOsDistro in
-      "centos"|"rhel"|"redhat")
-          echo "centos"
-          ;;
-      "ubuntu"|"debian")
-          echo "ubuntu"
-          ;;
-      "macos")
-          echo "macos"
-          ;;
-      *)
-          echo "unknown"
-          ;;
-  esac
-  echo $variOsDistro
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
   return 0
 }
 
 function funcProtectedCloudInit() {
-  local variOsType=$(uname)
-  local variOsDistro="unknown"
-  if [ "$variOsType" = "Darwin" ]; then
-      variOsDistro="macos"
-  elif [ "$variOsType" = "Linux" ]; then
-      if [ -f /etc/debian_version ]; then
-          variOsDistro="ubuntu"
-      elif [ -f /etc/os-release ]; then
-          . /etc/os-release
-          variOsDistro=$(echo $ID | tr '[:upper:]' '[:lower:]')
-      elif [ -f /etc/centos-release ]; then
-          variOsDistro="centos"
-      elif [ -f /etc/redhat-release ]; then
-          variOsDistro="centos"
-      fi
-  fi
-  case $variOsDistro in
-      "macos")
-          # macos
+  funcPublicOsDistroInit
+  case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
+      "MACOS")
           # TODO:...
           ;;
-      "ubuntu"|"debian")
-          # ubuntu
+      "UBUNTU"|"DEBIAN")
           funcProtectedUbuntuInit
           ;;
-      "centos"|"rhel"|"redhat")
-          # centos
+      "CENTOS"|"RHEL"|"REDHAT")
           funcProtectedCentosInit
           ;;
       *)
-          echo "unknown"
+          return 1
           ;;
   esac
   return 0
@@ -621,11 +594,12 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
 # public function[START]
 
 function funcPublicInit(){
-  local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
+  local variParameterDescList=("init model，value：0/cache（default），1/refresh")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  variRefreshCache=${1:-0}
-  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
+  local variInitModel=${1:-0}
+  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
+    funcProtectedCloudInit
     variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
@@ -648,6 +622,32 @@ function funcPublicInit(){
   # pull *.sh list[END]
   funcProtectedCommandInit "${variAbleUnitFileURIList}"
   funcProtectedOptionInit "${variAbleUnitFileURIList}"
+  return 0
+}
+
+function funcPublicVersion() {
+    echo "[ https://github.com/chunio/omni.git ] version 1.0.0"
+    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
+    if [ -z "$variLineNum" ]; then
+        return 1
+    else
+        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
+        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
+        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    fi
+    return 0
+}
+
+function funcPublicNewUnit(){
+  local variParameterDescList=("unit name")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
+    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    return 1
+  fi
+  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
+  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
   return 0
 }
 
@@ -679,20 +679,8 @@ function funcPublicSaveUnit(){
   return 0
 }
 
-function funcPublicNewUnit(){
-  local variParameterDescList=("unit name")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
-  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
-    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    return 1
-  fi
-  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
-  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
-  return 0
-}
 
-function funcPublicShowPort(){
+function funcPublicPort(){
   local variParameterDescList=("port")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variPort=${1}
@@ -707,12 +695,12 @@ function funcPublicShowPort(){
     lsof -i :${variPort}
     funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
     lsof -i :${variPort} -t | xargs -r ps -fp
-    if [ ${variExpectAction} == "confirm" ];then
-      variInput="confirm"
+    if [ ${variExpectAction} == "kill" ];then
+      variInput="kill"
     else
-      read -p "Do you want to release the port（$variPort） ? (type 'confirm' to release): " variInput
+      read -p "Do you want to release the port（$variPort） ? (type 'kill' to release): " variInput
     fi
-    if [[ "$variInput" == "confirm" ]]; then
+    if [[ "$variInput" == "kill" ]]; then
       for eachProcessId in ${variProcessIdList}
       do
           variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
@@ -722,44 +710,6 @@ function funcPublicShowPort(){
     fi
   fi
   return 0
-}
-
-function funcPublicMatchKill() {
-    local variParameterDescList=("keyword")
-    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-    local variKeyword=$1
-    ps aux | grep "${variKeyword}"
-    local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
-    if [ -z "${variPidList}" ]; then
-        echo "no process found with keyword : ${variKeyword}"
-        return 1
-    fi
-    for variEachPid in ${variPidList}; do
-        echo "killing process with pid : ${variEachPid}"
-        kill ${variEachPid}
-        sleep 1
-        if ps -p ${variEachPid} > /dev/null; then
-            echo "process ${variEachPid} did not terminate, force killing ..."
-            kill -9 ${variEachPid}
-        else
-            echo "process ${variEachPid} terminated"
-        fi
-    done
-    echo "all processes with keyword '${variKeyword}' have been killed"
-    return 0
-}
-
-
-function funcPublicVersion() {
-    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
-    if [ -z "$variLineNum" ]; then
-        return 1
-    else
-        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
-        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
-        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    fi
-    return 0
 }
 
 # v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
@@ -818,6 +768,32 @@ HTTPPROXYCONF
   echo '/etc/systemd/system/docker.service.d/http-proxy.conf' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   cat /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
+}
+
+#
+function funcPublicKillMatchProcess() {
+    local variParameterDescList=("process keyword")
+    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+    local variKeyword=$1
+    ps aux | grep "${variKeyword}"
+    local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
+    if [ -z "${variPidList}" ]; then
+        echo "no process found with keyword : ${variKeyword}"
+        return 1
+    fi
+    for variEachPid in ${variPidList}; do
+        echo "killing process with pid : ${variEachPid}"
+        kill ${variEachPid}
+        sleep 1
+        if ps -p ${variEachPid} > /dev/null; then
+            echo "process ${variEachPid} did not terminate, force killing ..."
+            kill -9 ${variEachPid}
+        else
+            echo "process ${variEachPid} terminated"
+        fi
+    done
+    echo "all processes with keyword '${variKeyword}' have been killed"
+    return 0
 }
 
 # 免費證書 && 自動續簽
@@ -930,7 +906,7 @@ certbot renew --quiet \
 WEBROOTRENEWSHELL
     ;;
     "standalone")
-      /windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
+      /windows/code/backend/chunio/omni/init/system/system.sh port 80 kill
       certbot certonly \
         --standalone \
         --preferred-challenges http \
