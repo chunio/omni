@@ -679,39 +679,6 @@ function funcPublicSaveUnit(){
   return 0
 }
 
-
-function funcPublicPort(){
-  local variParameterDescList=("port")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1}
-  variExpectAction=${2:-"cancel"}
-  variProcessIdList=$(lsof -i :${variPort} -t)
-  if [ -z "$variProcessIdList" ]; then
-    funcProtectedEchoGreen "${variPort} is not being listened to"
-  else
-    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
-    netstat -lutnp | grep ":${variPort}"
-    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
-    lsof -i :${variPort}
-    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
-    lsof -i :${variPort} -t | xargs -r ps -fp
-    if [ ${variExpectAction} == "kill" ];then
-      variInput="kill"
-    else
-      read -p "Do you want to release the port（$variPort） ? (type 'kill' to release): " variInput
-    fi
-    if [[ "$variInput" == "kill" ]]; then
-      for eachProcessId in ${variProcessIdList}
-      do
-          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
-          /usr/bin/kill -9 $eachProcessId
-          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
-      done
-    fi
-  fi
-  return 0
-}
-
 # v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
 # 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP代理，因此PING不通亦正常）
 function funcPublicProxy() {
@@ -770,29 +737,87 @@ HTTPPROXYCONF
   return 0
 }
 
-#
-function funcPublicKillMatchProcess() {
-    local variParameterDescList=("process keyword")
+function funcPublicPort(){
+  local variParameterDescList=("port")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variPort=${1}
+  variExpectAction=${2:-"cancel"}
+  variProcessIdList=$(lsof -i :${variPort} -t)
+  if [ -z "$variProcessIdList" ]; then
+    funcProtectedEchoGreen "${variPort} is not being listened to"
+  else
+    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
+    netstat -lutnp | grep ":${variPort}"
+    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
+    lsof -i :${variPort}
+    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
+    lsof -i :${variPort} -t | xargs -r ps -fp
+    if [ ${variExpectAction} == "kill" ];then
+      variInput="kill"
+    else
+      read -p "do you want to kill the process that match the port ( ${variPort} ) ? ( type 'kill' to confirm ) : " variInput
+    fi
+    if [[ "$variInput" == "kill" ]]; then
+      for eachProcessId in ${variProcessIdList}
+      do
+          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
+          /usr/bin/kill -9 $eachProcessId
+          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
+      done
+    fi
+  fi
+  return 0
+}
+
+function funcPublicProcess() {
+    local variParameterDescList=("keyword")
     funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
     local variKeyword=$1
-    ps aux | grep "${variKeyword}"
-    local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
-    if [ -z "${variPidList}" ]; then
-        echo "no process found with keyword : ${variKeyword}"
+    local variExpectAction=${2:-"cancel"}
+    #（1）檢查是否命令注入
+    if [[ ! "${variKeyword}" =~ ^[a-zA-Z0-9_./:-]+$ ]]; then
+        funcProtectedEchoRed "invalid keyword format"
         return 1
     fi
-    for variEachPid in ${variPidList}; do
-        echo "killing process with pid : ${variEachPid}"
-        kill ${variEachPid}
-        sleep 1
-        if ps -p ${variEachPid} > /dev/null; then
-            echo "process ${variEachPid} did not terminate, force killing ..."
-            kill -9 ${variEachPid}
-        else
-            echo "process ${variEachPid} terminated"
-        fi
-    done
-    echo "all processes with keyword '${variKeyword}' have been killed"
+    #（2）進程數量
+    local variPidList=$(pgrep -f "${variKeyword}" 2>/dev/null)
+    if [ -z "${variPidList}" ]; then
+        funcProtectedEchoGreen "0 process matching the keyword '${variKeyword}' were found"
+        return 0
+    fi
+    local variProcessCount=$(echo "${variPidList}" | wc -w)
+    funcProtectedEchoGreen "${variProcessCount} process(es) matching the keyword '${variKeyword}' were found"
+    #（3）進程信息
+    ps -fp ${variPidList}
+    #（4）是否終止
+    local variInput=""
+    if [ "${variExpectAction}" == "kill" ]; then
+        variInput="kill"
+    else
+        read -p "do you want to kill ${variProcessCount} process(es) that match the keyword '${variKeyword}' ? ( type 'kill' to confirm ) : " variInput
+    fi
+    if [[ "$variInput" == "kill" ]]; then
+        for variEachPid in ${variPidList}; do
+            # 獲取進程命令詳情
+            local variEachCommand=$(ps -p ${variEachPid} -o cmd --no-headers 2>/dev/null)
+            if [ -n "${variEachCommand}" ]; then
+                # 正常終止
+                kill ${variEachPid} 2>/dev/null
+                sleep 1
+                # 檢查狀態
+                if ps -p ${variEachPid} > /dev/null 2>&1; then
+                    # 強制終止
+                    kill -9 ${variEachPid} 2>/dev/null
+                    funcProtectedEchoGreen "kill -9 ${variEachPid} success ( force killed : ${variEachCommand} )"
+                else
+                    funcProtectedEchoGreen "kill ${variEachPid} success ( gracefully killed : ${variEachCommand} )"
+                fi
+            else
+                funcProtectedEchoGreen "process ${variEachPid} already terminated"
+            fi
+        done
+        funcProtectedEchoGreen "${variProcessCount} process(es) with keyword '${variKeyword}' have been killed"
+    fi
     return 0
 }
 

@@ -67,7 +67,7 @@ FSTAB
   sudo mount -a
   sudo systemctl daemon-reload
   cat <<'PROFILE' >> /etc/bash.bashrc
-alias omni.ubuntu="source /windows/code/backend/chunio/omni/init/ubuntu/ubuntu.sh"
+alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
 PROFILE
   source /etc/bash.bashrc
   # TODO:echo 'set nu' >> ~/.vimrc

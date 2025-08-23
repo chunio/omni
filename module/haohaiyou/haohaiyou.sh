@@ -1096,7 +1096,7 @@ function funcPublicCloudUnicornReinit() {
         fi
         /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
         /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-        # /windows/code/backend/chunio/omni/init/system/system.sh killMatchProcess unicorn
+        # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
         mkdir -p ./bin && chmod 777 -R .
         /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
         echo "" > /windows/runtime/${variBinName}.command
@@ -1190,7 +1190,7 @@ JUMPEREOF
 #   else
 #     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
 #     # supervisor[START]
-#     /windows/code/backend/chunio/omni/common/docker/docker.sh killMatchProcess unicorn
+#     /windows/code/backend/chunio/omni/common/docker/docker.sh process unicorn kill
 #     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
 #     eval "$(cat /windows/runtime/command.variable)"
 #     echo "[ ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
@@ -1234,7 +1234,7 @@ function funcPublicCloudUnicornSupervisor(){
     /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
     /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
     /usr/bin/cp -rf /windows/runtime/unicorn_${variModuleName}.log /windows/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
-    # /windows/code/backend/chunio/omni/init/system/system.sh killMatchProcess unicorn
+    # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
     eval "$(cat /windows/runtime/unicorn_${variModuleName}.command)"
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
