@@ -737,34 +737,41 @@ HTTPPROXYCONF
   return 0
 }
 
+# 一個特定的網絡端點（協議（如：IPV4/IPV6/...） + IP地址 + 端口）僅支持被一個進程綁定
 function funcPublicPort(){
   local variParameterDescList=("port")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1}
-  variExpectAction=${2:-"cancel"}
-  variProcessIdList=$(lsof -i :${variPort} -t)
+  local variPort=${1}
+  local variExpectAction=${2:-"cancel"}
+  local variInput=""
+  #（1）統計數量
+  local variProcessIdList=$(lsof -i :${variPort} -t)
   if [ -z "$variProcessIdList" ]; then
-    funcProtectedEchoGreen "${variPort} is not being listened to"
+    funcProtectedEchoGreen "0 process was found listening on port '${variPort}'"
+    return 0
+  fi
+  local variProcessCount=$(echo "${variProcessIdList}" | wc -w)
+  funcProtectedEchoGreen "${variProcessCount} process(es) was(were) found listening on port '${variPort}'"
+  #（2）進程信息
+  funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
+  netstat -lutnp | grep ":${variPort}"
+  funcProtectedEchoGreen "command >> lsof -i :${variPort}"
+  lsof -i :${variPort}
+  funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
+  lsof -i :${variPort} -t | xargs -r ps -fp
+  #（2）是否終止
+  if [ ${variExpectAction} == "kill" ];then
+    variInput="kill"
   else
-    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
-    netstat -lutnp | grep ":${variPort}"
-    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
-    lsof -i :${variPort}
-    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
-    lsof -i :${variPort} -t | xargs -r ps -fp
-    if [ ${variExpectAction} == "kill" ];then
-      variInput="kill"
-    else
-      read -p "do you want to kill the process that match the port ( ${variPort} ) ? ( type 'kill' to confirm ) : " variInput
-    fi
-    if [[ "$variInput" == "kill" ]]; then
-      for eachProcessId in ${variProcessIdList}
-      do
-          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
-          /usr/bin/kill -9 $eachProcessId
-          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
-      done
-    fi
+    read -p "do you want to kill the ${variProcessCount} process(es) listening on port '${variPort}' ? ( type 'kill' to confirm ) : " variInput
+  fi
+  if [[ "$variInput" == "kill" ]]; then
+    for variEachProcessId in ${variProcessIdList}; do
+        variEachCommand=$(ps -p ${variEachProcessId} -f -o cmd --no-headers)
+        /usr/bin/kill -9 $variEachProcessId
+        funcProtectedEchoGreen "kill -9 $variEachProcessId success ( command : ${variEachCommand} ) "
+    done
+    funcProtectedEchoGreen "${variProcessCount} process(es) with port '${variPort}' has(have) been terminated"
   fi
   return 0
 }
@@ -774,49 +781,40 @@ function funcPublicProcess() {
     funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
     local variKeyword=$1
     local variExpectAction=${2:-"cancel"}
-    #（1）檢查是否命令注入
+    local variInput=""
+    #（0）檢查是否命令注入
     if [[ ! "${variKeyword}" =~ ^[a-zA-Z0-9_./:-]+$ ]]; then
         funcProtectedEchoRed "invalid keyword format"
         return 1
     fi
-    #（2）進程數量
-    local variPidList=$(pgrep -f "${variKeyword}" 2>/dev/null)
-    if [ -z "${variPidList}" ]; then
-        funcProtectedEchoGreen "0 process matching the keyword '${variKeyword}' were found"
+    #（1）統計數量
+    local variProcessIdList=$(pgrep -f "${variKeyword}" 2>/dev/null)
+    if [ -z "${variProcessIdList}" ]; then
+        funcProtectedEchoGreen "0 process was found matching the keyword '${variKeyword}'"
         return 0
     fi
-    local variProcessCount=$(echo "${variPidList}" | wc -w)
-    funcProtectedEchoGreen "${variProcessCount} process(es) matching the keyword '${variKeyword}' were found"
-    #（3）進程信息
-    ps -fp ${variPidList}
-    #（4）是否終止
-    local variInput=""
+    local variProcessCount=$(echo "${variProcessIdList}" | wc -w)
+    funcProtectedEchoGreen "${variProcessCount} process(es) was(were) found matching the keyword '${variKeyword}'"
+    #（2）進程信息
+    ps -fp ${variProcessIdList}
+    #（3）是否終止
     if [ "${variExpectAction}" == "kill" ]; then
         variInput="kill"
     else
-        read -p "do you want to kill ${variProcessCount} process(es) that match the keyword '${variKeyword}' ? ( type 'kill' to confirm ) : " variInput
+        read -p "do you want to kill the ${variProcessCount} process(es) matching the keyword '${variKeyword}' ? ( type 'kill' to confirm ) : " variInput
     fi
     if [[ "$variInput" == "kill" ]]; then
-        for variEachPid in ${variPidList}; do
+        for variEachProcessId in ${variProcessIdList}; do
             # 獲取進程命令詳情
-            local variEachCommand=$(ps -p ${variEachPid} -o cmd --no-headers 2>/dev/null)
+            local variEachCommand=$(ps -p ${variEachProcessId} -o cmd --no-headers 2>/dev/null)
             if [ -n "${variEachCommand}" ]; then
-                # 正常終止
-                kill ${variEachPid} 2>/dev/null
-                sleep 1
-                # 檢查狀態
-                if ps -p ${variEachPid} > /dev/null 2>&1; then
-                    # 強制終止
-                    kill -9 ${variEachPid} 2>/dev/null
-                    funcProtectedEchoGreen "kill -9 ${variEachPid} success ( force killed : ${variEachCommand} )"
-                else
-                    funcProtectedEchoGreen "kill ${variEachPid} success ( gracefully killed : ${variEachCommand} )"
-                fi
+                kill -9 ${variEachProcessId} 2>/dev/null
+                funcProtectedEchoGreen "kill -9 ${variEachProcessId} success ( command : ${variEachCommand} )"
             else
-                funcProtectedEchoGreen "process ${variEachPid} already terminated"
+                funcProtectedEchoGreen "the ${variEachProcessId} already terminated ( command : ${variEachCommand} )"
             fi
         done
-        funcProtectedEchoGreen "${variProcessCount} process(es) with keyword '${variKeyword}' have been killed"
+        funcProtectedEchoGreen "${variProcessCount} process(es) with keyword '${variKeyword}' has(have) been terminated"
     fi
     return 0
 }
