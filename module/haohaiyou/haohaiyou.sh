@@ -26,8 +26,8 @@ redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-1
 du -ch /mnt/volume1/unicorn/runtime/bid-request-20250220* | grep total$
 # --------------------------------------------------
 # [騰訊雲]磁盤管理[START]
+# 僅適用於「ext4」文件係統類型（查看：df -T /）
 # （1）係統磁盤/擴容
-# [ext4]
 # 查看磁盤信息（含：1分區結構，2掛載信息）
 lsblk
 yum install -y cloud-utils-growpart
@@ -42,7 +42,7 @@ df -h /mnt/volume1/unicorn/runtime
 mount | grep runtime
 # ----------
 #（2B）數據磁盤/擴容
-# [ext4]
+# 查看磁盤信息（含：1分區結構，2掛載信息）
 lsblk
 resize2fs /dev/vdb
 df -h /mnt/datadisk0
