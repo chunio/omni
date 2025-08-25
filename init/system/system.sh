@@ -102,8 +102,8 @@ function funcProtectedUbuntuInit(){
     bash-completion
   )
   variCloudInitSucceeded=1
-  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+  variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
   [ $? -eq 0 ] && return 0
   local variRetry=2
   declare -A variCloudInstallResult
@@ -168,7 +168,7 @@ function funcProtectedUbuntuInit(){
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
   done
-  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
   return 0
 }
@@ -177,7 +177,8 @@ function funcProtectedCentosInit(){
   funcProtectedCentos7YumRepositoryUpdater
   rm -f /var/run/yum.pid
   variPackageList=(
-    epel-release
+    # Extra Packages for Enterprise Linux/企業係統額外套件
+    # epel-release
     git
     lsof
     tree
@@ -192,21 +193,29 @@ function funcProtectedCentosInit(){
     docker-compose
     bash-completion
   )
-  variCloudInitSucceeded=1
-  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
-  [ $? -eq 0 ] && return 0
-  local variRetry=2
+  # default
+  local variCloudInitSucceeded=1
+  # 檢查整體套件安裝狀態，已完成則退出[START]
+  local variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null && return 0
+  # 檢查整體套件安裝狀態，已完成則退出[END]
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
-    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-    grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+    # 檢查單個套件安裝狀態，已完成則跳過[START]
+    local variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    # grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
     # 安裝狀態，值：0/已安裝，1/未安裝
-    variInstalled=$?
+    # variInstalled=$?
+    if grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null; then
+      echo "package '${variEachPackage}' already installed"
+      variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+      continue
+    fi
+    # 檢查單個套件安裝狀態，已完成則跳過[END]
     case ${variEachPackage} in
       "docker")
         if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+          echo "package '${variEachPackage}' already installed"
         else
           # https://docs.docker.com/engine/install/centos/
           # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
@@ -216,12 +225,12 @@ function funcProtectedCentosInit(){
           yum install -y docker-ce docker-ce-cli containerd.io
           systemctl enable docker
           systemctl restart docker
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         ;;
       "docker-compose")
         if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+          echo "package '${variEachPackage}' already installed"
         else
           # https://github.com/docker/compose/releases
           # docker-compose-linux-x86_64
@@ -229,21 +238,22 @@ function funcProtectedCentosInit(){
           [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
           curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+
         fi
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         ;;
       *)
-        local variCount=0
-        while [ $variCount -lt $variRetry ]; do
-          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
-            if [ ${variInstalled} != 0 ]; then
-              echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
-            fi
-            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        local variRetry=3
+        for ((i=1; i<variRetry; i++)); do
+          if yum install -y "${variEachPackage}"; then
+            variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
+          fi
+          # 當最後一次嘗試時，記錄失敗狀態
+          if [[ $i -eq $((variRetry - 1)) ]]; then
+             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
           else
-            variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
-            ((variCount++))
+             sleep 1
           fi
         done
         ;;
@@ -252,9 +262,14 @@ function funcProtectedCentosInit(){
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
+    if [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
+      echo "${variEachPackageInstalledLabel}" >> "${VARI_GLOBAL["VERSION_URI"]}"
+    else
+      variCloudInitSucceeded=0
+    fi
+    # [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
   done
-  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
   return 0
 }
@@ -277,16 +292,8 @@ function funcProtectedCentos7YumRepositoryUpdater(){
     rm -rf "$variRepositoryPath"/CentOS-*.repo
   fi
   # 是否備份[END]
-  # local variCentosVersion="${1:-7.9.2009}"
-  sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-  sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-
-  # DEBUG_LABEL[START]
-  sed -i 's|#mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-  # return 0
-  # DEBUG_LABEL[END]
-
-  # ----------
+  # sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  # sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
   rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
   cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Base.repo
@@ -297,9 +304,9 @@ function funcProtectedCentos7YumRepositoryUpdater(){
 name=CentOS-7.9 - Base
 baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -307,9 +314,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - Updates
 baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/updates/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -317,9 +324,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - Extras
 baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/extras/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -327,9 +334,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - CentOSPlus
 baseurl=http://vault.centos.org/7.9.2009/centosplus/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/centosplus/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -341,9 +348,9 @@ MARK
 name=CentOS-7.9 - Cr
 baseurl=http://vault.centos.org/7.9.2009/cr/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/cr/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -379,8 +386,8 @@ name=CentOS-7 - Media
 baseurl=file:///media/CentOS/
         file:///media/cdrom/
         file:///media/cdrecorder/
-gpgcheck=0
 enabled=0
+gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 skip_if_unavailable=1
 MARK
@@ -391,18 +398,18 @@ MARK
 [C7.9.2009-base]
 name=CentOS-7.9.2009 - Base (vault - disabled)
 baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 
 [C7.9.2009-updates]
 name=CentOS-7.9.2009 - Updates (vault - disabled)
 baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -414,9 +421,9 @@ MARK
 name=CentOS-7.9 - Sources
 baseurl=http://vault.centos.org/7.9.2009/os/Source/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/Source/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -428,9 +435,9 @@ MARK
 name=CentOS-7.9 - Fasttrack
 baseurl=http://vault.centos.org/7.9.2009/fasttrack/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/fasttrack/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -441,9 +448,9 @@ MARK
 [debuginfo]
 name=CentOS-7 - Debuginfo
 baseurl=http://debuginfo.centos.org/7/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Debug-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -458,9 +465,71 @@ gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 skip_if_unavailable=1
 MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/epel.repo
+[epel]
+name=Extra Packages for Enterprise Linux 7 - $basearch
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/$basearch
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Debug
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/$basearch/debug
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-source]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Source
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/SRPMS
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-source-7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/epel-testing.repo
+[epel-testing]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/$basearch
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-testing-debuginfo]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch - Debug
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/$basearch/debug
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-debug-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-testing-source]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch - Source
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/SRPMS
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-source-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+MARK
   # ----------
   # /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/repository/* ${variRepositoryPath}/
-   /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
+  /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
   chmod -R 644 ${variRepositoryPath}
   #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
   sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
