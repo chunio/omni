@@ -25,20 +25,28 @@ redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-1
 # [統計]文件大小
 du -ch /mnt/volume1/unicorn/runtime/bid-request-20250220* | grep total$
 # --------------------------------------------------
-# 擴展存儲[START]
-（1）係統磁盤/擴容
-[ext4]
+# [騰訊雲]磁盤管理[START]
+# （1）係統磁盤/擴容
+# [ext4]
+# 查看磁盤信息（含：1分區結構，2掛載信息）
 lsblk
 yum install -y cloud-utils-growpart
 growpart /dev/vda 1
 resize2fs /dev/vda1
 df -h /dev/vda1
-（2）數據磁盤/掛載
+# ----------
+#（2A）數據磁盤/掛載
 mkdir -p /mnt/datadisk0/unicorn/runtime && mkdir -p /mnt/volume1/unicorn/runtime
 mount --bind /mnt/datadisk0/unicorn/runtime /mnt/volume1/unicorn/runtime
-df -h /mnt/volume1/unicorn/runtime 
+df -h /mnt/volume1/unicorn/runtime
 mount | grep runtime
-# 擴展存儲[END]
+# ----------
+#（2B）數據磁盤/擴容
+# [ext4]
+lsblk
+resize2fs /dev/vdb
+df -h /mnt/datadisk0
+# [騰訊雲]磁盤管理[END]
 # --------------------------------------------------
 scp root@170.106.165.51:/windows/runtime/profile001.svg .
 # --------------------------------------------------
