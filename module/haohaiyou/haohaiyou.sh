@@ -990,6 +990,32 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+# TODO:ubuntu/error[START]
+# enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : 25
+# index : 25
+# input「confirm」to continue : confirm
+# 13e286f4449f9cfe3bc592306e97c975  /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_dsp
+# Warning: Permanently added '119.28.55.124' (ECDSA) to the list of known hosts.
+# unicorn_dsp -> 100% 41MB 5.1MB/s 00:08
+# Pseudo-terminal will not be allocated because stdin is not a terminal.
+# ====================================================================================================
+# >> [ SLAVE ] 25 DSP BID 19 PADDLEWAVER SINGAPORE 43.156.8.253 22 ubuntu ...
+# ====================================================================================================
+# Warning: Permanently added '43.156.8.253' (ECDSA) to the list of known hosts.
+# Permission denied, please try again.
+# Permission denied, please try again.
+# Permission denied (publickey,password).
+# lost connection
+# Permission denied, please try again.
+# Permission denied, please try again.
+# Permission denied (publickey,password).
+# lost connection
+# Pseudo-terminal will not be allocated because stdin is not a terminal.
+# Permission denied, please try again.
+# Permission denied, please try again.
+# Permission denied (publickey,password).
+# // omni.haohaiyou cloudUnicornReinit ...
+# TODO:ubuntu/error[END]
 function funcPublicCloudUnicornReinit() {
   local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
