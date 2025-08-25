@@ -165,10 +165,11 @@ function funcProtectedCloudSelector() {
     "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 --"
     "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 --"
     "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 --"
-    "25 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
-    "26 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --" 
-    "27 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --" 
-    "28 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --" 
+    "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.156.8.253 22 temp"
+    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
+    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --"
+    "28 DSP BID 03 PADDLEWAVER USEAST 43.166.134.30 22 --"
+    "29 DSP BID 04 PADDLEWAVER USEAST 43.166.233.154 22 --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -674,9 +675,9 @@ function funcPublicCloudIptableReinit(){
           echo "[ omni ] git fetch origin ..."
           git fetch origin
           echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/main ..."
-          git reset --hard origin/main
-          echo "[ omni ] git reset --hard origin/main finished"
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
+          git reset --hard origin/feature/zengweitao/ubuntu
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
           chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         else
           mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
@@ -794,9 +795,9 @@ function funcPublicCloudSkeletonRinit() {
             echo "[ omni ] git fetch origin ..."
             git fetch origin
             echo "[ omni ] git fetch origin finished"
-            echo "[ omni ] git reset --hard origin/main ..."
-            git reset --hard origin/main
-            echo "[ omni ] git reset --hard origin/main finished"
+            echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
+            git reset --hard origin/feature/zengweitao/ubuntu
+            echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
             chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
           else
             mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
@@ -845,7 +846,7 @@ JUMPEREOF
 }
 
 # 將「80」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/ubuntu && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -890,7 +891,7 @@ DOCKERCOMPOSEYML
 }
 
 # 將「80/443」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/ubuntu && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -1072,9 +1073,9 @@ function funcPublicCloudUnicornReinit() {
           echo "[ omni ] git fetch origin ..."
           git fetch origin
           echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/main ..."
-          git reset --hard origin/main
-          echo "[ omni ] git reset --hard origin/main finished"
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
+          git reset --hard origin/feature/zengweitao/ubuntu
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
           chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         else
           mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
