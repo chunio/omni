@@ -199,7 +199,7 @@ function funcProtectedCheckRequiredParameter() {
     variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
   fi
   variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
-    variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is/are required :")
+    variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done
@@ -231,7 +231,7 @@ function funcProtectedCheckOptionParameter() {
   # 背景綠色，字體黑色
   COLOR_GREEN_BLACK='\033[42;30m'
   variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
-  variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is/are required :")
+  variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done

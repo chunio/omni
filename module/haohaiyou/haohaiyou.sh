@@ -472,10 +472,23 @@ GOROOT=/usr/local/go
 GOSUMDB=sum.golang.google.cn
 GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
 GOENVLINUX
+# TODO:chunio/go:1.25.0/error[START]
+# root@6ecb6df251c4:/windows/code/backend/haohaiyou/gopath/src/unicorn# make generate
+# # go mod tidy
+# # go get github.com/google/wire/cmd/wire@latest
+# go generate ./...
+# # golang.org/x/tools/internal/tokeninternal
+# ../../../../../pkg/mod/golang.org/x/tools@v0.22.0/internal/tokeninternal/tokeninternal.go:64:9: invalid array length -delta * delta (constant -256 of type int64)
+# module/adx/main/wire_gen.go:3: running "go": exit status 1
+# # golang.org/x/tools/internal/tokeninternal
+# ../../../../../pkg/mod/golang.org/x/tools@v0.22.0/internal/tokeninternal/tokeninternal.go:64:9: invalid array length -delta * delta (constant -256 of type int64)
+# module/dsp/main/wire_gen.go:3: running "go": exit status 1
+# make: *** [Makefile:82: generate] Error 1
+# TODO:chunio/go:1.25.0/error[END]
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   ${veriModuleName}:
-    image: chunio/go:1.25.0
+    image: chunio/go:1.22.4
     container_name: ${veriModuleName}
     environment:
       - HTTP_PROXY=http://192.168.255.1:10809
