@@ -33,7 +33,7 @@ VARI_GLOBAL["SEPARATOR_LINE"]="-------------------------------------------------
 # public function[START]
 # 網絡不佳:「Head "https://registry-1.docker.io/v2/chunio/php/blobs/sha256:fa89db0e0fce3d0c80948c0b4c13e53da6ea4e33c89a4c1013ac2b1cc1b4b6ce": EOF」
 function funcPublicReleaseImage(){
-  variParameterDescList=("image pattern（example : chunio/php:8370）")
+  variParameterDescList=("image pattern（example : chunio/php:8.3.24）")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1}
   variDockerUsername=$(funcProtectedPullEncryptEnvi "DOCKER_USERNAME")
@@ -139,6 +139,50 @@ function funcPublicMatchKill() {
     docker ps --filter "name=$keyword" --format "{{.ID}}\t{{.Names}}"
     docker rm -f ${variContainerList}
     return 0    
+}
+
+# image pattern : <namespace>/<repository>:<tag>
+function funcPublicBuildSystemdUbuntuImage() {
+    cat > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/systemd.ubuntu.dockerfile << 'EOF'
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
+# 安裝「systemd 」
+RUN apt update && \
+    apt install -y --no-install-recommends dbus systemd systemd-sysv && \
+    apt clean && \
+    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+# 清理「systemd 」的次要服務
+RUN rm -f /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/plymouth* \
+    /lib/systemd/system/systemd-update-utmp* \
+    /lib/systemd/system/basic.target.wants/* \
+    /lib/systemd/system/anaconda.target.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/multi-user.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl*
+# 屏蔽「systemd」於容器中存在問題的相關服務
+RUN systemctl mask \
+    getty@.service \
+    systemd-udevd.service \
+    console-getty.service \
+    systemd-logind.service \
+    systemd-remount-fs.service \
+    dev-hugepages.mount \
+    sys-fs-fuse-connections.mount
+# 創建「systemd」必需目錄
+RUN mkdir -p /run/systemd && \
+    echo 'docker' > /run/systemd/container
+# 設置「systemd」運行級別
+RUN systemctl set-default multi-user.target
+VOLUME ["/sys/fs/cgroup", "/windows"]
+WORKDIR /
+CMD ["/sbin/init"]
+EOF
+  docker builder prune --all -f
+  docker build -f ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/systemd.ubuntu.dockerfile -t "systemd.ubuntu" .
+  return 0
 }
 # public function[END]
 # ##################################################

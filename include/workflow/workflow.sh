@@ -9,7 +9,7 @@ MARK
 VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]=${1}
 
 # ##################################################
-if [[ ${VARI_GLOBAL["BUILTIN_BASH_EVNI"]} == "MASTER" ]]; then
+if [[ ${VARI_GLOBAL["BUILTIN_BASH_ENVI"]} == "MASTER" ]]; then
   set +e
 else
   # [set -e]：trap >> exit the bash

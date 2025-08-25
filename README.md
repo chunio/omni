@@ -1,18 +1,29 @@
 # Omni
-## Installation
+
+## System Dependency
+
+```
+centos 7.9
+ubuntu 24.04
+```
+
+## Install Wizard
+
 ```
 [root@localhost /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
-[root@localhost /]# git clone https://github.com/chunio/omni.git
-[root@localhost /]# cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-[root@localhost /]# omni.system version
+[root@localhost /]# git clone https://github.com/chunio/omni.git && chmod 777 -R ./omni
+[root@localhost /]# ./omni/init/system/system.sh init && source /etc/bashrc # or : source /etc/bash.bashrc
 ```
+
 ## New Unit
+
 ```
 [root@localhost /]# omni.system newUnit example
 [root@localhost /]# # [unit]funcPublicXXXX is only for external call and internal call are prohibited
 ```
 
 ## Directory Structure
+
 ```
 omni
 ├── common
@@ -64,6 +75,7 @@ omni
 ```
 
 ## Common Symbol
+
 ```
 「」
 ```

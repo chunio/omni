@@ -10,7 +10,7 @@ find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_EVNI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
@@ -29,11 +29,64 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # ##################################################
 # protected function[START]
+function funcProtectedOsDistroInit() {
+  local variOsType=$(uname)
+  local variOsDistro="UNKNOWN"
+  local variSourceUri=""
+  if [ "$variOsType" = "Darwin" ]; then
+      variOsDistro="MACOS"
+  elif [ "$variOsType" = "Linux" ]; then
+      if [ -f /etc/debian_version ]; then
+          variOsDistro="UBUNTU"
+          variSourceUri="/etc/bash.bashrc"
+      # elif [ -f /etc/os-release ]; then
+      #   . /etc/os-release
+      #   variOsDistro=$(echo $ID | tr '[:lower:]' '[:upper:]')
+      elif [ -f /etc/centos-release ]; then
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/bashrc"
+      elif [ -f /etc/redhat-release ]; then
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/bashrc"
+      fi
+  fi
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
+  return 0
+}
+
 function funcProtectedCloudInit() {
-  funcProtectedCento7YumRepositoryReinit
-  rm -f /var/run/yum.pid
+  funcProtectedOsDistroInit
+  case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
+      "MACOS")
+          # TODO:...
+          ;;
+      "UBUNTU"|"DEBIAN")
+          funcProtectedUbuntuInit
+          ;;
+      "CENTOS"|"RHEL"|"REDHAT")
+          funcProtectedCentosInit
+          ;;
+      *)
+          return 1
+          ;;
+  esac
+  return 0
+}
+
+function funcProtectedUbuntuInit(){
+  # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[START]
+  rm -f /var/lib/dpkg/lock-frontend
+  rm -f /var/lib/dpkg/lock
+  rm -f /var/cache/apt/archives/lock
+  # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
+  apt update
   variPackageList=(
-    epel-release
+    # ubuntu[START]
+    dialog
+    apt-utils
+    # ubuntu[END]
+    ca-certificates
     git
     lsof
     tree
@@ -43,19 +96,19 @@ function funcProtectedCloudInit() {
     dos2unix
     net-tools
     # 含：nslookup（用以測試域名解析等）
-    bind-utils
+    dnsutils
     docker
     docker-compose
     bash-completion
   )
   variCloudInitSucceeded=1
-  variCloudInitVersion="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
-  grep -qF "${variCloudInitVersion}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+  variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
   [ $? -eq 0 ] && return 0
   local variRetry=2
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
-    variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    variEachPackageInstalledLabel="apt install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
     grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
     # 安裝狀態，值：0/已安裝，1/未安裝
     variInstalled=$?
@@ -64,12 +117,17 @@ function funcProtectedCloudInit() {
         if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         else
-          # https://docs.docker.com/engine/install/centos/
-          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
-          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-          yum install -y yum-utils device-mapper-persistent-data lvm2
-          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-          yum install -y docker-ce docker-ce-cli containerd.io
+          # https://docs.docker.com/engine/install/ubuntu/
+          apt remove -y docker.io docker-doc docker-compose containerd runc
+          # 等價於：mkdir -p /etc/apt/keyrings && chmod 0755 /etc/apt/keyrings
+          install -m 0755 -d /etc/apt/keyrings
+          # 獲取公鑰（驗證套件哈希/真實性的）
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          chmod a+r /etc/apt/keyrings/docker.asc
+          # 動態構建資源倉庫
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+          apt update
+          apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           systemctl enable docker
           systemctl restart docker
           variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
@@ -91,7 +149,7 @@ function funcProtectedCloudInit() {
       *)
         local variCount=0
         while [ $variCount -lt $variRetry ]; do
-          if [ "${variInstalled}" == 0 ] || yum install -y "${variEachPackage}"; then
+          if [ "${variInstalled}" == 0 ] || apt install -y "${variEachPackage}"; then
             if [ ${variInstalled} != 0 ]; then
               echo "${variEachPackageInstalledLabel}" >> ${VARI_GLOBAL["VERSION_URI"]}
             fi
@@ -110,18 +168,128 @@ function funcProtectedCloudInit() {
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
   done
-  [ ${variCloudInitSucceeded} == 1 ] && echo ${variCloudInitVersion} >> ${VARI_GLOBAL["VERSION_URI"]}
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
+  # --------------------------------------------------
+  return 0
+}
+
+function funcProtectedCentosInit(){
+  funcProtectedCentos7YumRepositoryUpdater
+  rm -f /var/run/yum.pid
+  variPackageList=(
+    # Extra Packages for Enterprise Linux/企業係統額外套件
+    # epel-release
+    git
+    lsof
+    tree
+    wget
+    expect
+    telnet
+    dos2unix
+    net-tools
+    # 含：nslookup（用以測試域名解析等）
+    bind-utils
+    docker
+    docker-compose
+    bash-completion
+  )
+  # default
+  local variCloudInitSucceeded=1
+  # 檢查整體套件安裝狀態，已完成則退出[START]
+  local variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null && return 0
+  # 檢查整體套件安裝狀態，已完成則退出[END]
+  declare -A variCloudInstallResult
+  for variEachPackage in "${variPackageList[@]}"; do
+    # 檢查單個套件安裝狀態，已完成則跳過[START]
+    local variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+    # grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
+    # 安裝狀態，值：0/已安裝，1/未安裝
+    # variInstalled=$?
+    if grep -qF "${variEachPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null; then
+      echo "package '${variEachPackage}' already installed"
+      variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+      continue
+    fi
+    # 檢查單個套件安裝狀態，已完成則跳過[END]
+    case ${variEachPackage} in
+        "epel-release")
+        # 當小於/等於「centos.7.x」時，則跳過「for variEachPackage in "${variPackageList[@]}"; do」（已驗證）
+        [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -le 7 ]] && continue
+        if yum install -y epel-release; then
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+        fi
+        yum clean all > /dev/null
+        ;;
+      "docker")
+        if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
+          echo "package '${variEachPackage}' already installed"
+        else
+          # https://docs.docker.com/engine/install/centos/
+          # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
+          yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce docker-ce-cli containerd.io
+          systemctl enable docker
+          systemctl restart docker
+        fi
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        ;;
+      "docker-compose")
+        if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
+          echo "package '${variEachPackage}' already installed"
+        else
+          # https://github.com/docker/compose/releases
+          # docker-compose-linux-x86_64
+          variDockerComposeUri=$(which docker-compose)
+          [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
+          curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
+        fi
+        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        ;;
+      *)
+        local variRetry=3
+        for ((i=1; i<variRetry; i++)); do
+          if yum install -y "${variEachPackage}"; then
+            variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+            break
+          fi
+          # 當最後一次嘗試時，記錄失敗狀態
+          if [[ $i -eq $((variRetry - 1)) ]]; then
+             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+          else
+             sleep 1
+          fi
+        done
+        ;;
+    esac
+  done
+  # --------------------------------------------------
+  for variEachPackage in "${!variCloudInstallResult[@]}"; do
+    echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    if [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
+      echo "${variEachPackageInstalledLabel}" >> "${VARI_GLOBAL["VERSION_URI"]}"
+    else
+      variCloudInitSucceeded=0
+    fi
+    # [ ${variCloudInstallResult[${variEachPackage}]} == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ] && variCloudInitSucceeded=0
+  done
+  [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
   return 0
 }
 
 # 更新倉庫(x9)
 #「centos7.9」已停止維護（截止2024/06/30），[官方倉庫]mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
-funcProtectedCento7YumRepositoryReinit(){
+function funcProtectedCentos7YumRepositoryUpdater(){
   # 僅適用於「centos7」[START]
-  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
-    return 0
-  fi
+  # 當大於/等於「centos.8.x」時，則返回0
+  [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -ge 8 ]] && return 0
   # 僅適用於「centos7」[END]
   # 是否備份[START]
   local variRepositoryPath="/etc/yum.repos.d"
@@ -129,20 +297,12 @@ funcProtectedCento7YumRepositoryReinit(){
     local variBackupPath="${variRepositoryPath}/backup-$(date +%F-%H%M%S)"
     sudo mkdir -p "$variBackupPath"
     sudo mv "$variRepositoryPath"/CentOS-*.repo "$variBackupPath"/ 2>/dev/null || true
-  else 
+  else
     rm -rf "$variRepositoryPath"/CentOS-*.repo
-  fi 
+  fi
   # 是否備份[END]
-  # local variCentosVersion="${1:-7.9.2009}"
-  sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-  sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-
-  # DEBUG_LABEL[START]
-  sed -i 's|#mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
-  # return 0
-  # DEBUG_LABEL[END]
-
-  # ----------
+  # sed -i 's|^mirrorlist=|# mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
+  # sed -i 's|#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2> /dev/null
   rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository
   cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Base.repo
@@ -153,9 +313,9 @@ funcProtectedCento7YumRepositoryReinit(){
 name=CentOS-7.9 - Base
 baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -163,9 +323,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - Updates
 baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/updates/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -173,9 +333,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - Extras
 baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/extras/$basearch/
+enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=1
 metadata_expire=never
 skip_if_unavailable=1
 
@@ -183,9 +343,9 @@ skip_if_unavailable=1
 name=CentOS-7.9 - CentOSPlus
 baseurl=http://vault.centos.org/7.9.2009/centosplus/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/centosplus/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -197,9 +357,9 @@ MARK
 name=CentOS-7.9 - Cr
 baseurl=http://vault.centos.org/7.9.2009/cr/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/cr/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -235,8 +395,8 @@ name=CentOS-7 - Media
 baseurl=file:///media/CentOS/
         file:///media/cdrom/
         file:///media/cdrecorder/
-gpgcheck=0
 enabled=0
+gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 skip_if_unavailable=1
 MARK
@@ -247,18 +407,18 @@ MARK
 [C7.9.2009-base]
 name=CentOS-7.9.2009 - Base (vault - disabled)
 baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 
 [C7.9.2009-updates]
 name=CentOS-7.9.2009 - Updates (vault - disabled)
 baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -270,9 +430,9 @@ MARK
 name=CentOS-7.9 - Sources
 baseurl=http://vault.centos.org/7.9.2009/os/Source/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/os/Source/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -284,9 +444,9 @@ MARK
 name=CentOS-7.9 - Fasttrack
 baseurl=http://vault.centos.org/7.9.2009/fasttrack/$basearch/
 # [alternative]baseurl=https://archive.kernel.org/centos-vault/7.9.2009/fasttrack/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -297,9 +457,9 @@ MARK
 [debuginfo]
 name=CentOS-7 - Debuginfo
 baseurl=http://debuginfo.centos.org/7/$basearch/
+enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Debug-7
-enabled=0
 metadata_expire=never
 skip_if_unavailable=1
 MARK
@@ -314,17 +474,80 @@ gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 skip_if_unavailable=1
 MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/epel.repo
+[epel]
+name=Extra Packages for Enterprise Linux 7 - $basearch
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/$basearch
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Debug
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/$basearch/debug
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-source]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Source
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/SRPMS
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-source-7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+MARK
+  cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/epel-testing.repo
+[epel-testing]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/$basearch
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-testing-debuginfo]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch - Debug
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/$basearch/debug
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-debug-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+
+[epel-testing-source]
+name=Extra Packages for Enterprise Linux 7 - Testing - $basearch - Source
+baseurl=https://archives.fedoraproject.org/pub/archive/epel/testing/7/SRPMS
+# metalink=https://mirrors.fedoraproject.org/metalink?repo=testing-source-epel7&arch=$basearch
+failovermethod=priority
+enabled=0
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+# skip_if_unavailable=1
+MARK
   # ----------
   # /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/repository/* ${variRepositoryPath}/
-   /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
+  /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
   chmod -R 644 ${variRepositoryPath}
   #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
   sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
-  sudo yum clean all
+  sudo yum clean all > /dev/null
   # sudo yum makecache fast
   # sudo yum repolist
   return 0
 }
+
 
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
@@ -333,11 +556,14 @@ function funcProtectedCommandInit(){
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri}; then
+    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
         # 基於當前環境的命令（即：vim /etc/bashrc）[START]
-        pattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        if ! $(grep -qF "$pattern" /etc/bashrc); then
-          echo $pattern >> /etc/bashrc
+        local variDeletePattern="^alias ${variEachUnitCommand}="
+        local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
+        sed -i "/${variDeletePattern}/d" /etc/bashrc
+        local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
+        echo $variAddPattern >> /etc/bashrc
+        if [ "${variDeletedCount}" -gt 0 ]; then
           [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
           variEtcBashrcReloadStatus=1
         fi
@@ -388,8 +614,8 @@ function funcProtectedOptionInit(){
     done
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_EVNI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
-    funcProtectedComplete "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
+    funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
     # report2/3[START]
     if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
       # 置頂
@@ -416,7 +642,7 @@ function funcProtectedOptionInit(){
   return 0
 }
 
-function funcProtectedComplete(){
+function funcProtectedBashCompletion(){
   variCommand=$1
   variOptionList=$2
 # 添加當前腳本的命令補全邏輯
@@ -442,81 +668,19 @@ complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/
   return 0
 }
 
-function funcProtectedEchoGreen(){
-  echo -e "\033[32m$1\033[0m"
-}
-
-# 要求：基於純淨係統（centos7.9）
-function funcProtectedSystemInitMark(){
-  # step1：設置網絡
-  variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
-  variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
-  # GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet" >> GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root rd.lvm.lv=centos/swap rhgb quiet net.ifnames=0 biosdevname=0"
-  vim /etc/default/grub
-  grub2-mkconfig -o /boot/grub2/grub.cfg
-  reboot
-  nmcli connection add type ethernet ifname eth0 con-name eth0
-  # 保留「{$NICName}==eth0」的，其餘全部分別刪除
-  nmcli connection delete {$NICName1}
-  nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.255.130/24 ipv4.gateway 192.168.255.254 ipv4.dns 114.114.114.114 connection.autoconnect yes
-  nmcli connection up eth0
-  cat <<IFCFGETH0 > /etc/sysconfig/network-scripts/ifcfg-eth0
-TYPE=Ethernet
-PROXY_METHOD=none
-BROWSER_ONLY=no
-BOOTPROTO=none
-DEFROUTE=yes
-IPV4_FAILURE_FATAL=no
-IPV6INIT=yes
-IPV6_AUTOCONF=yes
-IPV6_DEFROUTE=yes
-IPV6_FAILURE_FATAL=no
-IPV6_ADDR_GEN_MODE=stable-privacy
-NAME=eth0
-UUID=276a668b-6904-4c68-9479-263547f40fa6
-DEVICE=eth0
-ONBOOT=yes
-IPADDR=192.168.255.130
-PREFIX=24
-GATEWAY=192.168.255.254
-DNS1=114.114.114.114
-IFCFGETH0
-  systemctl restart network.service
-  systemctl disable firewalld
-  systemctl stop firewalld
-  systemctl status firewalld
-  # SELINUX=enforcing >> SELINUX=disabled
-  vi /etc/sysconfig/selinux
-  source /etc/sysconfig/selinux
-  # SELINUX=enforcing >> SELINUX=disabled
-  vi /etc/selinux/config
-  source /etc/selinux/config
-  reboot
-  # [selinux]查看狀態
-  sestatus
-cat <<FSTAB >> /etc/fstab
-//192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
-FSTAB
-cat <<PROFILE >> /etc/bashrc
-export http_proxy="http://${variProxy}"
-export https_proxy="http://${variProxy}"
-alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
-PROFILE
-  source /etc/bashrc
-  # TODO:echo 'set nu' >> ~/.vimrc
-  return 0
-}
 # protected function[END]
 # ##################################################
 
 # ##################################################
 # public function[START]
+
 function funcPublicInit(){
-  local variParameterDescList=("init mode，value：0/（default），1/refresh cache")
+  local variParameterDescList=("init model，value：0/cache（default），1/refresh")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  variRefreshCache=${1:-0}
-  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variRefreshCache} -eq 1 ]; then
+  local variInitModel=${1:-0}
+  if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
+    funcProtectedCloudInit
     variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
@@ -539,6 +703,32 @@ function funcPublicInit(){
   # pull *.sh list[END]
   funcProtectedCommandInit "${variAbleUnitFileURIList}"
   funcProtectedOptionInit "${variAbleUnitFileURIList}"
+  return 0
+}
+
+function funcPublicVersion() {
+    echo "[ https://github.com/chunio/omni.git ] version 1.0.0"
+    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
+    if [ -z "$variLineNum" ]; then
+        return 1
+    else
+        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
+        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
+        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    fi
+    return 0
+}
+
+function funcPublicNewUnit(){
+  local variParameterDescList=("unit name")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  variUnitName=${1}
+  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
+    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    return 1
+  fi
+  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
+  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
   return 0
 }
 
@@ -570,145 +760,107 @@ function funcPublicSaveUnit(){
   return 0
 }
 
-function funcPublicNewUnit(){
-  local variParameterDescList=("unit name")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
-  if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
-    echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    return 1
-  fi
-  cp -rf ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/init/template ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}
-  mv ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/template.sh ${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}/${variUnitName}.sh
-  return 0
-}
-
-function funcPublicShowPort(){
-  local variParameterDescList=("port")
-  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1}
-  variExpectAction=${2:-"cancel"}
-  variProcessIdList=$(lsof -i :${variPort} -t)
-  if [ -z "$variProcessIdList" ]; then
-    funcProtectedEchoGreen "${variPort} is not being listened to"
-  else
-    funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
-    netstat -lutnp | grep ":${variPort}"
-    funcProtectedEchoGreen "command >> lsof -i :${variPort}"
-    lsof -i :${variPort}
-    funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
-    lsof -i :${variPort} -t | xargs -r ps -fp
-    if [ ${variExpectAction} == "confirm" ];then
-      variInput="confirm"
-    else
-      read -p "Do you want to release the port（$variPort） ? (type 'confirm' to release): " variInput
-    fi
-    if [[ "$variInput" == "confirm" ]]; then
-      for eachProcessId in ${variProcessIdList}
-      do
-          variEachCommand=$(ps -p ${eachProcessId} -f -o cmd --no-headers)
-          /usr/bin/kill -9 $eachProcessId
-          funcProtectedEchoGreen "kill -9 $eachProcessId success （${variEachCommand}）"
-      done
-    fi
-  fi
-  return 0
-}
-
-function funcPublicMatchKill() {
-    local variParameterDescList=("keyword")
-    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-    local variKeyword=$1
-    ps aux | grep "${variKeyword}"
-    local variPidList=$(ps aux | grep "${variKeyword}" | grep -v grep | awk '{print $2}')
-    if [ -z "${variPidList}" ]; then
-        echo "no process found with keyword : ${variKeyword}"
-        return 1
-    fi
-    for variEachPid in ${variPidList}; do
-        echo "killing process with pid : ${variEachPid}"
-        kill ${variEachPid}
-        sleep 1
-        if ps -p ${variEachPid} > /dev/null; then
-            echo "process ${variEachPid} did not terminate, force killing ..."
-            kill -9 ${variEachPid}
-        else
-            echo "process ${variEachPid} terminated"
-        fi
-    done
-    echo "all processes with keyword '${variKeyword}' have been killed"
-    return 0
-}
-
-
-function funcPublicVersion() {
-    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
-    if [ -z "$variLineNum" ]; then
-        return 1
-    else
-        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
-        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
-        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    fi
-    return 0
-}
-
+# clash:7890
 # v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
 # 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP代理，因此PING不通亦正常）
 function funcPublicProxy() {
-  local variParameterDescMulti=("port")
-  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1:-0}
-  variProxy="192.168.255.1:${variPort}"
-  if [ ${variPort} -gt 0 ]; then
-    # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bashrc; then
-        sed -i '/http_proxy="http/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-        sed -i '/https_proxy="http/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-    else
-        echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bashrc
-        echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bashrc
-    fi
-    # common proxy[END]
-    # docker proxy[START]
-    mkdir -p /etc/systemd/system/docker.service.d
-    cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
-[Service]
-Environment="HTTP_PROXY=http://${variProxy}"
-Environment="HTTPS_PROXY=http://${variProxy}"
-HTTPPROXYCONF
-    # docker proxy[END]
-  else
-    # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bashrc; then
-        sed -i '/http_proxy="http/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-        sed -i '/https_proxy="http/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bashrc
-    else
-        echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bashrc
-        echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bashrc
-    fi
-    unset http_proxy
-    unset https_proxy
-    # common proxy[END]
-    # docker proxy[START]
-    rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
-    # docker proxy[END]
-  fi
-  # systemctl restart network.service
-  source /etc/bashrc
-  systemctl daemon-reload
-  systemctl restart docker
-  # [臨時]禁用代理
-  # env -i curl https://www.google.com
-  # [臨時]啟用代理
-  # curl -x http://192.168.255.1:10809 https://www.google.com
-  # ICMP（如：ping）流量不經過HTTP/SOCKS代理
-  echo '/etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo 'http_proxy = '${http_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo 'https_proxy = '${https_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo '/etc/systemd/system/docker.service.d/http-proxy.conf' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  cat /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
+      "MACOS")
+          # TODO:...
+          ;;
+      "UBUNTU"|"DEBIAN")
+          omni.ubuntu proxy $1
+          ;;
+      "CENTOS"|"RHEL"|"REDHAT")
+          omni.centos proxy $1
+          ;;
+      *)
+          return 1
+          ;;
+  esac
   return 0
+}
+
+# 一個特定的網絡端點（協議（如：IPV4/IPV6/...） + IP地址 + 端口）僅支持被一個進程綁定
+function funcPublicPort(){
+  local variParameterDescList=("port")
+  funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variPort=${1}
+  local variExpectAction=${2:-"cancel"}
+  local variInput=""
+  #（1）統計數量
+  local variProcessIdList=$(lsof -i :${variPort} -t)
+  if [ -z "$variProcessIdList" ]; then
+    funcProtectedEchoGreen "0 process was found listening on port '${variPort}'"
+    return 0
+  fi
+  local variProcessCount=$(echo "${variProcessIdList}" | wc -w)
+  funcProtectedEchoGreen "${variProcessCount} process(es) was(were) found listening on port '${variPort}'"
+  #（2）進程信息
+  funcProtectedEchoGreen 'command >> netstat -lutnp | grep ":'${variPort}'"'
+  netstat -lutnp | grep ":${variPort}"
+  funcProtectedEchoGreen "command >> lsof -i :${variPort}"
+  lsof -i :${variPort}
+  funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
+  lsof -i :${variPort} -t | xargs -r ps -fp
+  #（2）是否終止
+  if [ ${variExpectAction} == "kill" ];then
+    variInput="kill"
+  else
+    read -p "do you want to kill the ${variProcessCount} process(es) listening on port '${variPort}' ? ( type 'kill' to confirm ) : " variInput
+  fi
+  if [[ "$variInput" == "kill" ]]; then
+    for variEachProcessId in ${variProcessIdList}; do
+        variEachCommand=$(ps -p ${variEachProcessId} -f -o cmd --no-headers)
+        /usr/bin/kill -9 $variEachProcessId
+        funcProtectedEchoGreen "kill -9 $variEachProcessId success ( command : ${variEachCommand} ) "
+    done
+    funcProtectedEchoGreen "${variProcessCount} process(es) with port '${variPort}' has(have) been terminated"
+  fi
+  return 0
+}
+
+function funcPublicProcess() {
+    local variParameterDescList=("keyword")
+    funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+    local variKeyword=$1
+    local variExpectAction=${2:-"cancel"}
+    local variInput=""
+    #（0）檢查是否命令注入
+    if [[ ! "${variKeyword}" =~ ^[a-zA-Z0-9_./:-]+$ ]]; then
+        funcProtectedEchoRed "invalid keyword format"
+        return 1
+    fi
+    #（1）統計數量
+    local variProcessIdList=$(pgrep -f "${variKeyword}" 2>/dev/null)
+    if [ -z "${variProcessIdList}" ]; then
+        funcProtectedEchoGreen "0 process was found matching the keyword '${variKeyword}'"
+        return 0
+    fi
+    local variProcessCount=$(echo "${variProcessIdList}" | wc -w)
+    funcProtectedEchoGreen "${variProcessCount} process(es) was(were) found matching the keyword '${variKeyword}'"
+    #（2）進程信息
+    ps -fp ${variProcessIdList}
+    #（3）是否終止
+    if [ "${variExpectAction}" == "kill" ]; then
+        variInput="kill"
+    else
+        read -p "do you want to kill the ${variProcessCount} process(es) matching the keyword '${variKeyword}' ? ( type 'kill' to confirm ) : " variInput
+    fi
+    if [[ "$variInput" == "kill" ]]; then
+        for variEachProcessId in ${variProcessIdList}; do
+            # 獲取進程命令詳情
+            local variEachCommand=$(ps -p ${variEachProcessId} -o cmd --no-headers 2>/dev/null)
+            if [ -n "${variEachCommand}" ]; then
+                kill -9 ${variEachProcessId} 2>/dev/null
+                funcProtectedEchoGreen "kill -9 ${variEachProcessId} success ( command : ${variEachCommand} )"
+            else
+                funcProtectedEchoGreen "the ${variEachProcessId} already terminated ( command : ${variEachCommand} )"
+            fi
+        done
+        funcProtectedEchoGreen "${variProcessCount} process(es) with keyword '${variKeyword}' has(have) been terminated"
+    fi
+    return 0
 }
 
 # 免費證書 && 自動續簽
@@ -737,9 +889,12 @@ HTTPPROXYCONF
 #        default_type "text/plain";
 #        allow all;
 #        auth_basic off;
-#        try_files $uri =404;
+#        try_files $uri $uri/ =404;
 #    }
 #    #「Let’s Encrypt」挑戰認證[END]
+#    location / {
+#        return 301 https://$host$request_uri;
+#    }
 # }
 # server {
 #    listen 443 ssl http2;
@@ -754,8 +909,6 @@ HTTPPROXYCONF
 #    ssl_session_timeout 1d;
 #    ssl_session_cache shared:SSL:50m;
 #    ssl_session_tickets off;
-#    ssl_stapling on;
-#    ssl_stapling_verify on;
 #    add_header Strict-Transport-Security "max-age=63072000" always;
 #    add_header X-Frame-Options "SAMEORIGIN" always;
 #    add_header X-Content-Type-Options "nosniff" always;
@@ -820,7 +973,7 @@ certbot renew --quiet \
 WEBROOTRENEWSHELL
     ;;
     "standalone")
-      /windows/code/backend/chunio/omni/init/centos/centos.sh showPort 80 confirm
+      /windows/code/backend/chunio/omni/init/system/system.sh port 80 kill
       certbot certonly \
         --standalone \
         --preferred-challenges http \
