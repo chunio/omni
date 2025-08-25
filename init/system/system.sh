@@ -213,6 +213,16 @@ function funcProtectedCentosInit(){
     fi
     # 檢查單個套件安裝狀態，已完成則跳過[END]
     case ${variEachPackage} in
+        "epel-release")
+        # 當小於/等於「centos.7.x」時，則跳過「for variEachPackage in "${variPackageList[@]}"; do」（已驗證）
+        [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -le 7 ]] && continue
+        if yum install -y epel-release; then
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        else
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+        fi
+        yum clean all > /dev/null
+        ;;
       "docker")
         if command -v docker > /dev/null && [ "$(docker --version | awk '{print $3}' | sed 's/,//')" == "26.1.3" ]; then
           echo "package '${variEachPackage}' already installed"
@@ -278,9 +288,8 @@ function funcProtectedCentosInit(){
 #「centos7.9」已停止維護（截止2024/06/30），[官方倉庫]mirrorlist.centos.org >> [歸檔倉庫]vault.centos.org
 function funcProtectedCentos7YumRepositoryUpdater(){
   # 僅適用於「centos7」[START]
-  if ! grep -qE 'CentOS.* 7(\.|$)' /etc/centos-release 2>/dev/null; then
-    return 0
-  fi
+  # 當大於/等於「centos.8.x」時，則返回0
+  [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -ge 8 ]] && return 0
   # 僅適用於「centos7」[END]
   # 是否備份[START]
   local variRepositoryPath="/etc/yum.repos.d"
