@@ -792,18 +792,19 @@ function funcPublicCloudSkeletonRinit() {
           mkdir -p /windows/runtime
           if [ -d "/windows/code/backend/chunio/omni" ]; then
             cd /windows/code/backend/chunio/omni
-            echo "[ omni ] git fetch origin ..."
-            git fetch origin
-            echo "[ omni ] git fetch origin finished"
-            echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
-            git reset --hard origin/feature/zengweitao/ubuntu
-            echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
-            chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
           else
-            mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+            mkdir -p /windows/code/backend/chunio
+            cd /windows/code/backend/chunio
             git clone https://github.com/chunio/omni.git
-            cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+            cd ./omni
           fi
+          echo "[ omni ] git fetch origin ..."
+          git fetch origin
+          echo "[ omni ] git fetch origin finished"
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
+          git reset --hard origin/feature/zengweitao/ubuntu
+          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
+          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
           #（2）omni.system init[END]
           # --------------------------------------------------
           #（3）slave main[START]
@@ -1070,18 +1071,19 @@ function funcPublicCloudUnicornReinit() {
         mkdir -p /windows/runtime
         if [ -d "/windows/code/backend/chunio/omni" ]; then
           cd /windows/code/backend/chunio/omni
-          echo "[ omni ] git fetch origin ..."
-          git fetch origin
-          echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
-          git reset --hard origin/feature/zengweitao/ubuntu
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
-          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         else
-          mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+          mkdir -p /windows/code/backend/chunio
+          cd /windows/code/backend/chunio
           git clone https://github.com/chunio/omni.git
-          cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+          cd ./omni
         fi
+        echo "[ omni ] git fetch origin ..."
+        git fetch origin
+        echo "[ omni ] git fetch origin finished"
+        echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu ..."
+        git reset --hard origin/feature/zengweitao/ubuntu
+        echo "[ omni ] git reset --hard origin/feature/zengweitao/ubuntu finished"
+        chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         #（2）omni.system init[END]
         # --------------------------------------------------
         #（3）slave main[START]
