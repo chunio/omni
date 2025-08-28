@@ -44,10 +44,10 @@ function funcProtectedOsDistroInit() {
       #   variOsDistro=$(echo $ID | tr '[:lower:]' '[:upper:]')
       elif [ -f /etc/centos-release ]; then
           variOsDistro="CENTOS"
-          variSourceUri="/etc/bashrc"
+          variSourceUri="/etc/profile.d/omni.sh"
       elif [ -f /etc/redhat-release ]; then
           variOsDistro="CENTOS"
-          variSourceUri="/etc/bashrc"
+          variSourceUri="/etc/profile.d/omni.sh"
       fi
   fi
   funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
@@ -87,6 +87,7 @@ function funcProtectedUbuntuInit(){
     apt-utils
     # ubuntu[END]
     ca-certificates
+    zsh
     git
     lsof
     tree
@@ -179,6 +180,8 @@ function funcProtectedCentosInit(){
   variPackageList=(
     # Extra Packages for Enterprise Linux/企業係統額外套件
     # epel-release
+    ca-certificates
+    zsh
     git
     lsof
     tree
@@ -551,22 +554,27 @@ MARK
 
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
-  local variEtcBashrcReloadStatus=0
+  # local variEtcBashrcReloadStatus=0
   rm -rf /usr/local/bin/"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
         # 基於當前環境的命令（即：vim /etc/bashrc）[START]
+        # local variDeletePattern="^alias ${variEachUnitCommand}="
+        # local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
+        # sed -i "/${variDeletePattern}/d" /etc/bashrc
+        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
+        # echo $variAddPattern >> /etc/bashrc
+        # if [ "${variDeletedCount}" -gt 0 ]; then
+        #   [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+        #   variEtcBashrcReloadStatus=1
+        # fi
+        # ----------
         local variDeletePattern="^alias ${variEachUnitCommand}="
-        local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
-        sed -i "/${variDeletePattern}/d" /etc/bashrc
         local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        echo $variAddPattern >> /etc/bashrc
-        if [ "${variDeletedCount}" -gt 0 ]; then
-          [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
-          variEtcBashrcReloadStatus=1
-        fi
+        sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+        echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
         # 基於當前環境的命令（即：vim /etc/bashrc）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
@@ -679,9 +687,10 @@ function funcPublicInit(){
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variInitModel=${1:-0}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
+    install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
     funcProtectedCloudInit
-    variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
+    local variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
   # pull *.sh list[START]

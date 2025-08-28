@@ -10,7 +10,7 @@ working with push protection from the command line ：
 1，git rebase -i {$commitId}~1
 2，[delete commit] dd && :wq
 3，[check conflict] git status
-4，[resolve conflict] git add module/confict.file && git rebase --continue
+4，[resolve conflict] git add module/conflict.file && git rebase --continue
 5，git push origin main
 MARK
 

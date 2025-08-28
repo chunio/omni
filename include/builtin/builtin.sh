@@ -19,7 +19,7 @@ VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="/windows/code/backend/chunio/omni"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
 VARI_GLOBAL["BUILTIN_OS_DISTRO"]="CENTOS"
-VARI_GLOBAL["BUILTIN_SOURCE_URI"]="/etc/bashrc"
+VARI_GLOBAL["BUILTIN_SOURCE_URI"]="/etc/profile.d/omni.sh"
 # 支持（run mode）：1絕對路徑2相對路徑3符號鏈接($0等于：/usr/local/bin/omni.interface)
 # 僅適用於「source bash」[START]
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -90,6 +90,10 @@ function funcProtectedSyncQiniu() {
 }
 
 function funcProtectedConstruct() {
+  # 加載環境變量[START]
+  [ -f ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]} ] || install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+  source ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+  # 加載環境變量[END]
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
   mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   if ! [ -f "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" ]; then
