@@ -111,7 +111,7 @@ EOF
   typeset -g P10K_COLOR_OS_BG="#ffffff"           # 白色背景
   typeset -g P10K_COLOR_OS_FG="$P10K_COLOR_CRUST" # 深色字體
   # ----------
-  typeset -g P10K_COLOR_CONTEXT_BG="#d17102"      # 橙色背景
+  typeset -g P10K_COLOR_CONTEXT_BG="#ff7e00"      # 橙色背景
   typeset -g P10K_COLOR_CONTEXT_FG="#ffffff"      # 白色字體
   # ----------
   typeset -g P10K_COLOR_VCS_BG="#facc15"          # 黃色背景
