@@ -115,7 +115,7 @@ EOF
   typeset -g P10K_COLOR_CONTEXT_FG="#ffffff"      # 白色字體
   # ----------
   typeset -g P10K_COLOR_VCS_BG="#facc15"          # 黃色背景
-  typeset -g P10K_COLOR_VCS_FG="#ffffff"          # 白色字體
+  typeset -g P10K_COLOR_VCS_FG="#000000"          # 黑色字體
   # ----------
   typeset -g P10K_COLOR_TIME_BG="#0061ff"         # 藍色背景
   typeset -g P10K_COLOR_TIME_FG="#ffffff"         # 白色字體
