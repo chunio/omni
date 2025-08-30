@@ -117,6 +117,7 @@ function funcProtectedUbuntuInit(){
       continue
     fi
     # 檢查單個套件安裝狀態，已完成則跳過[END]
+    # default
     variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
       "docker")
@@ -216,7 +217,7 @@ function funcProtectedCentosInit(){
     # default
     variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
-        "epel-release")
+      "epel-release")
         # 當小於/等於「centos.7.x」時，則跳過「for variEachPackage in "${variPackageList[@]}"; do」（已驗證）
         [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -le 7 ]] && continue
         if yum install -y epel-release; then
