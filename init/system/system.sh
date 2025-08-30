@@ -202,6 +202,7 @@ function funcProtectedCentosInit(){
   local variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
   grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null && return 0
   # 檢查整體套件安裝狀態，已完成則退出[END]
+  local variRetry=3
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
     # 檢查單個套件安裝狀態，已完成則跳過[START]
@@ -237,7 +238,12 @@ function funcProtectedCentosInit(){
           yum update -y nss curl openssl
           yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
           sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
-          yum install -y docker-ce docker-ce-cli containerd.io
+          # yum install -y docker-ce docker-ce-cli containerd.io
+          for ((i=1; i<variRetry; i++)); do
+            if yum install -y docker-ce docker-ce-cli containerd.io; then
+              break
+            fi
+          done
           systemctl enable docker
           systemctl restart docker
         fi
@@ -261,7 +267,6 @@ function funcProtectedCentosInit(){
         fi
         ;;
       *)
-        local variRetry=3
         for ((i=1; i<variRetry; i++)); do
           if yum install -y "${variEachPackage}"; then
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
@@ -696,11 +701,12 @@ function funcPublicInit(){
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
     install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
-    # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」[START]
+    # 檢查間隔（要求：大於3秒）[START]
+    # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」
     if (( $(date +%s) - ${VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]} > 3 )); then
       funcProtectedCloudInit
     fi
-    # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」[END]
+    # 檢查間隔（要求：大於3秒）[END]
     local variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
