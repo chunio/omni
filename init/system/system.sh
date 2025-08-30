@@ -216,14 +216,14 @@ function funcProtectedCentosInit(){
       continue
     fi
     # 檢查單個套件安裝狀態，已完成則跳過[END]
+    # default
+    variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
         "epel-release")
         # 當小於/等於「centos.7.x」時，則跳過「for variEachPackage in "${variPackageList[@]}"; do」（已驗證）
         [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -le 7 ]] && continue
         if yum install -y epel-release; then
           variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        else
-          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
         fi
         yum clean all > /dev/null
         ;;
@@ -238,21 +238,19 @@ function funcProtectedCentosInit(){
           yum update -y nss curl openssl
           for ((i=1; i<variRetry; i++)); do
             if yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo; then
+              sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
               break
             fi
           done
-          sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
           # yum install -y docker-ce docker-ce-cli containerd.io
           for ((i=1; i<variRetry; i++)); do
             if yum install -y docker-ce docker-ce-cli containerd.io; then
+              systemctl enable docker
+              systemctl restart docker
+              variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
               break
             fi
           done
-          systemctl enable docker
-          systemctl restart docker
-        fi
-        if command -v docker > /dev/null; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
         ;;
       "docker-compose")
@@ -275,12 +273,6 @@ function funcProtectedCentosInit(){
           if yum install -y "${variEachPackage}"; then
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
-          fi
-          # 當最後一次嘗試時，記錄失敗狀態
-          if [[ $i -eq $((variRetry - 1)) ]]; then
-             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
-          else
-             sleep 1
           fi
         done
         ;;
