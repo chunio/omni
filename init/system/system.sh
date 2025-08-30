@@ -22,6 +22,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
 VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
+VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=0
 VARI_GLOBAL["MOUNT_USERNAME"]=""
 VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # global variable[END]
@@ -87,7 +88,6 @@ function funcProtectedUbuntuInit(){
     apt-utils
     # ubuntu[END]
     ca-certificates
-    zsh
     git
     lsof
     tree
@@ -140,7 +140,7 @@ function funcProtectedUbuntuInit(){
         else
           # https://github.com/docker/compose/releases
           # docker-compose-linux-x86_64
-          variDockerComposeUri=$(which docker-compose)
+          variDockerComposeUri=$(which docker-compose 2> /dev/null)
           [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
           curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
@@ -171,6 +171,7 @@ function funcProtectedUbuntuInit(){
   done
   [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
+  VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=$(date +%s)
   return 0
 }
 
@@ -181,7 +182,6 @@ function funcProtectedCentosInit(){
     # Extra Packages for Enterprise Linux/企業係統額外套件
     # epel-release
     ca-certificates
-    zsh
     git
     lsof
     tree
@@ -235,13 +235,15 @@ function funcProtectedCentosInit(){
           yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
           yum install -y lvm2 yum-utils device-mapper-persistent-data
           yum update -y nss curl openssl
-          yum-config-manager --disable docker-ce-stable
           yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
           yum install -y docker-ce docker-ce-cli containerd.io
           systemctl enable docker
           systemctl restart docker
         fi
-        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        if command -v docker > /dev/null; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
         ;;
       "docker-compose")
         if command -v docker-compose > /dev/null && [ "$(docker-compose --version | awk '{print $4}' | sed 's/,//')" == "v2.27.1" ]; then
@@ -249,13 +251,14 @@ function funcProtectedCentosInit(){
         else
           # https://github.com/docker/compose/releases
           # docker-compose-linux-x86_64
-          variDockerComposeUri=$(which docker-compose)
+          variDockerComposeUri=$(which docker-compose 2> /dev/null)
           [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
           curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
-
         fi
-        variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        if command -v docker-compose > /dev/null; then
+          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
         ;;
       *)
         local variRetry=3
@@ -286,6 +289,7 @@ function funcProtectedCentosInit(){
   done
   [ ${variCloudInitSucceeded} == 1 ] && echo ${variAllPackageInstalledLabel} >> ${VARI_GLOBAL["VERSION_URI"]}
   # --------------------------------------------------
+  VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=$(date +%s)
   return 0
 }
 
@@ -692,7 +696,11 @@ function funcPublicInit(){
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
     install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
-    funcProtectedCloudInit
+    # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」[START]
+    if (( $(date +%s) - ${VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]} > 3 )); then
+      funcProtectedCloudInit
+    fi
+    # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」[END]
     local variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
