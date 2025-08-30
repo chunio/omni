@@ -84,8 +84,8 @@ function funcProtectedUbuntuInit(){
   apt update
   variPackageList=(
     # ubuntu[START]
-    dialog
     apt-utils
+    dialog
     # ubuntu[END]
     ca-certificates
     git
@@ -184,8 +184,11 @@ function funcProtectedCentosInit(){
   funcProtectedCentos7YumRepositoryUpdater
   rm -f /var/run/yum.pid
   variPackageList=(
+    # centos[START]
+    yum-utils
     # Extra Packages for Enterprise Linux/企業係統額外套件
     # epel-release
+    # centos[END]
     ca-certificates
     git
     lsof
@@ -234,7 +237,7 @@ function funcProtectedCentosInit(){
         # https://docs.docker.com/engine/install/centos/
         # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
         yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-        yum install -y lvm2 yum-utils device-mapper-persistent-data
+        yum install -y lvm2 device-mapper-persistent-data
         yum update -y nss curl openssl
         for ((i=1; i<variRetry; i++)); do
           if yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo; then
