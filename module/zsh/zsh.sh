@@ -60,9 +60,9 @@ function funcPublicReinit(){
   # fc-list | grep -i meslo
   # 安裝「nerdfonts」字體[END]
   # 編譯安裝[START]
-  cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
-  # cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  # wget https://sourceforge.net/projects/zsh/files/zsh/5.8/zsh-5.8.tar.xz
+  # cd ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  wget https://sourceforge.net/projects/zsh/files/zsh/5.8/zsh-5.8.tar.xz
   rm -rf /usr/local/src/zsh-5.8 && tar -xf zsh-5.8.tar.xz -C /usr/local/src/ && cd /usr/local/src/zsh-5.8
   ./configure --prefix=/usr/local/zsh --enable-multibyte
   make -j$(nproc) && make install
