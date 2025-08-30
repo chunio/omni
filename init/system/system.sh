@@ -572,9 +572,10 @@ function funcProtectedCommandInit(){
         # fi
         # ----------
         local variDeletePattern="^alias ${variEachUnitCommand}="
-        local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
+        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
         sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-        echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+        ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+        # echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
         # 基於當前環境的命令（即：vim /etc/bashrc）[END]
     else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
@@ -622,7 +623,7 @@ function funcProtectedOptionInit(){
     done
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="S" || variEachBashEvni="S"
     funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
     # report2/3[START]
     if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
