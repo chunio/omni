@@ -106,7 +106,7 @@ function funcProtectedUbuntuInit(){
   variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
   grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
   [ $? -eq 0 ] && return 0
-  local variRetry=3
+  local variRetry=5
   declare -A variCloudInstallResult
   for variEachPackage in "${variPackageList[@]}"; do
     # 檢查單個套件安裝狀態，已完成則跳過[START]
@@ -138,6 +138,7 @@ function funcProtectedUbuntuInit(){
             variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
           fi
+          sleep 1
         done
         ;;
       "docker-compose")
@@ -157,6 +158,7 @@ function funcProtectedUbuntuInit(){
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
           fi
+          sleep 1
         done
         ;;
     esac
@@ -236,6 +238,7 @@ function funcProtectedCentosInit(){
             sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
             break
           fi
+          sleep 1
         done
         # yum install -y docker-ce docker-ce-cli containerd.io
         for ((i=1; i<variRetry; i++)); do
@@ -245,6 +248,7 @@ function funcProtectedCentosInit(){
             variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
           fi
+          sleep 1
         done
         ;;
       "docker-compose")
@@ -264,6 +268,7 @@ function funcProtectedCentosInit(){
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
           fi
+          sleep 1
         done
         ;;
     esac
