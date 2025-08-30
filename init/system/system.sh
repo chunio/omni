@@ -233,7 +233,8 @@ function funcProtectedCentosInit(){
           # https://docs.docker.com/engine/install/centos/
           # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
           yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum install -y lvm2 yum-utils device-mapper-persistent-data
+          yum update -y nss curl openssl
           yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
           yum install -y docker-ce docker-ce-cli containerd.io
           systemctl enable docker
@@ -544,8 +545,8 @@ MARK
   /usr/bin/cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/* ${variRepositoryPath}/
   chmod -R 644 ${variRepositoryPath}
   #「docker-ce-stable」對於「centos7」不再維護，需自行安裝
-  sudo yum-config-manager --disable docker-ce-stable > /dev/null || true
-  sudo yum clean all > /dev/null
+  # yum-config-manager --disable docker-ce-stable > /dev/null || true
+  yum clean all > /dev/null
   # sudo yum makecache fast
   # sudo yum repolist
   return 0
