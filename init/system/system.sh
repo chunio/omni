@@ -235,6 +235,7 @@ function funcProtectedCentosInit(){
           yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
           yum install -y lvm2 yum-utils device-mapper-persistent-data
           yum update -y nss curl openssl
+          yum-config-manager --disable docker-ce-stable
           yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
           yum install -y docker-ce docker-ce-cli containerd.io
           systemctl enable docker
