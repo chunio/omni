@@ -693,6 +693,9 @@ function funcPublicInit(){
     local variOmniRootPath="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]%'/init/system'}"
     funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
+  # 設置字符編碼[START]
+  localectl set-locale LANG=en_US.UTF-8
+  # 設置字符編碼[END]
   # pull *.sh list[START]
   # filter : ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"] && ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}
   # find "/windows/code/backend/chunio/omni" \
