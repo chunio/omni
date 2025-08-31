@@ -142,10 +142,10 @@ DOCKERCOMPOSEYML
   docker rm -f account-mysql 2> /dev/null
   docker rm -f account-nginx 2> /dev/null
   # 徹底重啟[END]
-  docker-compose down -v
+  docker compose down -v
   # 強制清除未使用的「volume」
   docker volume prune -f
-  docker-compose -p ${veriModuleName} up --build -d
+  docker compose -p ${veriModuleName} up --build -d
   docker ps -a | grep ${veriModuleName}
   cd ${variDockerWorkSpace}/${veriModuleName}/backend
   docker exec -it ${veriModuleName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"

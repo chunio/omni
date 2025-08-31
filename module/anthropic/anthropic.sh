@@ -79,8 +79,8 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f claude-code 2> /dev/null
-  docker-compose down -v
-  docker-compose -p claude-code up --build -d
+  docker compose down -v
+  docker compose -p claude-code up --build -d
   docker update --restart=always claude-code
   docker ps -a | grep claude-code
   return 0

@@ -222,8 +222,8 @@ volumes:
 DOCKERCOMPOSEYML
   # 「docker-compose.yml」[END]
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p apollo up --build -d
+  docker compose down -v
+  docker compose -p apollo up --build -d
   docker update --restart=always apollo-mysql # -development apollo-mysql-sandbox apollo-mysql-production apollo-mysql-portal
   docker update --restart=always apollo-config-development apollo-config-sandbox apollo-config-production
   docker update --restart=always apollo-admin-development apollo-admin-sandbox apollo-admin-production

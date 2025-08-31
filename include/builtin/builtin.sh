@@ -16,7 +16,7 @@ VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s%3N)
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="/windows/code/backend/chunio/omni"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
-VARI_GLOBAL["BUILTIN_OS_DISTRO"]="UBUNTU"
+VARI_GLOBAL["BUILTIN_OS_DISTRO"]="CENTOS"
 VARI_GLOBAL["BUILTIN_SOURCE_URI"]="/etc/profile.d/omni.sh"
 # 支持（run mode）：1絕對路徑2相對路徑3符號鏈接($0等于：/usr/local/bin/omni.interface)
 # 僅適用於「source bash」[START]

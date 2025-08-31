@@ -98,8 +98,8 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p ${variModuleName} up --build -d
+  docker compose down -v
+  docker compose -p ${variModuleName} up --build -d
   docker update --restart=always ${variModuleName}
   docker ps -a | grep ${variModuleName}
   cd ${variMasterPath}/gopath/src/${variModuleName}

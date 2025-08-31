@@ -416,8 +416,8 @@ ETCBASHRC
 #     driver: bridge
 # DOCKERCOMPOSEYML
 #   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-#   docker-compose down -v
-#   docker-compose -p ${variModuleName} up --build -d
+#   docker compose down -v
+#   docker compose -p ${variModuleName} up --build -d
 #   docker update --restart=always ${variModuleName}
 #   docker ps -a | grep ${variModuleName}
 #   cd ${variMasterPath}/gopath/src/${variModuleName}
@@ -525,8 +525,8 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
+  docker compose down -v
+  docker compose -p ${veriModuleName} up --build -d
   docker update --restart=always ${veriModuleName}
   docker ps -a | grep ${veriModuleName}
   cd ${variMasterPath}/gopath/src/${veriModuleName}
@@ -578,8 +578,8 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton 2> /dev/null
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
+  docker compose down -v
+  docker compose -p ${veriModuleName} up --build -d
   docker update --restart=always ${veriModuleName}
   docker ps -a | grep ${veriModuleName}
   cd ${variMasterPath}/gopath/src/${veriModuleName}
@@ -898,8 +898,8 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton-nginx
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
+  docker compose down -v
+  docker compose -p ${veriModuleName} up --build -d
   docker ps -a | grep ${veriModuleName}
   return 0
 }
@@ -997,8 +997,8 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton-nginx
-  docker-compose down -v
-  docker-compose -p ${veriModuleName} up --build -d
+  docker compose down -v
+  docker compose -p ${veriModuleName} up --build -d
   docker ps -a | grep ${veriModuleName}
   return 0
 }

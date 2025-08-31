@@ -143,8 +143,8 @@ volumes:
       device: ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p clickhouse up --build -d
+  docker compose down -v
+  docker compose -p clickhouse up --build -d
   docker update --restart=always clickhouse
   docker ps -a | grep clickhouse
   echo "username : ${variUsername}"

@@ -103,7 +103,7 @@ function funcProtectedCloudInit_centos(){
       "docker")
         # https://docs.docker.com/engine/install/centos/
         # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
-        yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine docker-compose-plugin
+        yum remove -y docker docker-engine docker-common docker-latest docker-client docker-client-latest docker-logrotate docker-latest-logrotate docker-compose-plugin
         yum install -y lvm2 device-mapper-persistent-data
         yum update -y nss curl openssl
         for ((i=1; i<variRetry; i++)); do
@@ -113,9 +113,8 @@ function funcProtectedCloudInit_centos(){
           fi
           sleep $variSleep
         done
-        # yum install -y docker-ce docker-ce-cli containerd.io
         for ((i=1; i<variRetry; i++)); do
-          if yum install -y docker-ce docker-ce-cli containerd.io; then
+          if yum install -y containerd.io docker-ce docker-ce-cli docker-compose-plugin; then
             systemctl enable docker
             systemctl restart docker
             variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}

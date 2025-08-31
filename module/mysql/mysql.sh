@@ -94,8 +94,8 @@ volumes:
       device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker-compose down -v
-  docker-compose -p mysql up --build -d
+  docker compose down -v
+  docker compose -p mysql up --build -d
   docker update --restart=always mysql
   docker ps -a | grep mysql
   return 0

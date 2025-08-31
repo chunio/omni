@@ -55,8 +55,8 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
     cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-    docker-compose down -v
-    docker-compose -p mongo up --build -d
+    docker compose down -v
+    docker compose -p mongo up --build -d
     # check status[START]
     for i in {1..120}; do
         if docker ps | grep -q mongo; then
