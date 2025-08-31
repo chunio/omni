@@ -566,10 +566,10 @@ function funcProtectedCommandInit(){
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    # TODO:已廢棄/待移除（直至：所有[haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
+    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
     local variDeletePattern="^alias ${variEachUnitCommand}="
     sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    # TODO:已廢棄/待移除（直至：所有[haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
+    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
     ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
     # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
         # 基於當前環境的命令（即：vim /etc/bashrc）[START]
