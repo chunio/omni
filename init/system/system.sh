@@ -559,7 +559,6 @@ MARK
   return 0
 }
 
-
 function funcProtectedCommandInit(){
   local variAbleUnitFileURIList=${1}
   # local variEtcBashrcReloadStatus=0
