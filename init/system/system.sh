@@ -773,22 +773,25 @@ function funcPublicZshReinit_centos(){
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
   #【一】段落顏色[START]
   #（1）common
-  typeset -g P10K_COLOR_CRUST="#11111b"           # 深色前景（黑色）
-  typeset -g P10K_COLOR_TEXT="#cdd6f4"            # 淺色前景（灰色）
-  typeset -g P10K_COLOR_SURFACE0="#313244"        # 提示背景（灰色）
+  typeset -g P10K_COLOR_CRUST="#11111b"              # 深色前景（黑色）
+  typeset -g P10K_COLOR_TEXT="#cdd6f4"               # 淺色前景（灰色）
+  typeset -g P10K_COLOR_SURFACE0="#313244"           # 提示背景（灰色）
   #（2）unit
   # ----------
-  typeset -g P10K_COLOR_OS_BG="#ffffff"           # 白色背景
-  typeset -g P10K_COLOR_OS_FG="$P10K_COLOR_CRUST" # 深色字體
+  typeset -g P10K_COLOR_WHITE_BG="#ffffff"           # 白色背景
+  typeset -g P10K_COLOR_WHITE_FG="$P10K_COLOR_CRUST" # 深色字體
   # ----------
-  typeset -g P10K_COLOR_CONTEXT_BG="#ffba00"      # 橙色背景
-  typeset -g P10K_COLOR_CONTEXT_FG="#000000"      # 黑色字體
+  typeset -g P10K_COLOR_ORANGE_BG="#ffba00"          # 橙色背景
+  typeset -g P10K_COLOR_ORANGE_FG="#000000"          # 黑色字體
   # ----------
-  typeset -g P10K_COLOR_VCS_BG="#facc15"          # 黃色背景
-  typeset -g P10K_COLOR_VCS_FG="#000000"          # 黑色字體
+  typeset -g P10K_COLOR_YELLOW_BG="#facc15"          # 黃色背景
+  typeset -g P10K_COLOR_YELLOW_FG="#000000"          # 黑色字體
   # ----------
-  typeset -g P10K_COLOR_TIME_BG="#00baff"         # 藍色背景
-  typeset -g P10K_COLOR_TIME_FG="#000000"         # 黑色字體
+  typeset -g P10K_COLOR_BLUE_BG="#00baff"            # 藍色背景
+  typeset -g P10K_COLOR_BLUE_FG="#000000"            # 黑色字體
+  # ----------
+  typeset -g P10K_COLOR_INDIGO_BG="#4B0082"          # 靛色背景
+  typeset -g P10K_COLOR_INDIGO_FG="#000000"          # 黑色字體
   # ----------
   #【一】段落顏色[START]
   #【二】段落排序[START]
@@ -798,7 +801,7 @@ function funcPublicZshReinit_centos(){
   typeset -ga P10K_RIGHT_ORDER=() # 右側排序
   #【二】段落排序[END]
   #【三】段落佈局[START]
-  #（0）core layout
+  #（0A）core layout[START]
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=("${P10K_LEFT_ORDER[@]}")
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=("${P10K_RIGHT_ORDER[@]}")
   typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=false # 單行提示，禁止自動換行
@@ -807,21 +810,35 @@ function funcPublicZshReinit_centos(){
   typeset -g POWERLEVEL9K_ICON_PADDING=none
   typeset -g POWERLEVEL9K_ICON_BEFORE_CONTENT=true
   typeset -g POWERLEVEL9K_BACKGROUND=$P10K_COLOR_SURFACE0
-  # 移除左右段落分隔符（目的：使其貼合）[START]
-  typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=''
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
-  # 移除左右段落分隔符（目的：使其貼合）[END]
+  #（0A）core layout[END]
+  #（0B）segment layout（default：arrow）[START]
+  typeset -g P10K_CONNECTOR_STYLE='flat'
+  if [[ "$P10K_CONNECTOR_STYLE" == 'arrow' ]]; then
+    # [arrow]箭頭風格
+    typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=$'\uE0B0'
+    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=$'\uE0B1'
+    typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=$'\uE0B0'
+    typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=$'\uE0B2'
+    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=$'\uE0B3'
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=$'\uE0B2'
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+  else
+    # [flat]方形風格
+    typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=''
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+  fi
+  #（0B）segment layout（default：arrow）[END]
   #（1A）os_icon/係統圖標
-  # typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=$P10K_COLOR_OS_BG
-  # typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$P10K_COLOR_OS_FG
+  # typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=$P10K_COLOR_WHITE_BG
+  # typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$P10K_COLOR_WHITE_FG
   #（1B）label_segment/標籤信息
-  typeset -g POWERLEVEL9K_LABEL_SEGMENT_BACKGROUND=$P10K_COLOR_OS_BG
-  typeset -g POWERLEVEL9K_LABEL_SEGMENT_FOREGROUND=$P10K_COLOR_OS_FG
+  typeset -g POWERLEVEL9K_LABEL_SEGMENT_BACKGROUND=$P10K_COLOR_WHITE_BG
+  typeset -g POWERLEVEL9K_LABEL_SEGMENT_FOREGROUND=$P10K_COLOR_WHITE_FG
   typeset -g POWERLEVEL9K_LABEL_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_LABEL_SEGMENT_RIGHT_WHITESPACE=0
   function prompt_label_segment() {
@@ -829,8 +846,8 @@ function funcPublicZshReinit_centos(){
     p10k segment -t 'zsh'
   }
   #（2）context_segment/操作信息（含：用戶/主機/目錄）
-  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_BACKGROUND=$P10K_COLOR_CONTEXT_BG
-  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_FOREGROUND=$P10K_COLOR_CONTEXT_FG
+  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_BACKGROUND=$P10K_COLOR_ORANGE_BG
+  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_FOREGROUND=$P10K_COLOR_ORANGE_FG
   typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_RIGHT_WHITESPACE=0
   function prompt_context_segment() {
@@ -840,13 +857,13 @@ function funcPublicZshReinit_centos(){
     p10k segment -t '[%n@%m %1~]'
   }
   #（3）vcs/版本信息
-  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=$P10K_COLOR_VCS_FG
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=$P10K_COLOR_VCS_FG
+  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=$P10K_COLOR_YELLOW_FG
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=$P10K_COLOR_YELLOW_FG
   typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='' # 移除「?」圖標
   typeset -g POWERLEVEL9K_VCS_BRANCH_ICON='' # 移除分支圖標，僅顯示分支名稱
   typeset -g POWERLEVEL9K_VCS_PREFIX=''
@@ -894,8 +911,8 @@ function funcPublicZshReinit_centos(){
     fi
     p10k segment -t "${variOutput}"
   }
-  typeset -g POWERLEVEL9K_TIME_SEGMENT_BACKGROUND=$P10K_COLOR_TIME_BG
-  typeset -g POWERLEVEL9K_TIME_SEGMENT_FOREGROUND=$P10K_COLOR_TIME_FG
+  typeset -g POWERLEVEL9K_TIME_SEGMENT_BACKGROUND=$P10K_COLOR_BLUE_BG
+  typeset -g POWERLEVEL9K_TIME_SEGMENT_FOREGROUND=$P10K_COLOR_BLUE_FG
   typeset -g POWERLEVEL9K_TIME_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_TIME_SEGMENT_RIGHT_WHITESPACE=0
   #【三】段落佈局[END]
@@ -992,22 +1009,25 @@ function funcPublicZshReinit_ubuntu(){
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
   #【一】段落顏色[START]
   #（1）common
-  typeset -g P10K_COLOR_CRUST="#11111b"           # 深色前景（黑色）
-  typeset -g P10K_COLOR_TEXT="#cdd6f4"            # 淺色前景（灰色）
-  typeset -g P10K_COLOR_SURFACE0="#313244"        # 提示背景（灰色）
+  typeset -g P10K_COLOR_CRUST="#11111b"              # 深色前景（黑色）
+  typeset -g P10K_COLOR_TEXT="#cdd6f4"               # 淺色前景（灰色）
+  typeset -g P10K_COLOR_SURFACE0="#313244"           # 提示背景（灰色）
   #（2）unit
   # ----------
-  typeset -g P10K_COLOR_OS_BG="#ffffff"           # 白色背景
-  typeset -g P10K_COLOR_OS_FG="$P10K_COLOR_CRUST" # 深色字體
+  typeset -g P10K_COLOR_WHITE_BG="#ffffff"           # 白色背景
+  typeset -g P10K_COLOR_WHITE_FG="$P10K_COLOR_CRUST" # 深色字體
   # ----------
-  typeset -g P10K_COLOR_CONTEXT_BG="#ffba00"      # 橙色背景
-  typeset -g P10K_COLOR_CONTEXT_FG="#000000"      # 黑色字體
+  typeset -g P10K_COLOR_ORANGE_BG="#ffba00"          # 橙色背景
+  typeset -g P10K_COLOR_ORANGE_FG="#000000"          # 黑色字體
   # ----------
-  typeset -g P10K_COLOR_VCS_BG="#facc15"          # 黃色背景
-  typeset -g P10K_COLOR_VCS_FG="#000000"          # 黑色字體
+  typeset -g P10K_COLOR_YELLOW_BG="#facc15"          # 黃色背景
+  typeset -g P10K_COLOR_YELLOW_FG="#000000"          # 黑色字體
   # ----------
-  typeset -g P10K_COLOR_TIME_BG="#00baff"         # 藍色背景
-  typeset -g P10K_COLOR_TIME_FG="#000000"         # 黑色字體
+  typeset -g P10K_COLOR_BLUE_BG="#00baff"            # 藍色背景
+  typeset -g P10K_COLOR_BLUE_FG="#000000"            # 黑色字體
+  # ----------
+  typeset -g P10K_COLOR_INDIGO_BG="#4B0082"          # 靛色背景
+  typeset -g P10K_COLOR_INDIGO_FG="#000000"          # 黑色字體
   # ----------
   #【一】段落顏色[START]
   #【二】段落排序[START]
@@ -1017,7 +1037,7 @@ function funcPublicZshReinit_ubuntu(){
   typeset -ga P10K_RIGHT_ORDER=() # 右側排序
   #【二】段落排序[END]
   #【三】段落佈局[START]
-  #（0）core layout
+  #（0A）core layout[START]
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=("${P10K_LEFT_ORDER[@]}")
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=("${P10K_RIGHT_ORDER[@]}")
   typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=false # 單行提示，禁止自動換行
@@ -1026,21 +1046,35 @@ function funcPublicZshReinit_ubuntu(){
   typeset -g POWERLEVEL9K_ICON_PADDING=none
   typeset -g POWERLEVEL9K_ICON_BEFORE_CONTENT=true
   typeset -g POWERLEVEL9K_BACKGROUND=$P10K_COLOR_SURFACE0
-  # 移除左右段落分隔符（目的：使其貼合）[START]
-  typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=''
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
-  # 移除左右段落分隔符（目的：使其貼合）[END]
+  #（0A）core layout[END]
+  #（0B）segment layout（default：arrow）[START]
+  typeset -g P10K_CONNECTOR_STYLE='flat'
+  if [[ "$P10K_CONNECTOR_STYLE" == 'arrow' ]]; then
+    # [arrow]箭頭風格
+    typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=$'\uE0B0'
+    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=$'\uE0B1'
+    typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=$'\uE0B0'
+    typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=$'\uE0B2'
+    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=$'\uE0B3'
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=$'\uE0B2'
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+  else
+    # [flat]方形風格
+    typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=''
+    typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
+  fi
+  #（0B）segment layout（default：arrow）[END]
   #（1A）os_icon/係統圖標
-  # typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=$P10K_COLOR_OS_BG
-  # typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$P10K_COLOR_OS_FG
+  # typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=$P10K_COLOR_WHITE_BG
+  # typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$P10K_COLOR_WHITE_FG
   #（1B）label_segment/標籤信息
-  typeset -g POWERLEVEL9K_LABEL_SEGMENT_BACKGROUND=$P10K_COLOR_OS_BG
-  typeset -g POWERLEVEL9K_LABEL_SEGMENT_FOREGROUND=$P10K_COLOR_OS_FG
+  typeset -g POWERLEVEL9K_LABEL_SEGMENT_BACKGROUND=$P10K_COLOR_WHITE_BG
+  typeset -g POWERLEVEL9K_LABEL_SEGMENT_FOREGROUND=$P10K_COLOR_WHITE_FG
   typeset -g POWERLEVEL9K_LABEL_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_LABEL_SEGMENT_RIGHT_WHITESPACE=0
   function prompt_label_segment() {
@@ -1048,8 +1082,8 @@ function funcPublicZshReinit_ubuntu(){
     p10k segment -t 'zsh'
   }
   #（2）context_segment/操作信息（含：用戶/主機/目錄）
-  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_BACKGROUND=$P10K_COLOR_CONTEXT_BG
-  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_FOREGROUND=$P10K_COLOR_CONTEXT_FG
+  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_BACKGROUND=$P10K_COLOR_ORANGE_BG
+  typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_FOREGROUND=$P10K_COLOR_ORANGE_FG
   typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_CONTEXT_SEGMENT_RIGHT_WHITESPACE=0
   function prompt_context_segment() {
@@ -1059,13 +1093,13 @@ function funcPublicZshReinit_ubuntu(){
     p10k segment -t '[%n@%m %1~]'
   }
   #（3）vcs/版本信息
-  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=$P10K_COLOR_VCS_BG
-  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=$P10K_COLOR_VCS_FG
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=$P10K_COLOR_VCS_FG
+  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=$P10K_COLOR_YELLOW_BG
+  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=$P10K_COLOR_YELLOW_FG
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=$P10K_COLOR_YELLOW_FG
   typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='' # 移除「?」圖標
   typeset -g POWERLEVEL9K_VCS_BRANCH_ICON='' # 移除分支圖標，僅顯示分支名稱
   typeset -g POWERLEVEL9K_VCS_PREFIX=''
@@ -1113,8 +1147,8 @@ function funcPublicZshReinit_ubuntu(){
     fi
     p10k segment -t "${variOutput}"
   }
-  typeset -g POWERLEVEL9K_TIME_SEGMENT_BACKGROUND=$P10K_COLOR_TIME_BG
-  typeset -g POWERLEVEL9K_TIME_SEGMENT_FOREGROUND=$P10K_COLOR_TIME_FG
+  typeset -g POWERLEVEL9K_TIME_SEGMENT_BACKGROUND=$P10K_COLOR_BLUE_BG
+  typeset -g POWERLEVEL9K_TIME_SEGMENT_FOREGROUND=$P10K_COLOR_BLUE_FG
   typeset -g POWERLEVEL9K_TIME_SEGMENT_LEFT_WHITESPACE=0
   typeset -g POWERLEVEL9K_TIME_SEGMENT_RIGHT_WHITESPACE=0
   #【三】段落佈局[END]
