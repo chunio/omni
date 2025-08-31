@@ -509,6 +509,131 @@ MARK
   return 0
 }
 
+function funcProtectedCommandInit(){
+  local variAbleUnitFileURIList=${1}
+  # local variEtcBashrcReloadStatus=0
+  rm -rf /usr/local/bin/"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
+  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
+    variEachUnitFilename=$(basename ${variAbleUnitFileUri})
+    variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
+    local variDeletePattern="^alias ${variEachUnitCommand}="
+    sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
+    ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+    # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
+        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
+        # local variDeletePattern="^alias ${variEachUnitCommand}="
+        # local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
+        # sed -i "/${variDeletePattern}/d" /etc/bashrc
+        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
+        # echo $variAddPattern >> /etc/bashrc
+        # if [ "${variDeletedCount}" -gt 0 ]; then
+        #   [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
+        #   variEtcBashrcReloadStatus=1
+        # fi
+        # echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
+    # else
+        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
+        # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+        # ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
+    # fi
+  done
+  return 0
+}
+
+function funcProtectedOptionInit(){
+  local variAbleUnitFileURIList=${1}
+  # 隔斷符號（echo $COMP_WORDBREAKS）"'><=;|&(:
+  rm -rf /etc/bash_completion.d/${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}.*
+  # inherit the public functions from builtin.sh[START]
+  local variIncludeOptionList=""
+  for variEachIncludeFuncName in $(grep -oP 'function \KfuncPublic\w+' "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin/builtin.sh"); do
+    # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
+    variOptionName=$(echo "$variEachIncludeFuncName" | sed 's/^funcPublic//')
+    variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
+    # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
+    variIncludeOptionList="$variIncludeOptionList $variOptionName"
+  done
+  # remove leading and trailing whitespace/移除首末空格
+  variIncludeOptionList=$(echo ${variIncludeOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  # inherit the public functions from builtin.sh[END]
+  # report1/3[START]
+  declare -A variOptionReport
+  # report1/3[END]
+  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
+    variEachUnitFilename=$(basename $variAbleUnitFileUri)
+    variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+    variFuncNameCollection=$(grep -oP 'function \KfuncPublic\w+' "$variAbleUnitFileUri") || true
+    [ -z "$variFuncNameCollection" ] && continue
+    local variEachOptionList=""
+    for variEachFuncName in $variFuncNameCollection; do
+      # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
+      variOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
+      variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
+      # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
+      variEachOptionList="$variEachOptionList $variOptionName"
+    done
+    # remove leading and trailing whitespace/移除首末空格
+    variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S" # TODO:已廢棄/待移除
+    funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+    # report2/3[START]
+    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
+      # 置頂
+      variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
+    else
+      variEachIndex=${variEachBashEvni}_1_${variEachUnitCommand}
+    fi
+    variOptionReport[${variEachIndex}]="${variEachOptionList}"
+    # report2/3[END]
+  done
+  # 「source /usr/share/bash-completion/bash_completion」成功返回：exit 1（待理解？）
+  source /usr/share/bash-completion/bash_completion || true
+  # pull public function list/自動補全選項列表[END]
+  # report3/3[START]
+  # command sort：0-9a-zA-Z
+  for variEachIndex in $(echo "${!variOptionReport[@]}" | tr ' ' '\n' | sort); do
+    IFS='_' read -r variEachBashEvni variDevNull variEachUnitCommand <<< "${variEachIndex}"
+    # option sort：0-9a-zA-Z
+    variEachOptionList=$(echo "${variOptionReport[$variEachIndex]}" | tr ' ' '\n' | sort | xargs)
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  done
+  # report3/3[END]
+  return 0
+}
+
+function funcProtectedBashCompletion(){
+  variCommand=$1
+  variOptionList=$2
+# 添加當前腳本的命令補全邏輯
+echo '# 1按下「table」時執行提示，2_complete()執行完畢後觸發補全邏輯
+_'${variCommand}'_complete() {
+    local currentWord optionList
+    currentWord="${COMP_WORDS[COMP_CWORD]}"
+    COMPREPLY=()
+    case ${COMP_CWORD} in
+        1)
+            optionList="'${variOptionList}'"
+            COMPREPLY=( $(compgen -W "${optionList}" -- "${currentWord}") )
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+    return 0
+}
+# 啟動「交互終端」時執行一次
+complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/${variCommand}
+  chmod +x /etc/bash_completion.d/${variCommand}
+  return 0
+}
+
 function funcProtectedZshReinit_centos(){
   yum remove -y zsh 2> /dev/null
   yum install -y gcc make ncurses-devel
@@ -980,138 +1105,11 @@ EOF
   # 設至默認命令解析器[END]
   return 0
 }
-
-function funcProtectedCommandInit(){
-  local variAbleUnitFileURIList=${1}
-  # local variEtcBashrcReloadStatus=0
-  rm -rf /usr/local/bin/"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
-  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
-    variEachUnitFilename=$(basename ${variAbleUnitFileUri})
-    variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
-    local variDeletePattern="^alias ${variEachUnitCommand}="
-    sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
-    ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
-    # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
-        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
-        # local variDeletePattern="^alias ${variEachUnitCommand}="
-        # local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
-        # sed -i "/${variDeletePattern}/d" /etc/bashrc
-        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        # echo $variAddPattern >> /etc/bashrc
-        # if [ "${variDeletedCount}" -gt 0 ]; then
-        #   [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
-        #   variEtcBashrcReloadStatus=1
-        # fi
-        # echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
-    # else
-        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
-        # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-        # ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
-        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
-    # fi
-  done
-  return 0
-}
-
-function funcProtectedOptionInit(){
-  local variAbleUnitFileURIList=${1}
-  # 隔斷符號（echo $COMP_WORDBREAKS）"'><=;|&(:
-  rm -rf /etc/bash_completion.d/${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}.*
-  # inherit the public functions from builtin.sh[START]
-  local variIncludeOptionList=""
-  for variEachIncludeFuncName in $(grep -oP 'function \KfuncPublic\w+' "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin/builtin.sh"); do
-    # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
-    variOptionName=$(echo "$variEachIncludeFuncName" | sed 's/^funcPublic//')
-    variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
-    # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
-    variIncludeOptionList="$variIncludeOptionList $variOptionName"
-  done
-  # remove leading and trailing whitespace/移除首末空格
-  variIncludeOptionList=$(echo ${variIncludeOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  # inherit the public functions from builtin.sh[END]
-  # report1/3[START]
-  declare -A variOptionReport
-  # report1/3[END]
-  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
-    variEachUnitFilename=$(basename $variAbleUnitFileUri)
-    variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    variFuncNameCollection=$(grep -oP 'function \KfuncPublic\w+' "$variAbleUnitFileUri") || true
-    [ -z "$variFuncNameCollection" ] && continue
-    local variEachOptionList=""
-    for variEachFuncName in $variFuncNameCollection; do
-      # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
-      variOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
-      variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
-      # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
-      variEachOptionList="$variEachOptionList $variOptionName"
-    done
-    # remove leading and trailing whitespace/移除首末空格
-    variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S" # TODO:已廢棄/待移除
-    funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
-    # report2/3[START]
-    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
-      # 置頂
-      variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
-    else
-      variEachIndex=${variEachBashEvni}_1_${variEachUnitCommand}
-    fi
-    variOptionReport[${variEachIndex}]="${variEachOptionList}"
-    # report2/3[END]
-  done
-  # 「source /usr/share/bash-completion/bash_completion」成功返回：exit 1（待理解？）
-  source /usr/share/bash-completion/bash_completion || true
-  # pull public function list/自動補全選項列表[END]
-  # report3/3[START]
-  # command sort：0-9a-zA-Z
-  for variEachIndex in $(echo "${!variOptionReport[@]}" | tr ' ' '\n' | sort); do
-    IFS='_' read -r variEachBashEvni variDevNull variEachUnitCommand <<< "${variEachIndex}"
-    # option sort：0-9a-zA-Z
-    variEachOptionList=$(echo "${variOptionReport[$variEachIndex]}" | tr ' ' '\n' | sort | xargs)
-    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["VERSION_URI"]}
-    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  done
-  # report3/3[END]
-  return 0
-}
-
-function funcProtectedBashCompletion(){
-  variCommand=$1
-  variOptionList=$2
-# 添加當前腳本的命令補全邏輯
-echo '# 1按下「table」時執行提示，2_complete()執行完畢後觸發補全邏輯
-_'${variCommand}'_complete() {
-    local currentWord optionList
-    currentWord="${COMP_WORDS[COMP_CWORD]}"
-    COMPREPLY=()
-    case ${COMP_CWORD} in
-        1)
-            optionList="'${variOptionList}'"
-            COMPREPLY=( $(compgen -W "${optionList}" -- "${currentWord}") )
-            ;;
-        *)
-            return 0
-            ;;
-    esac
-    return 0
-}
-# 啟動「交互終端」時執行一次
-complete -F _'${variCommand}'_complete '${variCommand} > /etc/bash_completion.d/${variCommand}
-  chmod +x /etc/bash_completion.d/${variCommand}
-  return 0
-}
-
 # protected function[END]
 # ##################################################
 
 # ##################################################
 # public function[START]
-
 function funcPublicInit(){
   local variParameterDescList=("init model，value：0/cache（default），1/refresh")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
