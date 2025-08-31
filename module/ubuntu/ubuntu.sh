@@ -33,8 +33,10 @@ VARI_GLOBAL["MOUNT_PASSWORD"]=""
 # 人工執行
 function funcProtectedManualInit(){
   #（1）設置網絡
+  sudo -i
   ip a
-  sudo tee /etc/netplan/01-netcfg.yaml > /dev/null <<EOF
+  #「99」表示加載順序，以確保能夠覆蓋係統默認/其他配置
+  tee /etc/netplan/99-ens33.yaml > /dev/null <<EOF
 network:
   version: 2
   renderer: networkd
@@ -49,23 +51,19 @@ network:
       nameservers:
         addresses: [114.114.114.114, 8.8.8.8]
 EOF
-  sudo chmod 600 /etc/netplan/01-netcfg.yaml
-  sudo netplan apply
-  sudo systemctl disable ufw
-  sudo systemctl stop ufw
-  sudo systemctl status ufw
-  sudo systemctl stop apparmor || true
-  sudo systemctl disable apparmor || true
-  aa-status || apparmor_status || true
+  chmod 600 /etc/netplan/99-ens33.yaml
+  netplan apply
+  systemctl disable --now apparmor
+  systemctl disable --now ufw
   #（2）掛載目錄
   local variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
   loacl variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
   grep -qF '//192.168.255.1/mount /windows' /etc/fstab || cat <<FSTAB >> /etc/fstab
 //192.168.255.1/mount /windows cifs dir_mode=0777,file_mode=0777,username=${variMountUsername},password=${variMountPassword},uid=1005,gid=1005,vers=3.0 0 0
 FSTAB
-  sudo mkdir -p /windows
-  sudo mount -a
-  sudo systemctl daemon-reload
+  mkdir -p /windows
+  mount -a
+  systemctl daemon-reload
   cat <<'PROFILE' >> /etc/bash.bashrc
 alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
 PROFILE

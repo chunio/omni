@@ -30,32 +30,6 @@ VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 
 # ##################################################
 # protected function[START]
-function funcProtectedOsDistroInit() {
-  local variOsType=$(uname)
-  local variOsDistro="UNKNOWN"
-  local variSourceUri=""
-  if [ "$variOsType" = "Darwin" ]; then
-      variOsDistro="MACOS"
-  elif [ "$variOsType" = "Linux" ]; then
-      if [ -f /etc/debian_version ]; then
-          variOsDistro="UBUNTU"
-          variSourceUri="/etc/bash.bashrc"
-      # elif [ -f /etc/os-release ]; then
-      #   . /etc/os-release
-      #   variOsDistro=$(echo $ID | tr '[:lower:]' '[:upper:]')
-      elif [ -f /etc/centos-release ]; then
-          variOsDistro="CENTOS"
-          variSourceUri="/etc/profile.d/omni.sh"
-      elif [ -f /etc/redhat-release ]; then
-          variOsDistro="CENTOS"
-          variSourceUri="/etc/profile.d/omni.sh"
-      fi
-  fi
-  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
-  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
-  return 0
-}
-
 function funcProtectedCloudInit() {
   funcProtectedOsDistroInit
   case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
@@ -77,8 +51,8 @@ function funcProtectedCloudInit() {
 
 function funcProtectedUbuntuInit(){
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[START]
-  rm -f /var/lib/dpkg/lock-frontend
   rm -f /var/lib/dpkg/lock
+  rm -f /var/lib/dpkg/lock-frontend
   rm -f /var/cache/apt/archives/lock
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
   apt update

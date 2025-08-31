@@ -16,8 +16,8 @@ VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s%3N)
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="/windows/code/backend/chunio/omni"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
-VARI_GLOBAL["BUILTIN_OS_DISTRO"]="CENTOS"
-VARI_GLOBAL["BUILTIN_SOURCE_URI"]="/etc/profile.d/omni.sh"
+VARI_GLOBAL["BUILTIN_OS_DISTRO"]="UBUNTU"
+VARI_GLOBAL["BUILTIN_SOURCE_URI"]="/etc/bash.bashrc"
 # 支持（run mode）：1絕對路徑2相對路徑3符號鏈接($0等于：/usr/local/bin/omni.interface)
 # 僅適用於「source bash」[START]
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -88,6 +88,7 @@ function funcProtectedSyncQiniu() {
 }
 
 function funcProtectedConstruct() {
+  funcProtectedOsDistroInit
   # 加載環境變量[START]
   [ -f ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]} ] || install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
   source ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
@@ -173,6 +174,32 @@ function funcProtectedDestruct() {
   # echo "end   : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
   echo "[ duration : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second ]"
   echo "--------------------------------------------------"
+  return 0
+}
+
+function funcProtectedOsDistroInit() {
+  local variOsType=$(uname)
+  local variOsDistro="UNKNOWN"
+  local variSourceUri=""
+  if [ "$variOsType" = "Darwin" ]; then
+      variOsDistro="MACOS"
+  elif [ "$variOsType" = "Linux" ]; then
+      if [ -f /etc/debian_version ]; then
+          variOsDistro="UBUNTU"
+          variSourceUri="/etc/bash.bashrc"
+      # elif [ -f /etc/os-release ]; then
+      #   . /etc/os-release
+      #   variOsDistro=$(echo $ID | tr '[:lower:]' '[:upper:]')
+      elif [ -f /etc/centos-release ]; then
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/profile.d/omni.sh"
+      elif [ -f /etc/redhat-release ]; then
+          variOsDistro="CENTOS"
+          variSourceUri="/etc/profile.d/omni.sh"
+      fi
+  fi
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
+  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
   return 0
 }
 
