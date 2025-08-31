@@ -267,7 +267,6 @@ function funcProtectedCloudSelector() {
   else
     variSelectIndexSlice=(${variInputIndexSlice[@]})
   fi
-  # echo "index : ${variSelectIndexSlice[@]}"
   echo "index : ${variSelectIndexSlice[*]}"
   read -p "input「confirm」to continue : " variInput
   if [[ "$variInput" != "confirm" ]]; then
