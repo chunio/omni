@@ -36,6 +36,8 @@ function funcProtectedManualInit(){
   sudo -i
   ip a
   #「99」表示加載順序，以確保能夠覆蓋係統默認/其他配置
+  # 114.114.114.114/國內DNS（[南京]信風網絡）
+  # 8.8.8.8/國際DNS（谷歌）
   tee /etc/netplan/99-ens33.yaml > /dev/null <<EOF
 network:
   version: 2
