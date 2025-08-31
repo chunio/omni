@@ -55,7 +55,6 @@ function funcProtectedUbuntuInit(){
   rm -f /var/lib/dpkg/lock-frontend
   rm -f /var/cache/apt/archives/lock
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
-  apt update
   variPackageList=(
     # ubuntu[START]
     apt-utils
@@ -73,13 +72,13 @@ function funcProtectedUbuntuInit(){
     # 含：nslookup（用以測試域名解析等）
     dnsutils
     docker
-    docker-compose
     bash-completion
   )
   variCloudInitSucceeded=1
   variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
   grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
   [ $? -eq 0 ] && return 0
+  apt update
   local variRetry=10
   local variSleep=2
   declare -A variCloudInstallResult
@@ -97,17 +96,18 @@ function funcProtectedUbuntuInit(){
     case ${variEachPackage} in
       "docker")
         # https://docs.docker.com/engine/install/ubuntu/
-        apt remove -y docker.io docker-doc docker-compose containerd runc
+        apt remove -y runc containerd docker.io docker-doc docker-compose podman-docker
+        # 獲取公鑰（驗證套件哈希/真實性的）[START]
         # 等價於：mkdir -p /etc/apt/keyrings && chmod 0755 /etc/apt/keyrings
         install -m 0755 -d /etc/apt/keyrings
-        # 獲取公鑰（驗證套件哈希/真實性的）
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
         chmod a+r /etc/apt/keyrings/docker.asc
+        # 獲取公鑰（驗證套件哈希/真實性的）[END]
         # 動態構建資源倉庫
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
         apt update
         for ((i=1; i<variRetry; i++)); do
-          if apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+          if apt install -y containerd.io docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin; then
             systemctl enable docker
             systemctl restart docker
             variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
@@ -115,17 +115,6 @@ function funcProtectedUbuntuInit(){
           fi
           sleep $variSleep
         done
-        ;;
-      "docker-compose")
-        # https://github.com/docker/compose/releases
-        # docker-compose-linux-x86_64
-        variDockerComposeUri=$(which docker-compose 2> /dev/null)
-        [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
-        curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-        if command -v docker-compose > /dev/null; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        fi
         ;;
       *)
         for ((i=1; i<variRetry; i++)); do
@@ -175,7 +164,6 @@ function funcProtectedCentosInit(){
     # 含：nslookup（用以測試域名解析等）
     bind-utils
     docker
-    docker-compose
     bash-completion
   )
   # default
@@ -210,7 +198,7 @@ function funcProtectedCentosInit(){
       "docker")
         # https://docs.docker.com/engine/install/centos/
         # docker-ce-cli-20.10.7-3.el7.x86_64.rpm
-        yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+        yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine docker-compose-plugin
         yum install -y lvm2 device-mapper-persistent-data
         yum update -y nss curl openssl
         for ((i=1; i<variRetry; i++)); do
@@ -230,17 +218,6 @@ function funcProtectedCentosInit(){
           fi
           sleep $variSleep
         done
-        ;;
-      "docker-compose")
-        # https://github.com/docker/compose/releases
-        # docker-compose-linux-x86_64
-        variDockerComposeUri=$(which docker-compose 2> /dev/null)
-        [ -n "${variDockerComposeUri}" ] && rm -f ${variDockerComposeUri}
-        curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-        if command -v docker-compose > /dev/null; then
-          variCloudInstallResult[${variEachPackage}]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
-        fi
         ;;
       *)
         for ((i=1; i<variRetry; i++)); do
@@ -668,6 +645,20 @@ function funcPublicInit(){
   local variParameterDescList=("init model，value：0/cache（default），1/refresh")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variInitModel=${1:-0}
+  # 其他配置[START]
+  case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
+      "MACOS")
+          # TODO:...
+          ;;
+      "UBUNTU"|"DEBIAN")
+          local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
+          grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+          ;;
+      "CENTOS"|"RHEL"|"REDHAT")
+          # TODO:...
+          ;;
+  esac
+  # 其他配置[END]
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
     install -m 755 <(echo '#!/bin/bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}

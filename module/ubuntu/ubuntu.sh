@@ -57,6 +57,7 @@ EOF
   netplan apply
   systemctl disable --now apparmor
   systemctl disable --now ufw
+  # 至此支持：ssh && network
   #（2）掛載目錄
   local variMountUsername=$(funcProtectedPullEncryptEnvi "MOUNT_USERNAME")
   loacl variMountPassword=$(funcProtectedPullEncryptEnvi "MOUNT_PASSWORD")
@@ -66,9 +67,9 @@ FSTAB
   mkdir -p /windows
   mount -a
   systemctl daemon-reload
-  cat <<'PROFILE' >> /etc/bash.bashrc
-alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
-PROFILE
+#  cat <<'PROFILE' >> /etc/bash.bashrc
+#alias omni.system="source /windows/code/backend/chunio/omni/init/system/system.sh"
+#PROFILE
   source /etc/bash.bashrc
   # TODO:echo 'set nu' >> ~/.vimrc
   return 0
@@ -84,69 +85,69 @@ function funcProtectedCloudInit() {
 # public function[START]
 # clash:7890
 # v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
-# 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP代理，因此PING不通亦正常）
+# 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP/SOCKS代理，因此PING不通亦正常）
+# [臨時]禁用代理：env -i curl https://www.google.com
+# [臨時]啟用代理：curl -x http://192.168.255.1:10809 https://www.google.com
 function funcPublicProxy() {
   local variParameterDescMulti=("port")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variPort=${1:-0}
-  variProxy="192.168.255.1:${variPort}"
-  if [ ${variPort} -gt 0 ]; then
-    # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bash.bashrc; then
-        sed -i '/http_proxy="http/c\export http_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-        sed -i '/https_proxy="http/c\export https_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-    else
-        echo 'export http_proxy="http://'${variProxy}'"' >> /etc/bash.bashrc
-        echo 'export https_proxy="http://'${variProxy}'"' >> /etc/bash.bashrc
-    fi
-    # common proxy[END]
-    # apt proxy[START]
+  local variProxyPort=${1:-0}
+  local variProxyUrl="< NIL >"
+  if [ ${variProxyPort} -gt 0 ]; then
+    variProxyUrl="http://192.168.255.1:${variProxyPort}"
+    #（1）common[START]
+    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export http_proxy="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export https_proxy="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export no_proxy="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export HTTP_PROXY="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export HTTPS_PROXY="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    #（1）common[END]
+    #（2）yum[START]
     cat > /etc/apt/apt.conf.d/80proxy <<APT_CONF_D
 Acquire::http::Proxy "http://${variProxy}";
 Acquire::https::Proxy "http://${variProxy}";
 APT_CONF_D
-    # apt proxy[END]
-    # docker proxy[START]
+    #（2）yum[END]
+    #（3）docker[START]
     mkdir -p /etc/systemd/system/docker.service.d
-    cat <<HTTP_PROXY_CONF > /etc/systemd/system/docker.service.d/http-proxy.conf
+    cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
 [Service]
-Environment="HTTP_PROXY=http://${variProxy}"
-Environment="HTTPS_PROXY=http://${variProxy}"
-HTTP_PROXY_CONF
-    # docker proxy[END]
+Environment="HTTP_PROXY=${variProxyUrl}"
+Environment="HTTPS_PROXY=${variProxyUrl}"
+Environment="NO_PROXY=localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+HTTPPROXYCONF
+    #（3）docker[END]
   else
-    # common proxy[START]
-    if grep -q 'export http_proxy="http' /etc/bash.bashrc; then
-        sed -i '/http_proxy="http/c\# export http_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-        sed -i '/https_proxy="http/c\# export https_proxy="http:\/\/'${variProxy}'"' /etc/bash.bashrc
-    else
-        echo "# export http_proxy=\"http://${variProxy}\"" >> /etc/bash.bashrc
-        echo "# export https_proxy=\"http://${variProxy}\"" >> /etc/bash.bashrc
-    fi
-    unset http_proxy
-    unset https_proxy
-    # common proxy[END]
-    # apt proxy[START]
+    #（1）common[START]
+    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY
+    #（1）common[END]
+    #（2）yum[START]
     rm -f /etc/apt/apt.conf.d/80proxy 2>/dev/null
-    # apt proxy[END]
-    # docker proxy[START]
+    #（2）yum[END]
+    #（3）docker[START]
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
-    # docker proxy[END]
+    #（3）docker[END]
   fi
   # systemctl restart network.service
-  source /etc/bash.bashrc
   systemctl daemon-reload
-  systemctl restart docker
-  # [臨時]禁用代理
-  # env -i curl https://www.google.com
-  # [臨時]啟用代理
-  # curl -x http://192.168.255.1:10809 https://www.google.com
-  # ICMP（如：ping）流量不經過HTTP/SOCKS代理
-  echo '/etc/bash.bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo 'http_proxy = '${http_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo 'https_proxy = '${https_proxy} >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo '/etc/systemd/system/docker.service.d/http-proxy.conf' >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  cat /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  systemctl restart docker 2> /dev/null
+  echo "update ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "update /etc/yum.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "update /etc/systemd/system/docker.service.d/http-proxy.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "update http/https/yum/docker proxy : ${variProxyUrl}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 # public function[END]

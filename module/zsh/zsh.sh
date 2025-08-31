@@ -45,8 +45,19 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 #「ohmyzsh」沒有分支/標籤的概念，鼓勵用戶使用最新（支持：使用「commit id」鎖定版本）
 # TODO:兼容BASH補全腳本
 function funcPublicReinit(){
-  yum remove -y zsh 2> /dev/null
-  yum install -y gcc make ncurses-devel
+  case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
+    "MACOS")
+        # TODO:...
+        ;;
+    "UBUNTU"|"DEBIAN")
+        apt remove -y zsh 2> /dev/null
+        apt install -y gcc make libncurses-dev
+        ;;
+    "CENTOS"|"RHEL"|"REDHAT")
+        yum remove -y zsh 2> /dev/null
+        yum install -y gcc make ncurses-devel
+        ;;
+  esac
   # 安裝「nerdfonts」字體[START]
   # wget https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf
   # wget https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf
