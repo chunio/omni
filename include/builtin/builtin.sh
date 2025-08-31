@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# interface : 2.0.0
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
-# memo : the function call order is not sensitive in the one shell
 
 :<<MARK
 MARK
