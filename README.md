@@ -12,7 +12,7 @@ ubuntu 24.04
 ```
 [root@localhost /]# # mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [root@localhost /]# git clone https://github.com/chunio/omni.git && chmod 777 -R ./omni
-[root@localhost /]# ./omni/init/system/system.sh init 1
+[root@localhost /]# ./omni/init/system/system.sh init
 ```
 
 ## New Unit

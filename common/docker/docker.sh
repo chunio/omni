@@ -60,8 +60,7 @@ EOF
   return 0
 }
 
-function funcPublicSetAuto()
-{
+function funcPublicSetAuto(){
   local variParameterDescMulti=("action，value：1/enable（as：--restart=always），0/disable（as：--restart=no）" "container name（keyword）")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variAction=${1}
