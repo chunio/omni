@@ -66,7 +66,7 @@ function funcPublicReinit(){
   rm -rf /usr/local/src/zsh-5.8 && tar -xf zsh-5.8.tar.xz -C /usr/local/src/ && cd /usr/local/src/zsh-5.8
   ./configure --prefix=/usr/local/zsh --enable-multibyte
   make -j$(nproc) && make install
-  ln -s /usr/local/zsh/bin/zsh /usr/bin/zsh
+  ln -sf /usr/local/zsh/bin/zsh /usr/bin/zsh
   zsh --version
   # 編譯安裝[END]
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
@@ -258,7 +258,7 @@ bindkey '^[[F' end-of-line
 EOF
   # 設至默認命令解析器[START]
   echo "/usr/bin/zsh" >> /etc/shells
-  chsh -s $(which zsh)
+  chsh -s $(which zsh) root
   # 設至默認命令解析器[END]
   return 0
 }

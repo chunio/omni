@@ -19,12 +19,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
-VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
-VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
-VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=0
 VARI_GLOBAL["MOUNT_USERNAME"]=""
 VARI_GLOBAL["MOUNT_PASSWORD"]=""
+VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version"
+VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=0
+VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
+VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 # global variable[END]
 # ##################################################
 
