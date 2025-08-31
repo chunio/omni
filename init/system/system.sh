@@ -567,7 +567,12 @@ function funcProtectedCommandInit(){
   for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
-    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
+    # TODO:已廢棄/待移除[START]
+    local variDeletePattern="^alias ${variEachUnitCommand}="
+    sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    # TODO:已廢棄/待移除[END]
+    ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+    # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
         # 基於當前環境的命令（即：vim /etc/bashrc）[START]
         # local variDeletePattern="^alias ${variEachUnitCommand}="
         # local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
@@ -578,20 +583,14 @@ function funcProtectedCommandInit(){
         #   [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
         #   variEtcBashrcReloadStatus=1
         # fi
-        # TODO:已廢棄/待移除[START]
-        local variDeletePattern="^alias ${variEachUnitCommand}="
-        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-        ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
-        # TODO:已廢棄/待移除[END]
         # echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
         # 基於當前環境的命令（即：vim /etc/bashrc）[END]
-    else
+    # else
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
         # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-        ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+        # ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
         # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
-    fi
+    # fi
   done
   return 0
 }
