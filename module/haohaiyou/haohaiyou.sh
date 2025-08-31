@@ -53,7 +53,7 @@ scp root@170.106.165.51:/windows/runtime/profile001.svg .
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
@@ -70,7 +70,7 @@ VARI_GLOBAL["JUMPER_PORT"]=""
 # 2 declare -A 關聯數組
 # 2 declare -p 打印變量
 # 2 declare -P 用於打印關聯數組
-# 使用隨機名稱以避免「VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"」時，變量衝突
+# 使用隨機名稱以避免「VARI_GLOBAL[BUILTIN_BASH_ENVI]=MASTER」時，變量衝突
 declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 # global variable[END]
 # local variable[START]
