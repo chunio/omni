@@ -292,9 +292,10 @@ function funcProtectedCloudSelector() {
 # public function[START]
 function funcPublicRebuildImage(){
   # 構建鏡像[START]
-  variParameterDescList=("image pattern（example ：chunio/go:1.25.0（<namespace>/<repository>:<tag>））")
+  variParameterDescList=("image pattern（default ：chunio/go:1.25.0（ <namespace>/<repository>:<tag>））" "image main（default : Go1250Main）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variImagePattern=${1-"chunio/go:1.25.0"}
+  variImageMain=${2-"Go1250Main"}
   # 習慣:中間橫線，原因：兼容DNS/主機名稱
   variContainerName="chunio-go-1.25.0"
   docker builder prune --all -f
@@ -317,7 +318,7 @@ function funcPublicRebuildImage(){
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     systemd.ubuntu /sbin/init
   # DEBUG_LABEL[END]
-  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") Go1250Main;"
+  docker exec -it ${variContainerName} /bin/bash -c "cd ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} && ./$(basename "${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]}") rebuildImage_${variImageMain};"
   variContainerId=$(docker ps --filter "name=${variContainerName}" --format "{{.ID}}")
   echo "docker commit $variContainerId $variImagePattern"
   docker commit $variContainerId $variImagePattern
@@ -330,7 +331,7 @@ function funcPublicRebuildImage(){
 
 # from : funcPublicRebuildImage()
 # 運行於容器內部
-function funcPublicGo1250Main(){
+function funcPublicRebuildImage_Go1250Main(){
   # 減少容器特有/安全性的警告信息[START]
   # 禁止彈出交互窗口，默認配置完成安裝
   export DEBIAN_FRONTEND=noninteractive
