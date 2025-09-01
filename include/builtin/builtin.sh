@@ -198,8 +198,10 @@ function funcProtectedOsDistroInit() {
           variSourceUri="/etc/profile.d/omni.sh"
       fi
   fi
-  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
-  funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
+  # funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OS_DISTRO" ${variOsDistro}
+  # funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_SOURCE_URI" ${variSourceUri}
+  VARI_GLOBAL["BUILTIN_OS_DISTRO"]=${variOsDistro}
+  VARI_GLOBAL["BUILTIN_SOURCE_URI"]=${variSourceUri}
   return 0
 }
 
@@ -336,6 +338,11 @@ function funcProtectedUpdateVariGlobalBuiltinValue() {
   fi
   local variBuiltinUri="${variOmniRootPath}/include/builtin/builtin.sh"
   local variNewRecord='VARI_GLOBAL["'${variIndex}'"]="'${variValue}'"'
+  # sed -i/工作原理（非原子操作，有文件誤刪的風險）：
+  # 1創建「臨時文件」（sedBF4iTk）
+  # 2修改「臨時文件」（sedBF4iTk）
+  # 3刪除「目標文件」（builtin.sh）
+  # 4將「臨時文件」重命名至「目標文件」（sedBF4iTk -> builtin.sh）
   sed -i "/^VARI_GLOBAL\[\"${variIndex}\"\]=/c$variNewRecord" ${variBuiltinUri}
   VARI_GLOBAL["${variIndex}"]="${variValue}"
   return 0
