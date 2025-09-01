@@ -445,8 +445,8 @@ function funcPublicUnicorn()
 {
   variMasterPath="/windows/code/backend/haohaiyou"
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  veriModuleName="unicorn"
-  docker rm -f ${veriModuleName} 2> /dev/null
+  variModuleName="unicorn"
+  docker rm -f ${variModuleName} 2> /dev/null
   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
   rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
@@ -487,9 +487,9 @@ GOENVLINUX
 # TODO:chunio/go:1.25.0/error[END]
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${veriModuleName}:
-    image: chunio/go:1.22.4
-    container_name: ${veriModuleName}
+  ${variModuleName}:
+    image: chunio/go:1.25.0
+    container_name: ${variModuleName}
     environment:
       - HTTP_PROXY=http://192.168.255.1:10809
       - HTTPS_PROXY=http://192.168.255.1:10809
@@ -502,7 +502,7 @@ services:
       # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    working_dir: ${variDockerWorkSpace}/gopath/src/${variModuleName}
     networks:
       - common
     extra_hosts:
@@ -526,11 +526,11 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker compose down -v
-  docker compose -p ${veriModuleName} up --build -d
-  docker update --restart=always ${veriModuleName}
-  docker ps -a | grep ${veriModuleName}
-  cd ${variMasterPath}/gopath/src/${veriModuleName}
-  docker exec -it ${veriModuleName} /bin/bash
+  docker compose -p ${variModuleName} up --build -d
+  docker update --restart=always ${variModuleName}
+  docker ps -a | grep ${variModuleName}
+  cd ${variMasterPath}/gopath/src/${variModuleName}
+  docker exec -it ${variModuleName} /bin/bash
   return 0
 }
 
@@ -539,7 +539,7 @@ function funcPublicSkeleton(){
   variMasterPath="/windows/code/backend/haohaiyou"
   # [DOCKER]temporary
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  veriModuleName="skeleton"
+  variModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   variImagePattern=${1:-"chunio/php:8.3.24"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
@@ -549,9 +549,9 @@ return 0
 ENTRYPOINTSH
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${veriModuleName}:
+  ${variModuleName}:
     image: ${variImagePattern}
-    container_name: ${veriModuleName}
+    container_name: ${variModuleName}
     # 開啟VPN/代理[START]
     # environment:
     #   HTTP_PROXY: http://192.168.255.1:10809
@@ -564,7 +564,7 @@ services:
       - /windows:/windows
       - /mnt:/mnt
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${veriModuleName}
+    working_dir: ${variDockerWorkSpace}/gopath/src/${variModuleName}
     networks:
       - common
     ports:
@@ -579,11 +579,11 @@ DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton 2> /dev/null
   docker compose down -v
-  docker compose -p ${veriModuleName} up --build -d
-  docker update --restart=always ${veriModuleName}
-  docker ps -a | grep ${veriModuleName}
-  cd ${variMasterPath}/gopath/src/${veriModuleName}
-  docker exec -it ${veriModuleName} /bin/bash
+  docker compose -p ${variModuleName} up --build -d
+  docker update --restart=always ${variModuleName}
+  docker ps -a | grep ${variModuleName}
+  cd ${variMasterPath}/gopath/src/${variModuleName}
+  docker exec -it ${variModuleName} /bin/bash
   return 0
 }
 
@@ -865,7 +865,7 @@ function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variDomain=${1:-"paddlewaver"}
-  local veriModuleName="skeleton"
+  local variModuleName="skeleton"
   local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
 server {
@@ -882,9 +882,9 @@ server {
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${veriModuleName}-nginx:
+  ${variModuleName}-nginx:
     image: nginx:1.27.0
-    container_name: ${veriModuleName}-nginx
+    container_name: ${variModuleName}-nginx
     volumes:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
@@ -899,8 +899,8 @@ DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton-nginx
   docker compose down -v
-  docker compose -p ${veriModuleName} up --build -d
-  docker ps -a | grep ${veriModuleName}
+  docker compose -p ${variModuleName} up --build -d
+  docker ps -a | grep ${variModuleName}
   return 0
 }
 
@@ -910,7 +910,7 @@ function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variDomain=${1:-"skeleton.y-one.co.jp"}
-  local veriModuleName="skeleton"
+  local variModuleName="skeleton"
   local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
 # 80[START]
@@ -977,9 +977,9 @@ server {
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${veriModuleName}-nginx:
+  ${variModuleName}-nginx:
     image: nginx:1.27.0
-    container_name: ${veriModuleName}-nginx
+    container_name: ${variModuleName}-nginx
     volumes:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
@@ -998,8 +998,8 @@ DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton-nginx
   docker compose down -v
-  docker compose -p ${veriModuleName} up --build -d
-  docker ps -a | grep ${veriModuleName}
+  docker compose -p ${variModuleName} up --build -d
+  docker ps -a | grep ${variModuleName}
   return 0
 }
 
