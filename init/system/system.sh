@@ -33,10 +33,10 @@ VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 function funcProtectedCloudInit() {
   case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
       "CENTOS"|"RHEL"|"REDHAT")
-        funcProtectedCloudInit_centos
+        funcProtectedCloudInit_Centos
         ;;
       "UBUNTU"|"DEBIAN")
-        funcProtectedCloudInit_ubuntu
+        funcProtectedCloudInit_Ubuntu
         ;;
       "MACOS")
           # TODO:...
@@ -48,7 +48,7 @@ function funcProtectedCloudInit() {
   return 0
 }
 
-function funcProtectedCloudInit_centos(){
+function funcProtectedCloudInit_Centos(){
   funcProtectedCentos7YumRepositoryUpdater
   rm -f /var/run/yum.pid
   variPackageList=(
@@ -151,7 +151,7 @@ function funcProtectedCloudInit_centos(){
 }
 
 
-function funcProtectedCloudInit_ubuntu(){
+function funcProtectedCloudInit_Ubuntu(){
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[START]
   rm -f /var/lib/dpkg/lock
   rm -f /var/lib/dpkg/lock-frontend

@@ -357,6 +357,12 @@ EOF
   sed -i 's/^path-exclude=\/usr\/share\/doc/#path-exclude=\/usr\/share\/doc/' /etc/dpkg/dpkg.cfg.d/excludes || true
   # 允許安裝「man」幫助手冊[END]
   apt install -y npm && npm install -g @anthropic-ai/claude-code
+  # windows[START]
+  # powershell >> irm https://claude.ai/install.ps1 | iex
+  # powershell >> [System.Environment]::SetEnvironmentVariable("http_proxy", "http://127.0.0.1:10809", "User")
+  # powershell >> [System.Environment]::SetEnvironmentVariable("https_proxy", "http://127.0.0.1:10809", "User")
+  # manual >> 配置「[搜尋路徑]C:\Users\zengweitao\.local\bin」至「system variables.Path」
+  # windows[END]
   # claude code install[END]
   # wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz
   tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz -C /usr/local
