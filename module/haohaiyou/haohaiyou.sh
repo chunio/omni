@@ -695,9 +695,9 @@ function funcPublicCloudIptableReinit(){
           echo "[ omni ] git fetch origin ..."
           git fetch origin
           echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 ..."
-          git reset --hard origin/feature/zengweitao/zsh2.0
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 finished"
+          echo "[ omni ] git reset --hard origin/main ..."
+          git reset --hard origin/main
+          echo "[ omni ] git reset --hard origin/main finished"
           chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         else
           mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
@@ -821,9 +821,9 @@ function funcPublicCloudSkeletonRinit() {
           echo "[ omni ] git fetch origin ..."
           git fetch origin
           echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 ..."
-          git reset --hard origin/feature/zengweitao/zsh2.0
-          echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 finished"
+          echo "[ omni ] git reset --hard origin/main ..."
+          git reset --hard origin/main
+          echo "[ omni ] git reset --hard origin/main finished"
           chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
           #（2）omni.system init[END]
           # --------------------------------------------------
@@ -867,7 +867,7 @@ JUMPEREOF
 }
 
 # 將「80」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/zsh2.0 && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -912,7 +912,7 @@ DOCKERCOMPOSEYML
 }
 
 # 將「80/443」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/zsh2.0 && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -1127,9 +1127,9 @@ function funcPublicCloudUnicornReinit() {
         echo "[ omni ] git fetch origin ..."
         git fetch origin
         echo "[ omni ] git fetch origin finished"
-        echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 ..."
-        git reset --hard origin/feature/zengweitao/zsh2.0
-        echo "[ omni ] git reset --hard origin/feature/zengweitao/zsh2.0 finished"
+        echo "[ omni ] git reset --hard origin/main ..."
+        git reset --hard origin/main
+        echo "[ omni ] git reset --hard origin/main finished"
         chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         #（2）omni.system init[END]
         # --------------------------------------------------
