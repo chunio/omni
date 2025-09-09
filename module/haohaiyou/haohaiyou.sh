@@ -363,6 +363,10 @@ EOF
   # powershell >> [System.Environment]::SetEnvironmentVariable("https_proxy", "http://127.0.0.1:10809", "User")
   # manual >> 配置「[搜尋路徑]C:\Users\zengweitao\.local\bin」至「system variables.Path」
   # windows[END]
+  # 取消代理[START]
+  # powershell >> [System.Environment]::SetEnvironmentVariable("http_proxy", $null, "User")
+  # powershell >> [System.Environment]::SetEnvironmentVariable("https_proxy", $null, "User")
+  # 取消代理[END]
   # claude code install[END]
   # wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz
   tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz -C /usr/local
