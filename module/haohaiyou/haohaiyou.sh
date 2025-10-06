@@ -539,6 +539,35 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+:<<'MARK'
+「chunio/php:haohaiyou」封裝日誌：
+docker rm -f skeleton
+docker rm -f chunio-php-haohaiyou
+docker rmi -f chunio/php:haohaiyou
+docker run -d \
+  --privileged \
+  --name chunio-php-haohaiyou \
+  --tmpfs /tmp \
+  --tmpfs /run \
+  --tmpfs /run/lock \
+  --cgroupns=host \
+  -v /windows:/windows \
+  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+  chunio/php:8.3.24 /sbin/init
+docker exec -it chunio-php-haohaiyou /bin/bash
+# ----------
+root@${variContainerId}:/# apt update
+root@${variContainerId}:/# apt install -y python3 python3-pip python3-venv
+root@${variContainerId}:/# pip3 install Pillow --break-system-packages
+root@${variContainerId}:/# pip3 install playwright --break-system-packages
+root@${variContainerId}:/# playwright install
+root@${variContainerId}:/# playwright install-deps
+root@${variContainerId}:/# apt clean && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+root@${variContainerId}:/# history -c
+root@${variContainerId}:/# exit
+# ----------
+docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
+MARK
 function funcPublicSkeleton(){
   # [MASTER]persistence
   variMasterPath="/windows/code/backend/haohaiyou"
@@ -546,7 +575,7 @@ function funcPublicSkeleton(){
   variDockerWorkSpace="/windows/code/backend/haohaiyou"
   variModuleName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:8.3.24"}
+  variImagePattern=${1:-"chunio/php:haohaiyou"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
 # 會被「docker run」中指定命令覆蓋
