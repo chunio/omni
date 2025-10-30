@@ -1379,11 +1379,17 @@ function funcPublicCloudSclickArchived(){
   local variArchivedLockUri="/windows/runtime/archived.lock"
   local variArchivedExitUri="/windows/runtime/archived.exit"
   local variArchivedLogUri="/windows/runtime/archived.log"
-  local variGoroutineActiveLimit=4
-  # local variGoroutineActiveNum=0
   if [ -f "${variArchivedLockUri}" ]; then
-    echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] the last task did not completed" >> "${variArchivedLogUri}"
-    return 0
+    # 鎖定文件大於2個小時則重置[START]
+    local variCurrentTimestamp=$(date -u +%s)
+    local variLockTimestamp=$(stat -c %Y "${variArchivedLockUri}" 2>/dev/null || echo "")
+    if [ -n "$variLockTimestamp" ] && [ $((variCurrentTimestamp - variLockTimestamp)) -gt 7200 ];then
+      rm -f "${variArchivedLockUri}"
+    else
+      echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] the last task did not completed" >> "${variArchivedLogUri}"
+      return 0
+    fi
+    # 鎖定文件大於2個小時則重置[END]
   fi
   touch "${variArchivedLockUri}"
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ACTION" >> "${variArchivedLogUri}"
@@ -1422,58 +1428,39 @@ function funcPublicCloudSclickArchived(){
   done
   # ORDER BY「variEachUtc0Datehour」DESC[START]
   sort -r -k1,1 "${variOrderByUtc0DatehourDescUri}" | while read -r variEachUtc0Datehour variEachFileUri variEachArchivedUri; do
-    {
-      variEachStartTime=$(date +%s.%N)
-      # include path
-      echo "time tar -${variOption} ${variEachArchivedUri} -C ${variPath} $(basename ${variEachFileUri})"
-      time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
-      # case ${variCommand} in
-      # "tar")
-      #     echo "time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}"
-      #     time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}
-      #     ;;
-      # "xz")
-      #     #「-T0」：啟用多核（優點：關閉耗時:啟用耗時≈22:09，缺點：關閉負載:啟用耗時≈2.5:11.5）
-      #     echo "time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
-      #     time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
-      #     # xz -d ${variEachArchivedUri}
-      #     ;;
-      # *)
-      #     return 1
-      #     ;;
-      # esac
-      variEachEndTime=$(date +%s.%N)
-      variEachDuration=$(echo "${variEachEndTime} - ${variEachStartTime}" | bc)
-      variEachFileSize=$(echo "scale=2; $(stat -c%s "${variEachFileUri}")/1048576" | bc)
-      variEachArchivedSize=$(echo "scale=2; $(stat -c%s "${variEachArchivedUri}")/1048576" | bc)
-      echo "-> ${variEachDuration} / ${variEachFileSize}MB >> ${variEachArchivedSize}MB ${variEachArchivedUri}" succeeded >> "${variArchivedLogUri}"
-    } &
-    while [ "$(jobs -r | wc -l)" -ge ${variGoroutineActiveLimit} ]; do
-        # exit signal monitor[START]
-        if [ -f "${variArchivedExitUri}" ]; then
-          echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} EXIT" >> "${variArchivedLogUri}"
-          jobs -p | xargs kill -9
-          wait
-          rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
-          return 0
-        fi
-        # exit signal monitor[END]
-        sleep 1
-    done
+    # exit signal monitor[START]
+    if [ -f "${variArchivedExitUri}" ]; then
+      echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} EXIT" >> "${variArchivedLogUri}"
+      rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
+      return 0
+    fi
+    # exit signal monitor[END]
+    variEachStartTime=$(date +%s.%N)
+    # include path
+    echo "time tar -${variOption} ${variEachArchivedUri} -C ${variPath} $(basename ${variEachFileUri})"
+    time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
+    # case ${variCommand} in
+    # "tar")
+    #     echo "time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}"
+    #     time tar -${variOption} ${variEachArchivedUri} ${variEachFileUri}
+    #     ;;
+    # "xz")
+    #     #「-T0」：啟用多核（優點：關閉耗時:啟用耗時≈22:09，缺點：關閉負載:啟用耗時≈2.5:11.5）
+    #     echo "time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}"
+    #     time xz -${variOption} ${variEachFileUri} > ${variEachArchivedUri}
+    #     # xz -d ${variEachArchivedUri}
+    #     ;;
+    # *)
+    #     return 1
+    #     ;;
+    # esac
+    variEachEndTime=$(date +%s.%N)
+    variEachDuration=$(echo "${variEachEndTime} - ${variEachStartTime}" | bc)
+    variEachFileSize=$(echo "scale=2; $(stat -c%s "${variEachFileUri}")/1048576" | bc)
+    variEachArchivedSize=$(echo "scale=2; $(stat -c%s "${variEachArchivedUri}")/1048576" | bc)
+    echo "-> ${variEachDuration} / ${variEachFileSize}MB >> ${variEachArchivedSize}MB ${variEachArchivedUri}" succeeded >> "${variArchivedLogUri}"
   done
-  # 阻塞至「當前進行/所有任務」執行完畢//
-  wait
   # ORDER BY「variEachUtc0Datehour」DESC[END]
-  # 處理「imp_streamstate02-*」文件[START]
-  # local variTodayUtc0Date=$(date -u "+%Y%m%d")
-  # local variYesterdayUtc0Date=$(date -u -d "yesterday" +"%Y%m%d")
-  # if [[ ! -f "${variPath}imp_streamstate02-${variYesterdayUtc0Date}.${variSuffix}" ]]; then
-    # 移除{空行 && 雙引號}
-    # rm -rf ${variPath}imp_streamstate02-${variYesterdayUtc0Date}.log
-    # sed '/^$/d; s/"//g' ${variPath}imp_streamstate02-${variTodayUtc0Date}.log > ${variPath}imp_streamstate02-${variYesterdayUtc0Date}.log
-    # time tar -${variOption} ${variEachArchivedUri} -C ${variPath} "$(basename "${variEachFileUri}")"
-  # fi
-  # 處理「imp_streamstate02-*」文件[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
   rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
   return 0
