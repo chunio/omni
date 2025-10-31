@@ -973,6 +973,10 @@ server {
     ssl_session_timeout 10m;
     ssl_prefer_server_ciphers off;
     # 證書配置[END]
+    # 採集日誌[START]
+    access_log /windows/runtime/${variDomain}_access.log main;
+    error_log  /windows/runtime/${variDomain}_error.log warn;
+    # 採集日誌[END]
     location / {
         # [CORS/同源策略]預檢響應[START]
         if (\$request_method = 'OPTIONS') {
