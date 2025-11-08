@@ -1498,8 +1498,8 @@ function funcPublicTailUnicornNotice(){
   cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
   pwd
   df -h
-  echo "tail -f notice-$(date -u +%Y%m%d).log"
-  tail -f notice-$(date -u +%Y%m%d).log
+  echo "tail -f *-notice-$(date -u +%Y%m%d).log"
+  tail -f *-notice-$(date -u +%Y%m%d).log
   return 0
 }
 
