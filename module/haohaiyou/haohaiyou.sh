@@ -120,6 +120,8 @@ function funcProtectedCloudSelector() {
     # ==================================================
     "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
     "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
+    "03 SKELETON WORKER 01 PADDLEWAVER SINGAPORE 43.156.226.228 22 --"
+    "04 SKELETON WORKER 01 PADDLEWAVER USEAST 43.130.150.62 22 --"
     # ==================================================
     "01 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
     "02 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 --"
@@ -870,6 +872,7 @@ function funcPublicCloudSkeletonRinit() {
           chmod 777 -R .
           echo "/usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env"
           /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env
+          sed -i "s/^APP_SERVICE=.*/APP_SERVICE=${variEachService}/" .env
           expect -c '
           set timeout -1
           spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
