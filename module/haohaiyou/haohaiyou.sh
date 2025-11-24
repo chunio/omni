@@ -1228,13 +1228,12 @@ function funcPublicCloudUnicornReinit() {
         # unicorn[END]
         # crontab[START]
         # （1）supervisor
-        if grep -Fq "cloudUnicornSupervisor" "${variCrontabUri}"; then
-          sed -i '/cloudUnicornSupervisor/d' "${variCrontabUri}"
+        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabUri}"; then
+          sed -i '/cloudUnicornSupervisor ${variEachLabelUpper}/d' "${variCrontabUri}"
         fi
         # 重置日誌
         # echo "" >> /windows/runtime/supervisor.log
         echo "${variEachCrontabTask}" >> "${variCrontabUri}"
-        echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           # TODO:[臨時]廢棄清理[START]
