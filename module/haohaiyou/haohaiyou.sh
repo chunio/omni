@@ -1238,8 +1238,8 @@ function funcPublicCloudUnicornReinit() {
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudUnicornSclickArchived" "${variCrontabUri}"; then
-            sed -i '/cloudUnicornSclickArchived/d' "${variCrontabUri}"
+          if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
+            sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
           fi
           # TODO:[臨時]廢棄清理[END]
           if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabUri}"; then
