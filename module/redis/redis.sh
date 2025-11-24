@@ -59,7 +59,7 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker compose down -v
+  docker compose -p redis down -v
   docker compose -p redis up --build -d
   docker update --restart=always redis
   docker ps -a | grep redis

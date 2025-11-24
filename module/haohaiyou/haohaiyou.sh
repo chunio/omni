@@ -138,6 +138,7 @@ function funcProtectedCloudSelector() {
     "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
     "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
     "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 --"
+    "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 --"
@@ -163,8 +164,8 @@ function funcProtectedCloudSelector() {
     "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 --"
     "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 --"
     "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 --"
-    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
-    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --"
+    "25 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
+    "26 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -803,6 +804,10 @@ function funcPublicCloudSkeletonRinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variBranchName=${1}
+  # slave variable[START]
+  # systemctl reload crond
+  variCrontabUri="/var/spool/cron/root"
+  # slave variable[END]
   funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
@@ -887,11 +892,25 @@ function funcPublicCloudSkeletonRinit() {
           send "exit\r"
           expect eof
           '
+          # crontab[START]
+          if grep -Fq "cloudSkeletonCrontab" "${variCrontabUri}"; then
+            sed -i '/cloudSkeletonCrontab/d' "${variCrontabUri}"
+          fi
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonCrontab" >> "${variCrontabUri}"
+          cat "${variCrontabUri}"
+          systemctl reload crond
+          # crontab[END]
           #（3）slave main[END]
           # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
   done
+  return 0
+}
+
+
+function funcPublicCloudSkeletonCrontab(){
+  rm -rf /windows/code/backend/haohaiyou/gopath/src/skeleton/core.*
   return 0
 }
 
@@ -1207,25 +1226,26 @@ function funcPublicCloudUnicornReinit() {
           done
         ) # &
         # unicorn[END]
-        # supervisor[START]
+        # crontab[START]
+        # （1）supervisor
         if grep -Fq "cloudUnicornSupervisor" "${variCrontabUri}"; then
           sed -i '/cloudUnicornSupervisor/d' "${variCrontabUri}"
         fi
         # 重置日誌
         # echo "" >> /windows/runtime/supervisor.log
         echo "${variEachCrontabTask}" >> "${variCrontabUri}"
-        # 僅使用於「variEachService=SINGLETON」[START]
+        echo "[ cloudUnicornSupervisor ] crontab init succeeded"
+        # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
             sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
           fi
           echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSclickArchived" >> "${variCrontabUri}"
         fi
-        # 僅使用於「variEachService=SINGLETON」[END]
+        # ----------
         cat "${variCrontabUri}"
         systemctl reload crond
-        echo "[ cloudUnicornSupervisor ] crontab init succeeded"
-        # supervisor[END]
+        # crontab[END]
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
         #（3）slave main[END]
