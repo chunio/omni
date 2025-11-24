@@ -1229,10 +1229,11 @@ function funcPublicCloudUnicornReinit() {
         # crontab[START]
         # （1）supervisor
         if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabUri}"; then
-          sed -i '/cloudUnicornSupervisor ${variEachLabelUpper}/d' "${variCrontabUri}"
+          # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
+          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabUri}"
         fi
         # 重置日誌
-        # echo "" >> /windows/runtime/supervisor.log
+        # echo "" > /windows/runtime/supervisor.log
         echo "${variEachCrontabTask}" >> "${variCrontabUri}"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
