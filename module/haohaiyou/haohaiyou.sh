@@ -893,10 +893,10 @@ function funcPublicCloudSkeletonRinit() {
           expect eof
           '
           # crontab[START]
-          if grep -Fq "cloudSkeletonCrontab" "${variCrontabUri}"; then
-            sed -i '/cloudSkeletonCrontab/d' "${variCrontabUri}"
+          if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabUri}"; then
+            sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabUri}"
           fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonCrontab" >> "${variCrontabUri}"
+          echo "0 * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabUri}"
           cat "${variCrontabUri}"
           systemctl reload crond
           # crontab[END]
@@ -909,7 +909,7 @@ JUMPEREOF
 }
 
 
-function funcPublicCloudSkeletonCrontab(){
+function funcPublicCloudSkeletonHourlyCrontab(){
   rm -rf /windows/code/backend/haohaiyou/gopath/src/skeleton/core.*
   return 0
 }
@@ -1237,10 +1237,15 @@ function funcPublicCloudUnicornReinit() {
         echo "[ cloudUnicornSupervisor ] crontab init succeeded"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
-          if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
+          # TODO:[臨時]廢棄清理[START]
+          if grep -Fq "cloudUnicornSclickArchived" "${variCrontabUri}"; then
+            sed -i '/cloudUnicornSclickArchived/d' "${variCrontabUri}"
           fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSclickArchived" >> "${variCrontabUri}"
+          # TODO:[臨時]廢棄清理[END]
+          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabUri}"; then
+            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabUri}"
+          fi
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabUri}"
         fi
         # ----------
         cat "${variCrontabUri}"
@@ -1379,7 +1384,8 @@ function funcPublicCloudHostReinit(){
   return 0
 }
 
-function funcPublicCloudSclickArchived(){
+# 含：sclick archived
+function funcPublicCloudUnicornMinutelyCrontab(){
   local variExecuteId="EXECUTE_ID_$(date -u "+%Y%m%d_%H%M%S_%N")"
   local variKeywordUtc0DatehourStart=$(date -u -d "24 hours ago" "+%Y%m%d%H")
   local variKeywordUtc0DatehourEnd=$(date -u "+%Y%m%d%H")
