@@ -49,7 +49,7 @@ function funcPublicRestart(){
   variMasterPath="/windows/code/backend/chunio"
   # [DOCKER]temporary
   variDockerWorkSpace="/windows/code/backend/chunio"
-  veriModuleName="account"
+  variModuleName="account"
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/bin/bash
@@ -58,9 +58,9 @@ return 0
 ENTRYPOINTSH
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${veriModuleName}-nginx:
+  ${variModuleName}-nginx:
     image: nginx:1.27.0
-    container_name: ${veriModuleName}-nginx
+    container_name: ${variModuleName}-nginx
     volumes:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/nginx/localhost.chunio.conf:/etc/nginx/conf.d/default.conf
@@ -70,9 +70,9 @@ services:
       - common
   # ##################################################
   # mysql[START]
-  ${veriModuleName}-mysql:
+  ${variModuleName}-mysql:
     image: mysql:8.0
-    container_name: ${veriModuleName}-mysql
+    container_name: ${variModuleName}-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
       # MYSQL_INITDB_SKIP_TZINFO: 1
@@ -91,9 +91,9 @@ services:
       - common
   # mysql[END]
   # ##################################################
-  ${veriModuleName}-redis:
+  ${variModuleName}-redis:
     image: redis:7.2.5
-    container_name: ${veriModuleName}-redis
+    container_name: ${variModuleName}-redis
     ports:
       - "6379:6379"
     volumes:
@@ -102,22 +102,22 @@ services:
       - common
     # 「--appendonly yes」表示是否開啟「AOF (Append Only File)」 /持久化機制
     command: redis-server --appendonly yes --requirepass 0000
-  ${veriModuleName}-php:
+  ${variModuleName}-php:
     image: hyperf/hyperf:7.4-alpine-v3.13-swoole-v4.8
-    container_name: ${veriModuleName}-php
+    container_name: ${variModuleName}-php
     volumes:
       - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/${veriModuleName}/backend
+    working_dir: ${variDockerWorkSpace}/${variModuleName}/backend
     networks:
       - common
     ports:
       - "18306:18306"
     command: ["tail", "-f", "/dev/null"]
     depends_on:
-      - ${veriModuleName}-nginx
-      - ${veriModuleName}-mysql
-      - ${veriModuleName}-redis
+      - ${variModuleName}-nginx
+      - ${variModuleName}-mysql
+      - ${variModuleName}-redis
 networks:
   common:
     driver: bridge
@@ -145,10 +145,10 @@ DOCKERCOMPOSEYML
   docker compose down -v
   # 強制清除未使用的「volume」
   docker volume prune -f
-  docker compose -p ${veriModuleName} up --build -d
-  docker ps -a | grep ${veriModuleName}
-  cd ${variDockerWorkSpace}/${veriModuleName}/backend
-  docker exec -it ${veriModuleName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"
+  docker compose -p ${variModuleName} up --build -d
+  docker ps -a | grep ${variModuleName}
+  cd ${variDockerWorkSpace}/${variModuleName}/backend
+  docker exec -it ${variModuleName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"
   return 0
 }
 

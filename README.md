@@ -44,11 +44,11 @@ omni
 │   │   ├── encrypt.envi
 │   │   └── builtin.sh
 │   ├── utility
-│   │   ├── cloud[adm.py](../../../../runtime/admpy/adm.py)
+│   │   ├── cloud
 │   │   ├── runtime
 │   │   ├── encrypt.envi
 │   │   └── utility.sh
-│   └── workflow[adm.py](../../../../runtime/admpy/adm.py)
+│   └── workflow
 │   │   ├── cloud
 │   │   ├── runtime
 │   │   ├── encrypt.envi
