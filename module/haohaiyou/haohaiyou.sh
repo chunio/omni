@@ -50,6 +50,7 @@ df -h /mnt/datadisk0
 # --------------------------------------------------
 scp root@170.106.165.51:/windows/runtime/profile001.svg .
 # --------------------------------------------------
+# TODO:[SingletonGoroutine.go]添加每日定時任務：find /var/spool/postfix/maildrop -type f -delete
 MARK
 
 declare -A VARI_GLOBAL
