@@ -57,6 +57,7 @@ function funcProtectedCloudInit_Centos(){
     # Extra Packages for Enterprise Linux/企業係統額外套件
     # epel-release
     # centos[END]
+    chrony
     ca-certificates
     git
     lsof
@@ -92,6 +93,13 @@ function funcProtectedCloudInit_Centos(){
     # default
     variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
+      "chrony")
+        if yum install -y chrony 2>/dev/null; then
+          # 服務名稱：[centos]chronyd，[ubuntu]chrony
+          systemctl start chronyd && systemctl enable chronyd && chronyc makestep
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
       "epel-release")
         # 當小於/等於「centos.7.x」時，則跳過「for variEachPackage in "${variPackageList[@]}"; do」（已驗證）
         [[ $(grep -oE '[0-9]+' /etc/centos-release 2>/dev/null | head -n 1) -le 7 ]] && continue
@@ -162,6 +170,7 @@ function funcProtectedCloudInit_Ubuntu(){
     apt-utils
     dialog
     # ubuntu[END]
+    chrony
     ca-certificates
     git
     lsof
@@ -196,6 +205,13 @@ function funcProtectedCloudInit_Ubuntu(){
     # default
     variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
+      "chrony")
+        if apt install -y chrony 2>/dev/null; then
+          # 服務名稱：[centos]chronyd，[ubuntu]chrony
+          systemctl start chrony && systemctl enable chrony && chronyc makestep
+          variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+        fi
+        ;;
       "docker")
         # https://docs.docker.com/engine/install/ubuntu/
         apt remove -y runc containerd docker.io docker-doc docker-compose podman-docker
@@ -518,7 +534,7 @@ function funcProtectedCommandInit(){
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
     local variDeletePattern="^alias ${variEachUnitCommand}="
-    sed -i "/${variDeletePattern}/d" /etc/bashrc
+    [ -f /etc/bashrc ] && sed -i "/${variDeletePattern}/d" /etc/bashrc
     # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
     ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
     # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
