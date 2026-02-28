@@ -345,18 +345,18 @@ EOF
   chmod +x /usr/sbin/policy-rc.d
   # No schema files found: doing nothing.
   # 減少容器特有/安全性的警告信息[END]
-  apt update
+  apt-get update
   #「dialog」支持文本界面對話框體 (TUI/text-based user interface)
   #「apt-utils」提供「apt」使用的輔助工具
-  apt install -y --no-install-recommends dialog apt-utils ca-certificates
-  apt install -y git wget curl make graphviz
+  apt-get install -y --no-install-recommends dialog apt-utils ca-certificates
+  apt-get install -y git wget curl make graphviz
   # claude code install[START]
   # 允許安裝「man」幫助手冊[START]
   # 解决警告x22：update-alternatives: warning: skip creation of /usr/share/man/man1/js.1.gz because associated file /usr/share/man/man1/nodejs.1.gz (of link group js) doesn't exist
   sed -i 's/^path-exclude=\/usr\/share\/man/#path-exclude=\/usr\/share\/man/' /etc/dpkg/dpkg.cfg.d/excludes || true
   sed -i 's/^path-exclude=\/usr\/share\/doc/#path-exclude=\/usr\/share\/doc/' /etc/dpkg/dpkg.cfg.d/excludes || true
   # 允許安裝「man」幫助手冊[END]
-  apt install -y npm && npm install -g @anthropic-ai/claude-code
+  apt-get install -y npm && npm install -g @anthropic-ai/claude-code
   # windows[START]
   # powershell >> irm https://claude.ai/install.ps1 | iex
   # powershell >> [System.Environment]::SetEnvironmentVariable("http_proxy", "http://127.0.0.1:10809", "User")
@@ -562,8 +562,8 @@ docker run -d \
   chunio/php:8.3.24 /sbin/init
 docker exec -it chunio-php-haohaiyou /bin/bash
 # ----------
-root@${variContainerId}:/# apt update
-root@${variContainerId}:/# apt install -y python3 python3-pip python3-venv
+root@${variContainerId}:/# apt-get update
+root@${variContainerId}:/# apt-get install -y python3 python3-pip python3-venv
 root@${variContainerId}:/# pip3 install Pillow --break-system-packages
 root@${variContainerId}:/# pip3 install playwright --break-system-packages
 root@${variContainerId}:/# playwright install
@@ -1290,6 +1290,11 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         return 1
         ;;
   esac
+  # 統計「執行狀態」/1[START]
+  local varSelectedCounter=0
+  local variSucceededCounter=0
+  local variFailedAbstract=""
+  # 統計「執行狀態」/1[END]
   funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
@@ -1311,6 +1316,9 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
       continue
     fi
     # 檢測目標節點環節是否支持當前模塊[END]
+    # 統計「執行狀態」/2[START]
+    varSelectedCounter=$((varSelectedCounter + 1))
+    # 統計「執行狀態」/2[END]
     rm -rf ~/.ssh/known_hosts
     if [[ ${variScpAble} -eq 1 && ${variScpSyncOnce} -eq 0 ]]; then
       md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
@@ -1329,22 +1337,27 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         scp -P ${variEachPort} -o StrictHostKeyChecking=no /tmp/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variEachIp}:/tmp/
       fi
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t ${variJumperAccount}@${variEachIp} "sudo bash -s" <<SLAVEEOF
+        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
+        export DEBIAN_FRONTEND=noninteractive
         # --------------------------------------------------
         # （1）ssh init[START]
         tar -xzvf /tmp/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-        echo "StrictHostKeyChecking no" > ~/.ssh/config
+        touch ~/.ssh/config
+        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
         chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
         # （1）ssh init[END]
         # --------------------------------------------------
         # （2）omni.system init[START]
         if ! command -v git &> /dev/null; then
-             apt update && apt install -y git
+          apt-get update && apt-get install -y git
         fi
         mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni" ]; then
+        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
           cd /windows/code/backend/chunio/omni
         else
+          rm -rf /windows/code/backend/chunio/omni
           mkdir -p /windows/code/backend/chunio
           cd /windows/code/backend/chunio
           git clone https://github.com/chunio/omni.git
@@ -1356,7 +1369,9 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         echo "[ omni ] git reset --hard origin/main ..."
         git reset --hard origin/main
         echo "[ omni ] git reset --hard origin/main finished"
-        chmod 777 -R . && ./init/system/system.sh init && source /etc/bash.bashrc
+        chmod 777 -R . && ./init/system/system.sh init
+        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+        [ -f /etc/bashrc ] && source /etc/bashrc
         #（2）omni.system init[END]
         # --------------------------------------------------
         #（3）slave main[START]
@@ -1433,7 +1448,18 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         # --------------------------------------------------
 SLAVEEOF
 JUMPEREOF
+    # 統計「執行狀態」/3[START]
+    if [[ $? -eq 0 ]]; then
+      variSucceededCounter=$((variSucceededCounter + 1))
+    else
+      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
+    fi
+    # 統計「執行狀態」/3[END]
   done
+  # 統計「執行狀態」/4[START]
+  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
+  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
+  # 統計「執行狀態」/4[END]
   return 0
 }
 
@@ -1799,7 +1825,7 @@ function funcPublicCloudTccliReinit(){
       if command -v yum &> /dev/null; then
         yum install -y python3 python3-pip
       elif command -v apt &> /dev/null; then
-        apt install -y python3 python3-pip
+        apt-get install -y python3 python3-pip
       else
         echo "no package manager found, please install python3 manually"
         return 1
