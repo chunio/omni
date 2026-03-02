@@ -80,6 +80,50 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 
 # ##################################################
 # protected function[START]
+function funcProtectedOmniPuller(){
+  # git[START]
+  if ! command -v git &> /dev/null; then
+    local variOsType=""
+    if [ -f /etc/os-release ]; then
+      variOsType=$(. /etc/os-release && echo "${ID}")
+    fi
+    case "${variOsType}" in
+      "centos"|"rhel"|"rocky"|"almalinux")
+        yum install -y git
+        ;;
+      "ubuntu"|"debian")
+        apt-get update && apt-get install -y git
+        ;;
+      *)
+        yum install -y git 2>/dev/null || apt-get update && apt-get install -y git 2>/dev/null
+        ;;
+    esac
+  fi
+  # git[END]
+  # omni.system init[START]
+  mkdir -p /windows/runtime
+  if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
+    cd /windows/code/backend/chunio/omni
+  else
+    rm -rf /windows/code/backend/chunio/omni
+    mkdir -p /windows/code/backend/chunio
+    cd /windows/code/backend/chunio
+    git clone https://github.com/chunio/omni.git
+    cd ./omni
+  fi
+  echo "[ omni ] git fetch origin ..."
+  git fetch origin
+  echo "[ omni ] git fetch origin finished"
+  echo "[ omni ] git reset --hard origin/main ..."
+  git reset --hard origin/main
+  echo "[ omni ] git reset --hard origin/main finished"
+  chmod 777 -R . && ./init/system/system.sh init
+  [ -f /etc/bashrc ] && source /etc/bashrc
+  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+  # omni.system init[END]
+  return 0
+}
+
 function funcProtectedCloudSelector() {
   # --------------------------------------------------
   # call example :
@@ -96,7 +140,8 @@ function funcProtectedCloudSelector() {
   #   variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
   #   variEachIp=$(echo ${variEachValue} | awk '{print $7}')
   #   variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-  #   variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+  #   variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+  #   variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
   # done
   # return 0
   # --------------------------------------------------
@@ -114,92 +159,92 @@ function funcProtectedCloudSelector() {
     "03 DSP --"
   )
   local variIptableCloudSlice=(
-    "01 -- -- 01 ALL SINGAPORE 43.156.140.171 22 iptable"
-    "02 -- -- 01 ALL USEAST 170.106.132.12 22 iptable"
+    "01 -- -- 01 ALL SINGAPORE 43.156.140.171 22 CENTOS iptable"
+    "02 -- -- 01 ALL USEAST 170.106.132.12 22 CENTOS iptable"
   )
   local variPaddlewaverCloudSlice=(
     # ==================================================
-    "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 --"
-    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 --"
-    "03 SKELETON WORKER 01 PADDLEWAVER SINGAPORE 43.156.226.228 22 --"
-    "04 SKELETON WORKER 01 PADDLEWAVER USEAST 43.130.150.62 22 --"
+    "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 CENTOS --"
+    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 CENTOS --"
+    "03 SKELETON WORKER 01 PADDLEWAVER SINGAPORE 43.156.226.228 22 CENTOS --"
+    "04 SKELETON WORKER 01 PADDLEWAVER USEAST 43.130.150.62 22 CENTOS --"
     # ==================================================
-    "01 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 --"
-    "02 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 --"
-    "03 ADX NOTICE 01 PADDLEWAVER USEAST 170.106.160.191 22 --"
-    "04 ADX NOTICE 02 PADDLEWAVER USEAST 43.130.108.190 22 --"
-    "05 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 --"
-    "06 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 --"
-    "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 --"
-    "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 --"
-    "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.59.14 22 --"
-    "10 ADX BID 06 PADDLEWAVER SINGAPORE 43.134.190.133 22 --"
-    "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 --"
-    "12 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 --"
-    "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 --"
-    "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 --"
-    "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 --"
-    "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 --"
+    "01 ADX NOTICE 01 PADDLEWAVER SINGAPORE 119.28.122.140 22 CENTOS --"
+    "02 ADX NOTICE 02 PADDLEWAVER SINGAPORE 101.32.126.189 22 CENTOS --"
+    "03 ADX NOTICE 01 PADDLEWAVER USEAST 170.106.160.191 22 CENTOS --"
+    "04 ADX NOTICE 02 PADDLEWAVER USEAST 43.130.108.190 22 CENTOS --"
+    "05 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 CENTOS --"
+    "06 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 CENTOS --"
+    "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 CENTOS --"
+    "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 CENTOS --"
+    "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.59.14 22 CENTOS --"
+    "10 ADX BID 06 PADDLEWAVER SINGAPORE 43.134.190.133 22 CENTOS --"
+    "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 CENTOS --"
+    "12 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 CENTOS --"
+    "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 CENTOS --"
+    "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
+    "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
+    "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
     # ==================================================
-    "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 --"
-    "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 --"
-    "03 DSP NOTICE 03 PADDLEWAVER SINGAPORE 43.134.90.124 22 --"
-    "04 DSP NOTICE 04 PADDLEWAVER SINGAPORE 43.163.87.38 22 --"
-    "05 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 --"
-    "06 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 --"
-    "07 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 --"
-    "08 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 --"
-    "09 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 --"
-    "10 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 --"
-    "11 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 --"
-    "12 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 --"
-    "13 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 --"
-    "14 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 --"
-    "15 DSP BID 09 PADDLEWAVER SINGAPORE 43.134.27.101 22 --"
-    "16 DSP BID 10 PADDLEWAVER SINGAPORE 43.156.110.205 22 --"
-    "17 DSP BID 11 PADDLEWAVER SINGAPORE 43.156.6.213 22 --"
-    "18 DSP BID 12 PADDLEWAVER SINGAPORE 43.156.26.249 22 --"
-    "19 DSP BID 13 PADDLEWAVER SINGAPORE 43.156.99.95 22 --"
-    "20 DSP BID 14 PADDLEWAVER SINGAPORE 43.156.108.53 22 --"
-    "21 DSP BID 15 PADDLEWAVER SINGAPORE 129.226.82.236 22 --"
-    "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 --"
-    "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 --"
-    "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 --"
-    "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 --"
-    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 --"
-    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 --"
-    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 --"
+    "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 CENTOS --"
+    "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 CENTOS --"
+    "03 DSP NOTICE 03 PADDLEWAVER SINGAPORE 43.134.90.124 22 CENTOS --"
+    "04 DSP NOTICE 04 PADDLEWAVER SINGAPORE 43.163.87.38 22 CENTOS --"
+    "05 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 CENTOS --"
+    "06 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 CENTOS --"
+    "07 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 CENTOS --"
+    "08 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 CENTOS --"
+    "09 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 CENTOS --"
+    "10 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 CENTOS --"
+    "11 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 CENTOS --"
+    "12 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 CENTOS --"
+    "13 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 CENTOS --"
+    "14 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 CENTOS --"
+    "15 DSP BID 09 PADDLEWAVER SINGAPORE 43.134.27.101 22 CENTOS --"
+    "16 DSP BID 10 PADDLEWAVER SINGAPORE 43.156.110.205 22 CENTOS --"
+    "17 DSP BID 11 PADDLEWAVER SINGAPORE 43.156.6.213 22 CENTOS --"
+    "18 DSP BID 12 PADDLEWAVER SINGAPORE 43.156.26.249 22 CENTOS --"
+    "19 DSP BID 13 PADDLEWAVER SINGAPORE 43.156.99.95 22 CENTOS --"
+    "20 DSP BID 14 PADDLEWAVER SINGAPORE 43.156.108.53 22 CENTOS --"
+    "21 DSP BID 15 PADDLEWAVER SINGAPORE 129.226.82.236 22 CENTOS --"
+    "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 CENTOS --"
+    "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 CENTOS --"
+    "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 CENTOS --"
+    "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
+    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
+    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
+    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 UBUNTU --"
     # ==================================================
   )
   local variYoneCloudSlice=(
     # ==================================================
-    "01 SKELETON SINGLETON 01 YONE SINGAPORE 43.134.87.222 22 --"
-    "02 SKELETON SINGLETON 01 YONE USEAST 43.130.147.251 22 --"
+    "01 SKELETON SINGLETON 01 YONE SINGAPORE 43.134.87.222 22 CENTOS --"
+    "02 SKELETON SINGLETON 01 YONE USEAST 43.130.147.251 22 CENTOS --"
     # ==================================================
-    "01 ADX NOTICE 01 YONE SINGAPORE 43.159.51.144 22 --"
-    "02 ADX NOTICE 02 YONE SINGAPORE 43.133.63.172 22 --"
-    "03 ADX NOTICE 01 YONE USEAST 43.130.148.210 22 --"
-    "04 ADX NOTICE 02 YONE USEAST 43.130.132.19 22 --"
-    "05 ADX BID 01 YONE SINGAPORE 43.156.0.206 22 --"
-    "06 ADX BID 02 YONE SINGAPORE 43.134.87.59 22 --"
-    "07 ADX BID 03 YONE SINGAPORE 43.134.10.168 22 --"
-    "08 ADX BID 04 YONE SINGAPORE 43.163.113.138 22 --"
-    "09 ADX BID 05 YONE SINGAPORE 43.134.57.230 22 --"
-    "10 ADX BID 06 YONE SINGAPORE 43.156.68.83 22 --"
-    "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 --"
-    "12 ADX BID 08 YONE SINGAPORE 129.226.152.214 22 --"
-    "13 ADX BID 09 YONE SINGAPORE 43.128.89.80 22 --"
-    "14 ADX BID 01 YONE USEAST 43.130.134.51 22 --"
-    "15 ADX BID 02 YONE USEAST 43.166.247.44 22 --"
+    "01 ADX NOTICE 01 YONE SINGAPORE 43.159.51.144 22 CENTOS --"
+    "02 ADX NOTICE 02 YONE SINGAPORE 43.133.63.172 22 CENTOS --"
+    "03 ADX NOTICE 01 YONE USEAST 43.130.148.210 22 CENTOS --"
+    "04 ADX NOTICE 02 YONE USEAST 43.130.132.19 22 CENTOS --"
+    "05 ADX BID 01 YONE SINGAPORE 43.156.0.206 22 CENTOS --"
+    "06 ADX BID 02 YONE SINGAPORE 43.134.87.59 22 CENTOS --"
+    "07 ADX BID 03 YONE SINGAPORE 43.134.10.168 22 CENTOS --"
+    "08 ADX BID 04 YONE SINGAPORE 43.163.113.138 22 CENTOS --"
+    "09 ADX BID 05 YONE SINGAPORE 43.134.57.230 22 CENTOS --"
+    "10 ADX BID 06 YONE SINGAPORE 43.156.68.83 22 CENTOS --"
+    "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 CENTOS --"
+    "12 ADX BID 08 YONE SINGAPORE 129.226.152.214 22 CENTOS --"
+    "13 ADX BID 09 YONE SINGAPORE 43.128.89.80 22 CENTOS --"
+    "14 ADX BID 01 YONE USEAST 43.130.134.51 22 CENTOS --"
+    "15 ADX BID 02 YONE USEAST 43.166.247.44 22 CENTOS --"
     # ==================================================
-    "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 --"
-    "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 --"
-    "03 DSP NOTICE 01 YONE USEAST 43.166.247.136 22 --"
-    "04 DSP NOTICE 02 YONE USEAST 43.166.226.222 22 --"
-    "05 DSP BID 01 YONE SINGAPORE 43.134.49.186 22 --"
-    "06 DSP BID 02 YONE SINGAPORE 43.134.32.190 22 --"
-    "07 DSP BID 01 YONE USEAST 43.166.254.65 22 --"
-    "08 DSP BID 02 YONE USEAST 43.166.254.61 22 --" 
+    "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 CENTOS --"
+    "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 CENTOS --"
+    "03 DSP NOTICE 01 YONE USEAST 43.166.247.136 22 CENTOS --"
+    "04 DSP NOTICE 02 YONE USEAST 43.166.226.222 22 CENTOS --"
+    "05 DSP BID 01 YONE SINGAPORE 43.134.49.186 22 CENTOS --"
+    "06 DSP BID 02 YONE SINGAPORE 43.134.32.190 22 CENTOS --"
+    "07 DSP BID 01 YONE USEAST 43.166.254.65 22 CENTOS --"
+    "08 DSP BID 02 YONE USEAST 43.166.254.61 22 CENTOS --"
     # ==================================================
   )
   printf "%-15s %-15s %-15s\n" "INDEX" "CLOUD" "DESC"
@@ -239,7 +284,8 @@ function funcProtectedCloudSelector() {
     esac
   fi
   # ----------
-  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "DESC"
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
+    "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "OS" "DESC"
   local variCheckAllSlice
   declare -A variSelectedCloudMap
   for variEachValue in "${variSelectedCloudSlice[@]}"; do
@@ -252,11 +298,12 @@ function funcProtectedCloudSelector() {
     variEachRegion=$(echo "$variEachValue" | awk '{print $6}')
     variEachIp=$(echo "$variEachValue" | awk '{print $7}')
     variEachPort=$(echo "$variEachValue" | awk '{print $8}')
-    variEachDesc=$(echo "$variEachValue" | awk '{print $9}')
+    variEachOs=$(echo "$variEachValue" | awk '{print $9}')
+    variEachDesc=$(echo "$variEachValue" | awk '{print $10}')
     [[ $variEachModule != $variSelectedModuleName* ]] && continue
     variCheckAllSlice="${variCheckAllSlice} $(echo $variEachValue | awk '{print $1}')"
     variSelectedCloudMap[$variEachIndex]="$variEachValue"
-    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachDesc"
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachOs" "$variEachDesc"
   done
   echo -n "enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
   read -a variInputIndexSlice
@@ -811,7 +858,7 @@ function funcPublicCloudSkeletonRinit() {
   variBranchName=${1}
   # slave variable[START]
   # systemctl reload crond
-  variCrontabUri="/var/spool/cron/root"
+  variCrontabEnviUri="/var/spool/cron/root"
   # slave variable[END]
   funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
@@ -898,11 +945,11 @@ function funcPublicCloudSkeletonRinit() {
           expect eof
           '
           # crontab[START]
-          if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabUri}"; then
-            sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabUri}"
+          if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
+            sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
           fi
-          echo "0 * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabUri}"
-          cat "${variCrontabUri}"
+          echo "0 * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
+          cat "${variCrontabEnviUri}"
           systemctl reload crond
           # crontab[END]
           #（3）slave main[END]
@@ -1067,6 +1114,219 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+function funcPublicCloudUnicornReinit() {
+  local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variModuleName=$1
+  local variBranchName=$2
+  local variEnvi="PRODUCTION"
+  local variBinName="unicorn_${variModuleName}"
+  # ----------
+  local variScpAble=1
+  local variScpSyncOnce=0
+  local variScpReceivePath="/tmp/"
+  # ----------
+  case ${variModuleName} in
+    "adx")
+        variHttpPort=8001
+        variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    *)
+        return 1
+        ;;
+  esac
+  funcProtectedCloudSelector
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  # 統計「執行狀態」/1[START]
+  local varSelectedCounter=0
+  local variSucceededCounter=0
+  local variFailedAbstract=""
+  # 統計「執行狀態」/1[END]
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    # 檢測目標節點環節是否支持當前模塊[START]
+    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
+    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
+      echo "invalid selection : [ ${variEachValue} ]"
+      continue
+    fi
+    # 檢測目標節點環節是否支持當前模塊[END]
+    # 統計「執行狀態」/2[START]
+    varSelectedCounter=$((varSelectedCounter + 1))
+    # 統計「執行狀態」/2[END]
+    # 係統兼容[START]
+    local variEachSlaveAccount="root"
+    local variEachSudoCommand=""
+    local variEachCrontabEnviUri="/var/spool/cron/root"
+    local variEachCrontabReloadCommand="systemctl reload crond"
+    local variEachGitInstallCommand="yum install -y git"
+    if [[ "${variEachOs}" == "UBUNTU" ]]; then
+      variEachSlaveAccount="ubuntu"
+      variEachSudoCommand="sudo bash -s"
+      variEachCrontabEnviUri="/var/spool/cron/crontabs/root"
+      variEachCrontabReloadCommand="systemctl restart cron"
+      variEachGitInstallCommand="apt-get update && apt-get install -y git"
+    fi
+    # 係統兼容[END]
+    rm -rf ~/.ssh/known_hosts
+    if [[ ${variScpAble} -eq 1 && ${variScpSyncOnce} -eq 0 ]]; then
+      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpReceivePath}
+      variScpSyncOnce=1
+    fi
+    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
+    variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf ~/.ssh/known_hosts
+      if [[ ${variScpAble} -eq 1 ]]; then
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
+      fi
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
+        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
+        export DEBIAN_FRONTEND=noninteractive
+        # --------------------------------------------------
+        # （1）ssh init[START]
+        tar -xzvf ${variScpReceivePath}omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        touch ~/.ssh/config
+        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        chmod 600 ~/.ssh/* && chown \$(whoami):\$(whoami) ~/.ssh/*
+        # （1）ssh init[END]
+        # --------------------------------------------------
+        # （2）omni.system init[START]
+        if ! command -v git &> /dev/null; then
+          ${variEachGitInstallCommand}
+        fi
+        mkdir -p /windows/runtime
+        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
+          cd /windows/code/backend/chunio/omni
+        else
+          rm -rf /windows/code/backend/chunio/omni
+          mkdir -p /windows/code/backend/chunio
+          cd /windows/code/backend/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni
+        fi
+        echo "[ omni ] git fetch origin ..."
+        git fetch origin
+        echo "[ omni ] git fetch origin finished"
+        echo "[ omni ] git reset --hard origin/main ..."
+        git reset --hard origin/main
+        echo "[ omni ] git reset --hard origin/main finished"
+        chmod 777 -R . && ./init/system/system.sh init
+        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+        [ -f /etc/bashrc ] && source /etc/bashrc
+        #（2）omni.system init[END]
+        # --------------------------------------------------
+        #（3）slave main[START]
+        ulimit -n 655360
+        docker rm -f unicorn 2> /dev/null
+        if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn/.git" ]; then
+          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+          # ----------
+          echo "[ unicorn ] git fetch origin ..."
+          git fetch origin
+          echo "[ unicorn ] git fetch origin finished"
+          # ----------
+          echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
+          git reset --hard origin/${variBranchName}
+          echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
+          # ----------
+        else
+          rm -rf /windows/code/backend/haohaiyou/gopath/src/unicorn
+          mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+          git clone git@github.com:chunio/unicorn.git && cd unicorn
+          git checkout ${variBranchName}
+        fi
+        /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+        /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+        # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
+        mkdir -p ./bin && chmod 777 -R .
+        /usr/bin/cp -rf ${variScpReceivePath}${variBinName} ./bin/${variBinName}
+        echo "" > /windows/runtime/${variBinName}.command
+        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
+        (
+          while true; do
+            if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
+              cat /windows/runtime/${variBinName}.log
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+              break
+            elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
+              cat /windows/runtime/${variBinName}.log
+              break
+            fi
+            sleep 1
+          done
+        ) # &
+        # unicorn[END]
+        # crontab[START]
+        # （1）supervisor
+        touch ${variEachCrontabEnviUri}
+        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variEachCrontabEnviUri}"; then
+          # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
+          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variEachCrontabEnviUri}"
+        fi
+        # 重置日誌
+        # echo "" > /windows/runtime/supervisor.log
+        echo "${variEachCrontabTask}" >> "${variEachCrontabEnviUri}"
+        # （2）僅使用於「variEachService=SINGLETON」
+        if [[ ${variEachService} == "SINGLETON" ]]; then
+          # TODO:[臨時]廢棄清理[START]
+          if grep -Fq "cloudSclickArchived" "${variEachCrontabEnviUri}"; then
+            sed -i '/cloudSclickArchived/d' "${variEachCrontabEnviUri}"
+          fi
+          # TODO:[臨時]廢棄清理[END]
+          if grep -Fq "cloudUnicornMinutelyCrontab" "${variEachCrontabEnviUri}"; then
+            sed -i '/cloudUnicornMinutelyCrontab/d' "${variEachCrontabEnviUri}"
+          fi
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variEachCrontabEnviUri}"
+        fi
+        # ----------
+        cat "${variEachCrontabEnviUri}"
+        ${variEachCrontabReloadCommand}
+        # crontab[END]
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+        #（3）slave main[END]
+        # --------------------------------------------------
+SLAVEEOF
+JUMPEREOF
+    # 統計「執行狀態」/3[START]
+    if [[ $? -eq 0 ]]; then
+      variSucceededCounter=$((variSucceededCounter + 1))
+    else
+      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
+    fi
+    # 統計「執行狀態」/3[END]
+  done
+  # 統計「執行狀態」/4[START]
+  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
+  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
+  # 統計「執行狀態」/4[END]
+  return 0
+}
+
 # TODO:ubuntu/error[START]
 # enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : 25
 # index : 25
@@ -1104,7 +1364,7 @@ function funcPublicCloudUnicornReinit_Centos() {
   variScpSyncOnce=0
   # slave variable[START]
   # systemctl reload crond
-  variCrontabUri="/var/spool/cron/root"
+  variCrontabEnviUri="/var/spool/cron/root"
   # slave variable[END]
   case ${variModuleName} in
     "adx")
@@ -1231,27 +1491,27 @@ function funcPublicCloudUnicornReinit_Centos() {
         # unicorn[END]
         # crontab[START]
         # （1）supervisor
-        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabUri}"; then
+        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabEnviUri}"; then
           # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
-          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabUri}"
+          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabEnviUri}"
         fi
         # 重置日誌
         # echo "" > /windows/runtime/supervisor.log
-        echo "${variEachCrontabTask}" >> "${variCrontabUri}"
+        echo "${variEachCrontabTask}" >> "${variCrontabEnviUri}"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
+          if grep -Fq "cloudSclickArchived" "${variCrontabEnviUri}"; then
+            sed -i '/cloudSclickArchived/d' "${variCrontabEnviUri}"
           fi
           # TODO:[臨時]廢棄清理[END]
-          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabUri}"; then
-            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabUri}"
+          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
+            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabEnviUri}"
           fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabUri}"
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabEnviUri}"
         fi
         # ----------
-        cat "${variCrontabUri}"
+        cat "${variCrontabEnviUri}"
         systemctl reload crond
         # crontab[END]
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
@@ -1267,16 +1527,21 @@ JUMPEREOF
 function funcPublicCloudUnicornReinit_Ubuntu() {
   local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variModuleName=$1
-  variBranchName=$2
-  variEnvi="PRODUCTION"
-  variBinName="unicorn_${variModuleName}"
-  variScpAble=1
-  variScpSyncOnce=0
+  local variModuleName=$1
+  local variBranchName=$2
+  local variEnvi="PRODUCTION"
+  local variBinName="unicorn_${variModuleName}"
+  local variScpAble=1
+  local variScpSyncOnce=0
   # slave variable[START]
-  # systemctl reload cron
-  variCrontabUri="/var/spool/cron/crontabs/root"
+  # systemctl restart cron
+  local variCrontabEnviUri="/var/spool/cron/crontabs/root"
   # slave variable[END]
+  # 統計「執行狀態」/1[START]
+  local varSelectedCounter=0
+  local variSucceededCounter=0
+  local variFailedAbstract=""
+  # 統計「執行狀態」/1[END]
   case ${variModuleName} in
     "adx")
         variHttpPort=8001
@@ -1290,11 +1555,6 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         return 1
         ;;
   esac
-  # 統計「執行狀態」/1[START]
-  local varSelectedCounter=0
-  local variSucceededCounter=0
-  local variFailedAbstract=""
-  # 統計「執行狀態」/1[END]
   funcProtectedCloudSelector
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
@@ -1418,28 +1678,28 @@ function funcPublicCloudUnicornReinit_Ubuntu() {
         # unicorn[END]
         # crontab[START]
         # （1）supervisor
-        touch ${variCrontabUri}
-        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabUri}"; then
+        touch ${variCrontabEnviUri}
+        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabEnviUri}"; then
           # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
-          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabUri}"
+          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabEnviUri}"
         fi
         # 重置日誌
         # echo "" > /windows/runtime/supervisor.log
-        echo "${variEachCrontabTask}" >> "${variCrontabUri}"
+        echo "${variEachCrontabTask}" >> "${variCrontabEnviUri}"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudSclickArchived" "${variCrontabUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variCrontabUri}"
+          if grep -Fq "cloudSclickArchived" "${variCrontabEnviUri}"; then
+            sed -i '/cloudSclickArchived/d' "${variCrontabEnviUri}"
           fi
           # TODO:[臨時]廢棄清理[END]
-          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabUri}"; then
-            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabUri}"
+          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
+            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabEnviUri}"
           fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabUri}"
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabEnviUri}"
         fi
         # ----------
-        cat "${variCrontabUri}"
+        cat "${variCrontabEnviUri}"
         systemctl restart cron
         # crontab[END]
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
@@ -1701,6 +1961,16 @@ function funcPublicCloudUnicornMinutelyCrontab(){
   # ORDER BY「variEachUtc0Datehour」DESC[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
   rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
+  return 0
+}
+
+:<<'MARK'
+1更新omni
+2拉取cos（配置）
+MARK
+# auto scaling
+function funcPublicCloudUnicornAutoScaling(){
+  funcProtectedOmniPuller
   return 0
 }
 
