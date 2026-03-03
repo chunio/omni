@@ -213,7 +213,7 @@ function funcProtectedCloudSelector() {
     "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
     "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
     "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
-    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 UBUNTU --"
+    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 CENTOS --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -1125,7 +1125,10 @@ function funcPublicCloudUnicornReinit() {
   local variScpAble=1
   local variScpSyncOnce=0
   local variScpReceivePath="/tmp/"
+  local variLaunchTimeout=30
   # ----------
+  local variHttpPort=0
+  local variGrpcPort=0
   case ${variModuleName} in
     "adx")
         variHttpPort=8001
@@ -1191,7 +1194,7 @@ function funcPublicCloudUnicornReinit() {
     fi
     variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
     variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -1200,7 +1203,7 @@ function funcPublicCloudUnicornReinit() {
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
       fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
         # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
         export DEBIAN_FRONTEND=noninteractive
         # --------------------------------------------------
@@ -1210,7 +1213,8 @@ function funcPublicCloudUnicornReinit() {
         touch ~/.ssh/config
         sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        chmod 600 ~/.ssh/* && chown \$(whoami):\$(whoami) ~/.ssh/*
+        # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+        chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
         # （1）ssh init[END]
         # --------------------------------------------------
         # （2）omni.system init[START]
@@ -1224,8 +1228,7 @@ function funcPublicCloudUnicornReinit() {
           rm -rf /windows/code/backend/chunio/omni
           mkdir -p /windows/code/backend/chunio
           cd /windows/code/backend/chunio
-          git clone https://github.com/chunio/omni.git
-          cd ./omni
+          git clone https://github.com/chunio/omni.git && cd ./omni
         fi
         echo "[ omni ] git fetch origin ..."
         git fetch origin
@@ -1265,20 +1268,28 @@ function funcPublicCloudUnicornReinit() {
         /usr/bin/cp -rf ${variScpReceivePath}${variBinName} ./bin/${variBinName}
         echo "" > /windows/runtime/${variBinName}.command
         nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
-        (
-          while true; do
-            if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-              break
-            elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              break
-            fi
-            sleep 1
-          done
-        ) # &
+        # ----------
+        variEachLaunchDuration=0
+        while true; do
+          if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
+            cat /windows/runtime/${variBinName}.log
+            echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+            echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+            # TODO:進去此分支才統計「執行狀態」
+            break
+          elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
+            cat /windows/runtime/${variBinName}.log
+            exit 1
+          elif [[ \\\${variEachLaunchDuration} -ge ${variLaunchTimeout} ]]; then
+            # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+            echo "[ failed ] ${variBinName} launch exceeded ${variLaunchTimeout} second"
+            cat /windows/runtime/${variBinName}.log
+            exit 1
+          fi
+          variEachLaunchDuration=\\\$((variEachLaunchDuration + 1))
+          sleep 1
+        done
+        # ----------
         # unicorn[END]
         # crontab[START]
         # （1）supervisor
@@ -1305,402 +1316,6 @@ function funcPublicCloudUnicornReinit() {
         # ----------
         cat "${variEachCrontabEnviUri}"
         ${variEachCrontabReloadCommand}
-        # crontab[END]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
-        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-        #（3）slave main[END]
-        # --------------------------------------------------
-SLAVEEOF
-JUMPEREOF
-    # 統計「執行狀態」/3[START]
-    if [[ $? -eq 0 ]]; then
-      variSucceededCounter=$((variSucceededCounter + 1))
-    else
-      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
-    fi
-    # 統計「執行狀態」/3[END]
-  done
-  # 統計「執行狀態」/4[START]
-  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
-  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
-  # 統計「執行狀態」/4[END]
-  return 0
-}
-
-# TODO:ubuntu/error[START]
-# enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : 25
-# index : 25
-# input「confirm」to continue : confirm
-# 13e286f4449f9cfe3bc592306e97c975  /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/unicorn_dsp
-# Warning: Permanently added '119.28.55.124' (ECDSA) to the list of known hosts.
-# unicorn_dsp -> 100% 41MB 5.1MB/s 00:08
-# Pseudo-terminal will not be allocated because stdin is not a terminal.
-# ====================================================================================================
-# >> [ SLAVE ] 25 DSP BID 19 PADDLEWAVER SINGAPORE 43.156.8.253 22 ubuntu ...
-# ====================================================================================================
-# Warning: Permanently added '43.156.8.253' (ECDSA) to the list of known hosts.
-# Permission denied, please try again.
-# Permission denied, please try again.
-# Permission denied (publickey,password).
-# lost connection
-# Permission denied, please try again.
-# Permission denied, please try again.
-# Permission denied (publickey,password).
-# lost connection
-# Pseudo-terminal will not be allocated because stdin is not a terminal.
-# Permission denied, please try again.
-# Permission denied, please try again.
-# Permission denied (publickey,password).
-# // omni.haohaiyou cloudUnicornReinit ...
-# TODO:ubuntu/error[END]
-function funcPublicCloudUnicornReinit_Centos() {
-  local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variModuleName=$1
-  variBranchName=$2
-  variEnvi="PRODUCTION"
-  variBinName="unicorn_${variModuleName}"
-  variScpAble=1
-  variScpSyncOnce=0
-  # slave variable[START]
-  # systemctl reload crond
-  variCrontabEnviUri="/var/spool/cron/root"
-  # slave variable[END]
-  case ${variModuleName} in
-    "adx")
-        variHttpPort=8001
-        variGrpcPort=9001
-        ;;
-    "dsp")
-        variHttpPort=8000
-        variGrpcPort=9000
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    # 檢測目標節點環節是否支持當前模塊[START]
-    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
-    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
-      echo "invalid selection : [ ${variEachValue} ]"
-      continue
-    fi
-    # 檢測目標節點環節是否支持當前模塊[END]
-    rm -rf /root/.ssh/known_hosts
-    if [[ ${variScpAble} -eq 1 && ${variScpSyncOnce} -eq 0 ]]; then
-      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/
-      variScpSyncOnce=1
-    fi
-    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
-    variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-      rm -rf /root/.ssh/known_hosts
-      if [[ ${variScpAble} -eq 1 ]]; then
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no /${variBinName} root@${variEachIp}:/
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
-      fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
-        # --------------------------------------------------
-        # （1）ssh init[START]
-        tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-        echo "StrictHostKeyChecking no" > ~/.ssh/config
-        chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-        # （1）ssh init[END]
-        # --------------------------------------------------
-        # （2）omni.system init[START]
-        if ! command -v git &> /dev/null; then
-            yum install -y git
-        fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni" ]; then
-          cd /windows/code/backend/chunio/omni
-        else
-          mkdir -p /windows/code/backend/chunio
-          cd /windows/code/backend/chunio
-          git clone https://github.com/chunio/omni.git
-          cd ./omni
-        fi
-        echo "[ omni ] git fetch origin ..."
-        git fetch origin
-        echo "[ omni ] git fetch origin finished"
-        echo "[ omni ] git reset --hard origin/main ..."
-        git reset --hard origin/main
-        echo "[ omni ] git reset --hard origin/main finished"
-        chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-        #（2）omni.system init[END]
-        # --------------------------------------------------
-        #（3）slave main[START]
-        ulimit -n 655360
-        docker rm -f unicorn 2> /dev/null
-        if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn" ]; then
-          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-          # ----------
-          echo "[ unicorn ] git fetch origin ..."
-          git fetch origin
-          echo "[ unicorn ] git fetch origin finished"
-          # ----------
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
-          git reset --hard origin/${variBranchName}
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-          # ----------
-        else
-          mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-          git clone git@github.com:chunio/unicorn.git && cd unicorn
-          git checkout ${variBranchName}
-        fi
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-        # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
-        mkdir -p ./bin && chmod 777 -R .
-        /usr/bin/cp -rf /${variBinName} ./bin/${variBinName} 
-        echo "" > /windows/runtime/${variBinName}.command
-        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
-        (
-          while true; do
-            if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-              break
-            elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              break
-            fi
-            sleep 1
-          done
-        ) # &
-        # unicorn[END]
-        # crontab[START]
-        # （1）supervisor
-        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabEnviUri}"; then
-          # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
-          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabEnviUri}"
-        fi
-        # 重置日誌
-        # echo "" > /windows/runtime/supervisor.log
-        echo "${variEachCrontabTask}" >> "${variCrontabEnviUri}"
-        # （2）僅使用於「variEachService=SINGLETON」
-        if [[ ${variEachService} == "SINGLETON" ]]; then
-          # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudSclickArchived" "${variCrontabEnviUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variCrontabEnviUri}"
-          fi
-          # TODO:[臨時]廢棄清理[END]
-          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
-            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabEnviUri}"
-          fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabEnviUri}"
-        fi
-        # ----------
-        cat "${variCrontabEnviUri}"
-        systemctl reload crond
-        # crontab[END]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
-        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-        #（3）slave main[END]
-        # --------------------------------------------------
-SLAVEEOF
-JUMPEREOF
-  done
-  return 0
-}
-
-function funcPublicCloudUnicornReinit_Ubuntu() {
-  local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variModuleName=$1
-  local variBranchName=$2
-  local variEnvi="PRODUCTION"
-  local variBinName="unicorn_${variModuleName}"
-  local variScpAble=1
-  local variScpSyncOnce=0
-  # slave variable[START]
-  # systemctl restart cron
-  local variCrontabEnviUri="/var/spool/cron/crontabs/root"
-  # slave variable[END]
-  # 統計「執行狀態」/1[START]
-  local varSelectedCounter=0
-  local variSucceededCounter=0
-  local variFailedAbstract=""
-  # 統計「執行狀態」/1[END]
-  case ${variModuleName} in
-    "adx")
-        variHttpPort=8001
-        variGrpcPort=9001
-        ;;
-    "dsp")
-        variHttpPort=8000
-        variGrpcPort=9000
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    # 檢測目標節點環節是否支持當前模塊[START]
-    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
-    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
-      echo "invalid selection : [ ${variEachValue} ]"
-      continue
-    fi
-    # 檢測目標節點環節是否支持當前模塊[END]
-    # 統計「執行狀態」/2[START]
-    varSelectedCounter=$((varSelectedCounter + 1))
-    # 統計「執行狀態」/2[END]
-    rm -rf ~/.ssh/known_hosts
-    if [[ ${variScpAble} -eq 1 && ${variScpSyncOnce} -eq 0 ]]; then
-      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:/tmp/
-      variScpSyncOnce=1
-    fi
-    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
-    variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-      rm -rf ~/.ssh/known_hosts
-      if [[ ${variScpAble} -eq 1 ]]; then
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no /tmp/${variBinName} ${variJumperAccount}@${variEachIp}:/tmp/
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no /tmp/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variEachIp}:/tmp/
-      fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t ${variJumperAccount}@${variEachIp} "sudo bash -s" <<SLAVEEOF
-        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
-        export DEBIAN_FRONTEND=noninteractive
-        # --------------------------------------------------
-        # （1）ssh init[START]
-        tar -xzvf /tmp/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-        touch ~/.ssh/config
-        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-        # （1）ssh init[END]
-        # --------------------------------------------------
-        # （2）omni.system init[START]
-        if ! command -v git &> /dev/null; then
-          apt-get update && apt-get install -y git
-        fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-          cd /windows/code/backend/chunio/omni
-        else
-          rm -rf /windows/code/backend/chunio/omni
-          mkdir -p /windows/code/backend/chunio
-          cd /windows/code/backend/chunio
-          git clone https://github.com/chunio/omni.git
-          cd ./omni
-        fi
-        echo "[ omni ] git fetch origin ..."
-        git fetch origin
-        echo "[ omni ] git fetch origin finished"
-        echo "[ omni ] git reset --hard origin/main ..."
-        git reset --hard origin/main
-        echo "[ omni ] git reset --hard origin/main finished"
-        chmod 777 -R . && ./init/system/system.sh init
-        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
-        [ -f /etc/bashrc ] && source /etc/bashrc
-        #（2）omni.system init[END]
-        # --------------------------------------------------
-        #（3）slave main[START]
-        ulimit -n 655360
-        docker rm -f unicorn 2> /dev/null
-        if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn/.git" ]; then
-          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-          # ----------
-          echo "[ unicorn ] git fetch origin ..."
-          git fetch origin
-          echo "[ unicorn ] git fetch origin finished"
-          # ----------
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
-          git reset --hard origin/${variBranchName}
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-          # ----------
-        else
-          rm -rf /windows/code/backend/haohaiyou/gopath/src/unicorn
-          mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-          git clone git@github.com:chunio/unicorn.git && cd unicorn
-          git checkout ${variBranchName}
-        fi
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-        # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
-        mkdir -p ./bin && chmod 777 -R .
-        /usr/bin/cp -rf /tmp/${variBinName} ./bin/${variBinName}
-        echo "" > /windows/runtime/${variBinName}.command
-        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
-        (
-          while true; do
-            if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-              echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-              break
-            elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-              cat /windows/runtime/${variBinName}.log
-              break
-            fi
-            sleep 1
-          done
-        ) # &
-        # unicorn[END]
-        # crontab[START]
-        # （1）supervisor
-        touch ${variCrontabEnviUri}
-        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variCrontabEnviUri}"; then
-          # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
-          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variCrontabEnviUri}"
-        fi
-        # 重置日誌
-        # echo "" > /windows/runtime/supervisor.log
-        echo "${variEachCrontabTask}" >> "${variCrontabEnviUri}"
-        # （2）僅使用於「variEachService=SINGLETON」
-        if [[ ${variEachService} == "SINGLETON" ]]; then
-          # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudSclickArchived" "${variCrontabEnviUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variCrontabEnviUri}"
-          fi
-          # TODO:[臨時]廢棄清理[END]
-          if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
-            sed -i '/cloudUnicornMinutelyCrontab/d' "${variCrontabEnviUri}"
-          fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variCrontabEnviUri}"
-        fi
-        # ----------
-        cat "${variCrontabEnviUri}"
-        systemctl restart cron
         # crontab[END]
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
         md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
