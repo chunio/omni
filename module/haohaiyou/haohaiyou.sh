@@ -1114,6 +1114,7 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+# 兼容：centos && ubuntu
 function funcPublicCloudUnicornReinit() {
   local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
@@ -1193,7 +1194,7 @@ function funcPublicCloudUnicornReinit() {
       variScpSyncOnce=1
     fi
     variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
-    variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper}"
+    # variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1"
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
@@ -1292,15 +1293,13 @@ function funcPublicCloudUnicornReinit() {
         # ----------
         # unicorn[END]
         # crontab[START]
-        # （1）supervisor
         touch ${variEachCrontabEnviUri}
+        # （1）supervisor
         if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variEachCrontabEnviUri}"; then
           # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
           sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variEachCrontabEnviUri}"
         fi
-        # 重置日誌
-        # echo "" > /windows/runtime/supervisor.log
-        echo "${variEachCrontabTask}" >> "${variEachCrontabEnviUri}"
+        echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1" >> "${variEachCrontabEnviUri}"
         # （2）僅使用於「variEachService=SINGLETON」
         if [[ ${variEachService} == "SINGLETON" ]]; then
           # TODO:[臨時]廢棄清理[START]
@@ -1311,7 +1310,7 @@ function funcPublicCloudUnicornReinit() {
           if grep -Fq "cloudUnicornMinutelyCrontab" "${variEachCrontabEnviUri}"; then
             sed -i '/cloudUnicornMinutelyCrontab/d' "${variEachCrontabEnviUri}"
           fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab" >> "${variEachCrontabEnviUri}"
+          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variEachCrontabEnviUri}"
         fi
         # ----------
         cat "${variEachCrontabEnviUri}"
