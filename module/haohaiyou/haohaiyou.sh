@@ -213,7 +213,6 @@ function funcProtectedCloudSelector() {
     "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
     "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
     "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
-    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 CENTOS --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -1334,6 +1333,10 @@ JUMPEREOF
   echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
   [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
   # 統計「執行狀態」/4[END]
+  return 0
+}
+
+function funcPublicCloudUnicornReinit_AutoScaling(){
   return 0
 }
 
