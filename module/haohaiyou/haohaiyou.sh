@@ -720,6 +720,8 @@ function funcPublicCloudJumperReinit() {
   scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:/tmp/
   ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
     # --------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    # --------------------------------------------------
     # ssh[START]
     tar -xzvf /tmp/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
     /usr/bin/mv ~/.ssh/ssh/* ~/.ssh
@@ -2104,7 +2106,7 @@ function funcPublicCloudTccliReinit(){
         return 1
       fi
     fi
-    pip3 install tccli -q
+    pip3 install tccli --break-system-packages -q
   fi
   mkdir -p ${HOME}/.tccli
   cat > ${HOME}/.tccli/default.credential <<EOF
