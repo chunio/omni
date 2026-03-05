@@ -213,6 +213,7 @@ function funcProtectedCloudSelector() {
     "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
     "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
     "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
+    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 CENTOS --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -1114,7 +1115,7 @@ DOCKERCOMPOSEYML
 }
 
 # 兼容：centos && ubuntu
-function funcPublicCloudUnicornReinit() {
+function funcPublicCloudUnicornReinit_Official() {
   local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variModuleName=$1
@@ -1336,8 +1337,400 @@ JUMPEREOF
   return 0
 }
 
-function funcPublicCloudUnicornReinit_AutoScaling(){
+# 兼容：centos && ubuntu
+function funcPublicCloudUnicornReinit_Static() {
+  local variParameterDescMulti=("node module : dsp，adx" "github branch : main，feature/.../...")
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variModuleName=$1
+  local variBranchName=$2
+  local variEnvi="PRODUCTION"
+  local variBinName="unicorn_${variModuleName}"
+  # ----------
+  local variScpAble=1
+  local variScpSyncOnce=0
+  local variScpReceivePath="/tmp/"
+  local variLaunchTimeout=30
+  # ----------
+  local variHttpPort=0
+  local variGrpcPort=0
+  case ${variModuleName} in
+    "adx")
+        variHttpPort=8001
+        variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    *)
+        return 1
+        ;;
+  esac
+  funcProtectedCloudSelector
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  # 統計「執行狀態」/1[START]
+  local varSelectedCounter=0
+  local variSucceededCounter=0
+  local variFailedAbstract=""
+  # 統計「執行狀態」/1[END]
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    # 檢測目標節點環節是否支持當前模塊[START]
+    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
+    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
+      echo "invalid selection : [ ${variEachValue} ]"
+      continue
+    fi
+    # 檢測目標節點環節是否支持當前模塊[END]
+    # 統計「執行狀態」/2[START]
+    varSelectedCounter=$((varSelectedCounter + 1))
+    # 統計「執行狀態」/2[END]
+    # 係統兼容[START]
+    local variEachSlaveAccount="root"
+    local variEachSudoCommand=""
+    local variEachCrontabEnviUri="/var/spool/cron/root"
+    local variEachCrontabReloadCommand="systemctl reload crond"
+    local variEachGitInstallCommand="yum install -y git"
+    if [[ "${variEachOs}" == "UBUNTU" ]]; then
+      variEachSlaveAccount="ubuntu"
+      variEachSudoCommand="sudo bash -s"
+      variEachCrontabEnviUri="/var/spool/cron/crontabs/root"
+      variEachCrontabReloadCommand="systemctl restart cron"
+      variEachGitInstallCommand="apt-get update && apt-get install -y git"
+    fi
+    # 係統兼容[END]
+    rm -rf ~/.ssh/known_hosts
+    if [[ ${variScpAble} -eq 1 && ${variScpSyncOnce} -eq 0 ]]; then
+      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpReceivePath}
+      variScpSyncOnce=1
+    fi
+    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
+    # variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1"
+    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf ~/.ssh/known_hosts
+      if [[ ${variScpAble} -eq 1 ]]; then
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpReceivePath}omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpReceivePath}
+      fi
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
+        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
+        export DEBIAN_FRONTEND=noninteractive
+        # --------------------------------------------------
+        # （一）ssh init[START]
+        tar -xzvf ${variScpReceivePath}omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        touch ~/.ssh/config
+        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+        chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
+        # （一）ssh init[END]
+        # --------------------------------------------------
+        # （二）omni.system init[START]
+        if ! command -v git &> /dev/null; then
+          ${variEachGitInstallCommand}
+        fi
+        mkdir -p /windows/runtime
+        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
+          cd /windows/code/backend/chunio/omni
+        else
+          rm -rf /windows/code/backend/chunio/omni
+          mkdir -p /windows/code/backend/chunio
+          cd /windows/code/backend/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni
+        fi
+        # ----------
+        echo "[ omni ] git fetch origin ..."
+        git fetch origin
+        echo "[ omni ] git fetch origin finished"
+        # ----------
+        echo "[ omni ] git reset --hard origin/main ..."
+        git reset --hard origin/main
+        echo "[ omni ] git reset --hard origin/main finished"
+        # ----------
+        chmod 777 -R .
+        ./init/system/system.sh init
+        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+        [ -f /etc/bashrc ] && source /etc/bashrc
+        # （二）omni.system init[END]
+        # --------------------------------------------------
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranchName}
+        # --------------------------------------------------
+SLAVEEOF
+JUMPEREOF
+    # 統計「執行狀態」/3[START]
+    if [[ $? -eq 0 ]]; then
+      variSucceededCounter=$((variSucceededCounter + 1))
+    else
+      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
+    fi
+    # 統計「執行狀態」/3[END]
+  done
+  # 統計「執行狀態」/4[START]
+  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
+  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
+  # 統計「執行狀態」/4[END]
   return 0
+}
+
+function funcPublicCloudUnicornReinit_Common() {
+  local variParameterDescMulti=(
+    "node module : dsp，adx"
+    "node service : BID，NOTICE，SINGLETON"
+    "node label : 01，02，..."
+    "node domain : PADDLEWAVER，YONE"
+    "node region : SINGAPORE，USEAST"
+    "github branch : main，feature/.../..."
+  )
+  funcProtectedCheckRequiredParameter 6 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  # ----------
+  local variNodeModule=$(echo "$1" | tr 'A-Z' 'a-z') # 確保小寫
+  local variNodeService=$2
+  local variNodeLabel=$3
+  local variNodeDomain=$4
+  local variNodeRegion=$5
+  local variGithubBranch=$6
+  # ----------
+  local variNodeEnvi="PRODUCTION"
+  local variScpReceivePath="/tmp/"
+  local variLaunchTimeout=30
+  local variLaunchDuration=0
+  # ----------
+  local variBinName="unicorn_${variNodeModule}"
+  local variHttpPort=0
+  local variGrpcPort=0
+  case ${variNodeModule} in
+    "adx")
+        variHttpPort=8001
+        variGrpcPort=9001
+        ;;
+    "dsp")
+        variHttpPort=8000
+        variGrpcPort=9000
+        ;;
+    *)
+        return 1
+        ;;
+  esac
+  # 自動兼容係統類型[START]
+  # 僅限：centos && ubuntu
+  local variOperatingSystem=""
+  if [ -f /etc/os-release ]; then
+    variOperatingSystem=$(. /etc/os-release && echo "${ID}")
+  fi
+  local variCrontabEnviUri="/var/spool/cron/root"
+  local variCrontabReloadCommand="systemctl reload crond"
+  local variGitInstallCommand="yum install -y git"
+  case "${variOperatingSystem}" in
+    "ubuntu")
+      variCrontabEnviUri="/var/spool/cron/crontabs/root"
+      variCrontabReloadCommand="systemctl restart cron"
+      variGitInstallCommand="apt-get update && apt-get install -y git"
+      ;;
+  esac
+  # 自動兼容係統類型[END]
+  # --------------------------------------------------
+  # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
+  export DEBIAN_FRONTEND=noninteractive
+  # --------------------------------------------------
+  # （一）unicorn[START]
+  ulimit -n 655360
+  docker rm -f unicorn 2> /dev/null
+  if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn/.git" ]; then
+    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+    # ----------
+    echo "[ unicorn ] git fetch origin ..."
+    git fetch origin
+    echo "[ unicorn ] git fetch origin finished"
+    # ----------
+    echo "[ unicorn ] git reset --hard origin/${variGithubBranch} ..."
+    git reset --hard origin/${variGithubBranch}
+    echo "[ unicorn ] git reset --hard origin/${variGithubBranch} finished"
+    # ----------
+  else
+    rm -rf /windows/code/backend/haohaiyou/gopath/src/unicorn
+    mkdir -p /windows/code/backend/haohaiyou/gopath/src
+    cd /windows/code/backend/haohaiyou/gopath/src
+    git clone git@github.com:chunio/unicorn.git
+    cd unicorn
+    git checkout ${variGithubBranch}
+  fi
+  /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+  /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+  mkdir -p ./bin
+  chmod 777 -R .
+  /usr/bin/cp -rf ${variScpReceivePath}${variBinName} ./bin/${variBinName}
+  echo "" > /windows/runtime/${variBinName}.command
+  nohup ./bin/${variBinName} -ENVI ${variNodeEnvi} -SERVICE ${variNodeService} -LABEL ${variNodeLabel} -DOMAIN ${variNodeDomain} -REGION ${variNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &
+  # ----------
+  while true; do
+    if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
+      cat /windows/runtime/${variBinName}.log
+      echo "nohup ./bin/${variBinName} -ENVI ${variNodeEnvi} -SERVICE ${variNodeService} -LABEL ${variNodeLabel} -DOMAIN ${variNodeDomain} -REGION ${variNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
+      echo "nohup ./bin/${variBinName} -ENVI ${variNodeEnvi} -SERVICE ${variNodeService} -LABEL ${variNodeLabel} -DOMAIN ${variNodeDomain} -REGION ${variNodeRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+      # TODO:進去此分支才統計「執行狀態」
+      break
+    elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
+      cat /windows/runtime/${variBinName}.log
+      exit 1
+    elif [[ ${variLaunchDuration} -ge ${variLaunchTimeout} ]]; then
+      # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+      echo "[ failed ] ${variBinName} launch exceeded ${variLaunchTimeout} second"
+      cat /windows/runtime/${variBinName}.log
+      exit 1
+    fi
+    variLaunchDuration=$((variLaunchDuration + 1))
+    sleep 1
+  done
+  # ----------
+  # （一）unicorn[END]
+  # --------------------------------------------------
+  # （二）crontab[START]
+  touch ${variCrontabEnviUri}
+  # （1）supervisor/異常重啟[START]
+  local variParameter=$(echo "${variNodeDomain}/${variNodeModule}/${variNodeService}/${variNodeRegion}/${variNodeLabel}" | tr 'a-z' 'A-Z')
+  if grep -Fq "cloudUnicornSupervisor ${variParameter}" "${variCrontabEnviUri}"; then
+    # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
+    sed -i "\#cloudUnicornSupervisor ${variParameter}#d" "${variCrontabEnviUri}"
+  fi
+  echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+  # （1）supervisor/異常重啟[END]
+  # （2）僅限「variNodeService=SINGLETON」[START]
+  if [[ ${variNodeService} == "SINGLETON" ]]; then
+    if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
+      sed -i "/cloudUnicornMinutelyCrontab/d" "${variCrontabEnviUri}"
+    fi
+    echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+  fi
+  # （2）僅限「variNodeService=SINGLETON」[END]
+  cat "${variCrontabEnviUri}"
+  ${variCrontabReloadCommand}
+  # （二）crontab[END]
+  # --------------------------------------------------
+  # （三）host[START]
+  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+  # （三）host[END]
+  # --------------------------------------------------
+  md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+  # --------------------------------------------------
+  return 0
+}
+
+function funcPublicCloudUnicornReinit_Dynamic() {
+  local variParameterDescMulti=(
+    "module : dsp，adx"
+    "domain : PADDLEWAVER，YONE"
+    "region : SINGAPORE，USEAST"
+  )
+  funcProtectedCheckRequiredParameter 3 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variModuleName=$1
+  local variDomain=$2
+  local variRegion=$3
+  local variEnvi="PRODUCTION"
+  local variBinName="unicorn_${variModuleName}"
+  local variLaunchTimeout=30
+  local variBinSourcePath="/tmp/"
+  # ----------
+  local variCosBucket="cos://common-1309058634"
+  local variCosPrefix="release/${variModuleName}/${variDomain}/${variRegion}"
+  # ----------
+  case ${variModuleName} in
+    "adx"|"dsp") ;;
+    *) echo "[FATAL] invalid module: ${variModuleName}"; return 1 ;;
+  esac
+  # --------------------------------------------------
+  # （1）從COS拉取配置和二進制[START]
+  echo "[AutoScaling] pulling config from COS: ${variCosPrefix} ..."
+  coscli cp ${variCosBucket}/${variCosPrefix}/github.branch /tmp/github.branch || { echo "[FATAL] failed to pull github.branch"; return 1; }
+  local variBranchName=$(cat /tmp/github.branch | tr -d '[:space:]')
+  echo "[AutoScaling] branch: ${variBranchName}"
+  coscli cp ${variCosBucket}/${variCosPrefix}/service /tmp/service || { echo "[FATAL] failed to pull service"; return 1; }
+  local variService=$(cat /tmp/service | tr -d '[:space:]')
+  echo "[AutoScaling] service: ${variService}"
+  echo "[AutoScaling] pulling binary: ${variBinName} ..."
+  coscli cp ${variCosBucket}/${variCosPrefix}/${variBinName} ${variBinSourcePath}${variBinName} || { echo "[FATAL] failed to pull ${variBinName}"; return 1; }
+  chmod +x ${variBinSourcePath}${variBinName}
+  md5sum ${variBinSourcePath}${variBinName}
+  # （1）從COS拉取配置和二進制[END]
+  # --------------------------------------------------
+  # （2）LABEL：使用內網IP（VPC內唯一，純本地獲取）[START]
+  # 優先：hostname -I（純本地，無需網絡）
+  # 備選：元數據接口（需本地網絡）
+  local variPrivateIp=$(hostname -I 2>/dev/null | awk '{print $1}')
+  if [[ -z "${variPrivateIp}" ]]; then
+    variPrivateIp=$(curl -s --max-time 3 http://metadata.tencentyun.com/latest/meta-data/local-ipv4)
+  fi
+  if [[ -z "${variPrivateIp}" ]]; then
+    echo "[FATAL] failed to get private ip"
+    return 1
+  fi
+  # 將「10.0.1.23」轉換為「10_0_1_23」作為LABEL
+  local variLabel=$(echo "${variPrivateIp}" | tr '.' '_')
+  echo "[AutoScaling] LABEL: ${variLabel} (private-ip: ${variPrivateIp})"
+  # （2）LABEL[END]
+  # --------------------------------------------------
+  # （3）omni.system init[START]
+  export DEBIAN_FRONTEND=noninteractive
+  local variOsType=""
+  if [ -f /etc/os-release ]; then
+    variOsType=$(. /etc/os-release && echo "${ID}")
+  fi
+  if ! command -v git &> /dev/null; then
+    case "${variOsType}" in
+      "ubuntu"|"debian")
+        apt-get update && apt-get install -y git
+        ;;
+      *)
+        yum install -y git
+        ;;
+    esac
+  fi
+  mkdir -p /windows/runtime
+  if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
+    cd /windows/code/backend/chunio/omni
+  else
+    rm -rf /windows/code/backend/chunio/omni
+    mkdir -p /windows/code/backend/chunio
+    cd /windows/code/backend/chunio
+    git clone https://github.com/chunio/omni.git && cd ./omni
+  fi
+  echo "[ omni ] git fetch origin ..."
+  git fetch origin
+  echo "[ omni ] git fetch origin finished"
+  echo "[ omni ] git reset --hard origin/main ..."
+  git reset --hard origin/main
+  echo "[ omni ] git reset --hard origin/main finished"
+  chmod 777 -R . && ./init/system/system.sh init
+  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+  [ -f /etc/bashrc ] && source /etc/bashrc
+  # （3）omni.system init[END]
+  # --------------------------------------------------
+  # （4）調用共用部署邏輯[START]
+  funcProtectedCicdMain ${variModuleName} ${variBranchName} ${variEnvi} ${variService} ${variLabel} ${variDomain} ${variRegion} ${variBinSourcePath} ${variLaunchTimeout}
+  local variResult=$?
+  if [[ ${variResult} -eq 0 ]]; then
+    echo "[AutoScaling] deploy succeeded: ${variDomain}/${variModuleName}/${variService}/${variRegion}/${variLabel}"
+  else
+    echo "[AutoScaling] deploy failed: ${variDomain}/${variModuleName}/${variService}/${variRegion}/${variLabel}"
+  fi
+  # （4）調用共用部署邏輯[END]
+  return ${variResult}
 }
 
 function funcPublicCloudUnicornCheck() {
