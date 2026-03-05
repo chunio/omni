@@ -718,9 +718,7 @@ function funcPublicCloudJumperReinit() {
   # 兼容：係統重裝[END]
   scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:/tmp/
   scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:/tmp/
-  ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} <<'JUMPEREOF'
-    # --------------------------------------------------
-    /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+  ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
     # --------------------------------------------------
     # ssh[START]
     tar -xzvf /tmp/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
@@ -780,6 +778,7 @@ function funcPublicCloudJumperReinit() {
     [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
     # omni.system init[END]
     # --------------------------------------------------
+    /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
 JUMPEREOF
@@ -2095,21 +2094,17 @@ function funcPublicCloudTccliReinit(){
   local variTencentAccountSecretId=$(funcProtectedPullEncryptEnvi "TENCENT_ACCOUNT_SECRET_ID")
   local variTencentAccountSecretKey=$(funcProtectedPullEncryptEnvi "TENCENT_ACCOUNT_SECRET_KEY")
   if ! command -v tccli &> /dev/null; then
-    if ! command -v pip3 &> /dev/null && ! command -v python3 &> /dev/null; then
+    if ! command -v pip3 &> /dev/null; then
       if command -v yum &> /dev/null; then
         yum install -y python3 python3-pip
-      elif command -v apt &> /dev/null; then
-        apt-get install -y python3 python3-pip
+      elif command -v apt-get &> /dev/null; then
+        apt-get update && apt-get install -y python3-pip
       else
-        echo "no package manager found, please install python3 manually"
+        echo "no package manager found, please install python3-pip manually"
         return 1
       fi
     fi
-    if command -v pip3 &> /dev/null; then
-      pip3 install tccli -q
-    else
-      python3 -m pip install tccli -q
-    fi
+    pip3 install tccli -q
   fi
   mkdir -p ${HOME}/.tccli
   cat > ${HOME}/.tccli/default.credential <<EOF
