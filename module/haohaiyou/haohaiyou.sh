@@ -711,14 +711,15 @@ function funcPublicCloudJumperReinit() {
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  local variScpPath="/tmp"
+  # 重啟保留（區別：/tmp重啟清空）
+  local variScpPath="/var/tmp"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   # 兼容：係統重裝[START]
   ssh-keygen -R ${variJumperIp} 2>/dev/null
   ssh-keygen -R "[${variJumperIp}]:${variJumperPort}" 2>/dev/null
   # 兼容：係統重裝[END]
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:${variScpPath}/
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:${variScpPath}/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:/
   ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
@@ -1405,7 +1406,7 @@ function funcPublicCloudPodReinit(){
   local variSlaveAccount="ubuntu"
   local variSlaveIp="43.130.156.239"
   local variSlavePort="22"
-  local variScpPath="/tmp"
+  local variScpPath="/var/tmp"
   ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variSlaveIp} ..."
@@ -1459,7 +1460,7 @@ function funcPublicCloudPodReinit(){
         [ -f /etc/bashrc ] && source /etc/bashrc
         # omni.system init[END]
         # --------------------------------------------------
-        /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
         # --------------------------------------------------
@@ -1487,7 +1488,7 @@ function funcPublicCloudUnicornReinit_Static() {
   local variAutoScalingStatus=1
   local variScpStatus=1
   local variScpOnce=0
-  local variScpPath="/tmp"
+  local variScpPath="/var/tmp"
   local variGoPath="/windows/code/backend/haohaiyou/gopath"
   local variBinName="unicorn_${variModule}"
   local variBinMd5=$(md5sum ${variGoPath}/src/unicorn/bin/${variBinName} | awk '{print $1}')
@@ -1608,7 +1609,7 @@ function funcPublicCloudUnicornReinit_Static() {
         ./init/system/system.sh init
         [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
         [ -f /etc/bashrc ] && source /etc/bashrc
-        /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
         # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
         # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
         # （四）omni.system init[END]
@@ -1687,7 +1688,7 @@ function funcPublicCloudUnicornReinit_Common() {
   local variBranch=$6
   # ----------
   local variEnvi="PRODUCTION"
-  local variScpPath="/tmp"
+  local variScpPath="/var/tmp"
   local variGoPath="/windows/code/backend/haohaiyou/gopath"
   local variLaunchTimeout=30
   local variLaunchDuration=0
@@ -1859,7 +1860,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z') # 確保小寫
   local variEnvi="PRODUCTION"
   local variService="BID"
-  local variScpPath="/tmp"
+  local variScpPath="/var/tmp"
   # --------------------------------------------------
   # envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
