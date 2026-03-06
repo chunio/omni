@@ -1791,11 +1791,21 @@ function funcPublicCloudUnicornReinit_Common() {
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（含：admin_cicd，zengweitao_yx044r26）
+ssh（include：admin_cicd，zengweitao_yx044r26）
 git install
 omni.system init
 omni.haohaiyou cloudCoscliReinit
 omni.haohaiyou cloudTccliReinit
+# ----------
+omni.haohaiyou cloudUnicornReinit_Dynamic DSP PADDLEWAVER SINGAPORE
+omni.haohaiyou cloudUnicornReinit_Dynamic DSP PADDLEWAVER USEAST
+omni.haohaiyou cloudUnicornReinit_Dynamic ADX PADDLEWAVER SINGAPORE
+omni.haohaiyou cloudUnicornReinit_Dynamic ADX PADDLEWAVER USEAST
+# ----------
+omni.haohaiyou cloudUnicornReinit_Dynamic DSP YONE SINGAPORE
+omni.haohaiyou cloudUnicornReinit_Dynamic DSP YONE USEAST
+omni.haohaiyou cloudUnicornReinit_Dynamic ADX YONE SINGAPORE
+omni.haohaiyou cloudUnicornReinit_Dynamic ADX YONE USEAST
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
