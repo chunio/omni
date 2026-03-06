@@ -1403,15 +1403,25 @@ function funcPublicCloudUnicornReinit_Static() {
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variAutoScalingStatus=1
   local variScpStatus=1
   local variScpOnce=0
-  local variScpPath="/tmp/"
+  local variScpPath="/tmp"
+  local variGoPath="/windows/code/backend/haohaiyou/gopath"
   local variBinName="unicorn_${variModule}"
+  local variBinMd5=$(md5sum ${variGoPath}/src/unicorn/bin/${variBinName} | awk '{print $1}')
   # 統計「執行狀態」/1[START]
   local varSelectedCounter=0
   local variSucceededCounter=0
   local variFailedAbstract=""
   # 統計「執行狀態」/1[END]
+  # 彈性伸縮/1[START]
+  if [ ${variAutoScalingStatus} -eq 1 ]; then
+    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos
+    mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos
+    /usr/bin/cp -rf ${variGoPath}/src/unicorn/bin/${variBinName} ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variBinName}
+  fi
+  # 彈性伸縮/1[END]
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
@@ -1431,6 +1441,12 @@ function funcPublicCloudUnicornReinit_Static() {
       continue
     fi
     # 檢測目標節點環節是否支持當前模塊[END]
+    # 彈性伸縮/2[START]
+    if [ ${variAutoScalingStatus} -eq 1 ]; then
+      variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
+      echo "${variModuleUpper} ${variEachDomain} ${variEachRegion} ${variBinMd5}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variModuleUpper}_${variEachDomain}_${variEachRegion}.envi"
+    fi
+    # 彈性伸縮/2[END]
     # 統計「執行狀態」/2[START]
     varSelectedCounter=$((varSelectedCounter + 1))
     # 統計「執行狀態」/2[END]
@@ -1446,8 +1462,8 @@ function funcPublicCloudUnicornReinit_Static() {
     # 自動兼容係統類型[END]
     rm -rf ~/.ssh/known_hosts
     if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
-      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}
+      md5sum ${variGoPath}/src/unicorn/bin/${variBinName}
+      scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${variGoPath}/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}/
       variScpOnce=1
     fi
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
@@ -1456,8 +1472,9 @@ function funcPublicCloudUnicornReinit_Static() {
       echo "===================================================================================================="
       rm -rf ~/.ssh/known_hosts
       if [[ ${variScpStatus} -eq 1 ]]; then
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpPath}
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
+        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
       fi
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
         # --------------------------------------------------
@@ -1466,17 +1483,24 @@ function funcPublicCloudUnicornReinit_Static() {
         export DEBIAN_FRONTEND=noninteractive
         # （一）envi[END]
         # --------------------------------------------------
-        # （二）ssh init[START]
-        tar -xzvf ${variScpPath}omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        # （二）資源校驗[START]
+        if [[ "\\\$(md5sum ${variScpPath}/${variBinName} | awk '{print \\\$1}')" != "${variBinMd5}" ]]; then
+          echo "[ FATAL ] ${variBinMd5} md5 mismatch"
+          exit 1
+        fi
+        # （二）資源校驗[END]
+        # --------------------------------------------------
+        # （三）ssh init[START]
+        tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         touch ~/.ssh/config
         sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
         chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # （二）ssh init[END]
+        # （三）ssh init[END]
         # --------------------------------------------------
-        # （三）omni.system init[START]
+        # （四）omni.system init[START]
         if ! command -v git &> /dev/null; then
           ${variEachGitInstallCommand}
         fi
@@ -1503,23 +1527,36 @@ function funcPublicCloudUnicornReinit_Static() {
         ./init/system/system.sh init
         [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
         [ -f /etc/bashrc ] && source /etc/bashrc
-        # （三）omni.system init[END]
+        /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+        # （四）omni.system init[END]
         # --------------------------------------------------
-        # （四）common[START]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
-        # （四）common[END]
+        # （五）common[START]
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common "${variEachModule}" "${variEachService}" "${variEachLabel}" "${variEachDomain}" "${variEachRegion}" "${variBranch}"
+        # （五）common[END]
         # --------------------------------------------------
         exit $?
 SLAVEEOF
-JUMPEREOF
+    echo "SLAVEEOF end ......................................"
     # 統計「執行狀態」/3[START]
     if [[ $? -eq 0 ]]; then
+      echo "SLAVEEOF if come in ......................................"
       variSucceededCounter=$((variSucceededCounter + 1))
+      # 統計「執行狀態」/4[END]
     else
+      echo "SLAVEEOF else come in ......................................"
       variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
     fi
     # 統計「執行狀態」/3[END]
+JUMPEREOF
   done
+  # 彈性伸縮/3[START]
+  if [ ${variAutoScalingStatus} -eq 1 ]; then
+    # TODO:{將配置/可執行文件}上傳至COS
+    echo "1"
+  fi
+  # 彈性伸縮/3[START]
   # 統計「執行狀態」/4[START]
   echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
   [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
@@ -1546,7 +1583,8 @@ function funcPublicCloudUnicornReinit_Common() {
   local variBranch=$6
   # ----------
   local variEnvi="PRODUCTION"
-  local variScpPath="/tmp/"
+  local variScpPath="/tmp"
+  local variGoPath="/windows/code/backend/haohaiyou/gopath"
   local variLaunchTimeout=30
   local variLaunchDuration=0
   # ----------
@@ -1588,8 +1626,8 @@ function funcPublicCloudUnicornReinit_Common() {
   # （二）unicorn[START]
   ulimit -n 655360
   docker rm -f unicorn 2> /dev/null
-  if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn/.git" ]; then
-    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
+  if [ -d "${variGoPath}/src/unicorn/.git" ]; then
+    cd ${variGoPath}/src/unicorn
     # ----------
     echo "[ unicorn ] git fetch origin ..."
     git fetch origin
@@ -1600,9 +1638,9 @@ function funcPublicCloudUnicornReinit_Common() {
     echo "[ unicorn ] git reset --hard origin/${variBranch} finished"
     # ----------
   else
-    rm -rf /windows/code/backend/haohaiyou/gopath/src/unicorn
-    mkdir -p /windows/code/backend/haohaiyou/gopath/src
-    cd /windows/code/backend/haohaiyou/gopath/src
+    rm -rf ${variGoPath}/src/unicorn
+    mkdir -p ${variGoPath}/src
+    cd ${variGoPath}/src
     git clone git@github.com:chunio/unicorn.git
     cd unicorn
     git checkout ${variBranch}
@@ -1611,7 +1649,7 @@ function funcPublicCloudUnicornReinit_Common() {
   /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
   mkdir -p ./bin
   chmod 777 -R .
-  /usr/bin/cp -rf ${variScpPath}${variBinName} ./bin/${variBinName}
+  /usr/bin/cp -rf ${variScpPath}/${variBinName} ./bin/${variBinName}
   echo "" > /windows/runtime/${variBinName}.command
   nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 &
   # ----------
@@ -1659,7 +1697,7 @@ function funcPublicCloudUnicornReinit_Common() {
   ${variCrontabReloadCommand}
   # （三）crontab[END]
   # --------------------------------------------------
-  md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
+  md5sum ${variGoPath}/src/unicorn/bin/${variBinName}
   return 0
 }
 
@@ -2106,7 +2144,8 @@ function funcPublicCloudTccliReinit(){
         return 1
       fi
     fi
-    pip3 install tccli --break-system-packages -q
+    # --break-system-packages：centos7.9不支持， ubuntu24.04則需要//待確認？
+    pip3 install tccli --break-system-packages -q 2>/dev/null || pip3 install tccli -q
   fi
   mkdir -p ${HOME}/.tccli
   cat > ${HOME}/.tccli/default.credential <<EOF
