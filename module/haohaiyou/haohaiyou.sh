@@ -1391,7 +1391,11 @@ JUMPEREOF
 
 :<<'MARK'
 [依賴]係統預裝：
-後台配置：ssh（含：admin_cicd，zengweitao_yx044r26）
+ssh（[backend]include：admin_cicd，zengweitao_yx044r26）
+git install
+omni.system init
+omni.haohaiyou cloudCoscliReinit
+omni.haohaiyou cloudTccliReinit
 MARK
 function funcPublicCloudPodReinit(){
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
@@ -1874,9 +1878,9 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variReturn=$?
   # common[END]
   if [[ ${variReturn} -eq 0 ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "auto scaling succeeded"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AutoScalingSucceeded"
   else
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "auto scaling failed"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AutoScalingFailed"
   fi
   return ${variReturn}
 }
