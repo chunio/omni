@@ -80,7 +80,7 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 
 # ##################################################
 # protected function[START]
-function funcProtectedOmniPuller(){
+function funcProtectedOmniReinit(){
   # git[START]
   if ! command -v git &> /dev/null; then
     local variOperatingSystem=""
@@ -1391,25 +1391,23 @@ JUMPEREOF
 
 :<<'MARK'
 [依賴]係統預裝：
-手動配置：ssh（含：admin_cicd，zengweitao_yx044r26）
+後台配置：ssh（含：admin_cicd，zengweitao_yx044r26）
 MARK
 function funcPublicCloudPodReinit(){
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   local variSlaveAccount="ubuntu"
-  local variIp="43.130.156.239"
-  local variPort="22"
+  local variSlaveIp="43.130.156.239"
+  local variSlavePort="22"
   local variScpPath="/tmp"
   ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
       echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo ">> [ SLAVE ] ${variSlaveIp} ..."
       echo "===================================================================================================="
       rm -rf ~/.ssh/known_hosts
-      if [[ ${variScpStatus} -eq 1 ]]; then
-        scp -P ${variPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variIp}:${variScpPath}/
-      fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variPort} -T ${variSlaveAccount}@${variIp} "sudo bash -s" <<SLAVEEOF
+      scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
+      ssh -o StrictHostKeyChecking=no -A -p ${variSlavePort} -T ${variSlaveAccount}@${variSlaveIp} "sudo bash -s" <<SLAVEEOF
         # --------------------------------------------------
         # （一）envi[START]
         # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
@@ -1449,6 +1447,7 @@ function funcPublicCloudPodReinit(){
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
         # --------------------------------------------------
+        history -c
 SLAVEEOF
 JUMPEREOF
   return 0
@@ -1799,6 +1798,25 @@ omni.haohaiyou cloudCoscliReinit
 omni.haohaiyou cloudTccliReinit
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
+  # --------------------------------------------------
+  # omni.system init[START]
+  mkdir -p /windows/runtime
+  cd /windows/code/backend/chunio/omni
+  # ----------
+  echo "[ omni ] git fetch origin ..."
+  git fetch origin
+  echo "[ omni ] git fetch origin finished"
+  # ----------
+  echo "[ omni ] git reset --hard origin/main ..."
+  git reset --hard origin/main
+  echo "[ omni ] git reset --hard origin/main finished"
+  # ----------
+  chmod 777 -R .
+  ./init/system/system.sh init
+  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+  [ -f /etc/bashrc ] && source /etc/bashrc
+  # omni.system init[END]
+  # --------------------------------------------------
   local variParameterDescMulti=(
     "module : DSP，ADX"
     "domain : PADDLEWAVER，YONE"
@@ -1817,15 +1835,13 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variService="BID"
   local variScpPath="/tmp"
   # --------------------------------------------------
-  # （一）envi[START]
+  # envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
   export DEBIAN_FRONTEND=noninteractive
-  # （1）${variLabel}[START]
+  # ----------
   local variLabel=$(hostname -I 2>/dev/null | awk '{print $1}' | tr '.' 'P')
   [[ -z "${variLabel}" ]] && variLabel=$(echo "$(date +%s%N)${RANDOM}$$" | md5sum | awk '{print $1}' | tr 'a-z' 'A-Z')
-  local variFeishuTitle="${variDomain}/${variModule}/${variService}/${variRegion}/${variLabel}"
-  # （1）${variLabel}[END]
-  # （2）pull ${variBinName}[START]
+  # ----------
   coscli cp ${variCosBucket}/${variCosRemotePath}/${variEnviFilename} ${variScpPath}/${variEnviFilename}
   coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName} ${variScpPath}/${variBinName}
   # 「tr -d '[:space:]」表示移除空白符號（含：空格/換行/回車/製表）
@@ -1834,37 +1850,19 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variBranch=$(echo "${variEnviContent}" | awk -F'#' '{print $1}')
   local variEnviBinMd5=$(echo "${variEnviContent}" | awk -F'#' '{print $2}')
   local variFileBinMd5=$(md5sum ${variScpPath}/${variBinName} | awk '{print $1}')
+  chmod +x ${variScpPath}/${variBinName}
+  # ----------
+  local variFeishuTitle="${variDomain}/${variModule}/${variService}/${variRegion}/${variLabel}"
   if [[ "${variFileBinMd5}" != "${variEnviBinMd5}" ]]; then
-    # PADDLEWAVER/ADX/BID/SINGAPORE/01
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "bin md5 mismatch ( expected : ${variEnviBinMd5} , current : ${variFileBinMd5})"
     return 1
   fi
-  chmod +x ${variScpPath}/${variBinName}
-  # （2）pull ${variBinName}[END]
-  # （一）envi[END]
-  # --------------------------------------------------
-  # （二）omni.system init[START]
-  mkdir -p /windows/runtime
-  cd /windows/code/backend/chunio/omni
-  # ----------
-  echo "[ omni ] git fetch origin ..."
-  git fetch origin
-  echo "[ omni ] git fetch origin finished"
-  # ----------
-  echo "[ omni ] git reset --hard origin/main ..."
-  git reset --hard origin/main
-  echo "[ omni ] git reset --hard origin/main finished"
-  # ----------
-  chmod 777 -R .
-  ./init/system/system.sh init
-  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
-  [ -f /etc/bashrc ] && source /etc/bashrc
-  # （二）omni.system init[END]
-  # --------------------------------------------------
-  # （三）common[START]
+ # ----------
+  # envi[END]
+  # common[START]
   /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModule} ${variService} ${variLabel} ${variDomain} ${variRegion} ${variBranch}
   local variReturn=$?
-  # （三）common[END]
+  # common[END]
   if [[ ${variReturn} -eq 0 ]]; then
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "auto scaling succeeded"
   else
