@@ -711,19 +711,20 @@ function funcPublicCloudJumperReinit() {
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variScpPath="/tmp"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   # 兼容：係統重裝[START]
   ssh-keygen -R ${variJumperIp} 2>/dev/null
   ssh-keygen -R "[${variJumperIp}]:${variJumperPort}" 2>/dev/null
   # 兼容：係統重裝[END]
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:/tmp/
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:/tmp/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:${variScpPath}/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:${variScpPath}/
   ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
     # --------------------------------------------------
     # ssh[START]
-    tar -xzvf /tmp/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+    tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
     /usr/bin/mv ~/.ssh/ssh/* ~/.ssh
     rm -rf ~/.ssh/ssh
     touch ~/.ssh/config
@@ -780,7 +781,7 @@ function funcPublicCloudJumperReinit() {
     [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
     # omni.system init[END]
     # --------------------------------------------------
-    /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+    /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
 JUMPEREOF
@@ -1410,15 +1411,26 @@ function funcPublicCloudPodReinit(){
       echo ">> [ SLAVE ] ${variSlaveIp} ..."
       echo "===================================================================================================="
       rm -rf ~/.ssh/known_hosts
+      scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       ssh -o StrictHostKeyChecking=no -A -p ${variSlavePort} -T ${variSlaveAccount}@${variSlaveIp} "sudo bash -s" <<SLAVEEOF
         # --------------------------------------------------
-        # （一）envi[START]
+        # envi[START]
         # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
         export DEBIAN_FRONTEND=noninteractive
-        # （一）envi[END]
+        # envi[END]
         # --------------------------------------------------
-        # （二）omni.system init[START]
+        # ssh init[START]
+        tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        touch ~/.ssh/config
+        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+        chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
+        # ssh init[END]
+        # --------------------------------------------------
+        # omni.system init[START]
         if ! command -v git &> /dev/null; then
           apt-get update && apt-get install -y git
         fi
@@ -1445,7 +1457,7 @@ function funcPublicCloudPodReinit(){
         ./init/system/system.sh init
         [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
         [ -f /etc/bashrc ] && source /etc/bashrc
-        # （二）omni.system init[END]
+        # omni.system init[END]
         # --------------------------------------------------
         /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
         /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
