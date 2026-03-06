@@ -181,9 +181,9 @@ function funcProtectedCloudSelector() {
     "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 CENTOS --"
     "12 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 CENTOS --"
     "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 CENTOS --"
-    "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
-    "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
-    "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
+    # "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
+    # "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
+    # "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 CENTOS --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 CENTOS --"
@@ -1839,7 +1839,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
   local variCosBucket="cos://${variCosBucketName}"
   local variCosRemotePath=$(echo "unicorn/release/${variModule}/${variDomain}/${variRegion}" | tr 'A-Z' 'a-z')
-  local variEnviFilename=$(echo "${variModule}_${variDomain}_${variRegion}.envi" | tr 'a-z' 'A-Z')
+  local variEnviFilename="$(echo "${variModule}_${variDomain}_${variRegion}" | tr 'a-z' 'A-Z').envi"
   local variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z') # 確保小寫
   local variEnvi="PRODUCTION"
   local variService="BID"
