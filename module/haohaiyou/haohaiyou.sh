@@ -1533,12 +1533,12 @@ function funcPublicCloudUnicornReinit_Static() {
         # （四）omni.system init[END]
         # --------------------------------------------------
         # （五）common[START]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common "${variEachModule}" "${variEachService}" "${variEachLabel}" "${variEachDomain}" "${variEachRegion}" "${variBranch}"
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
         # （五）common[END]
         # --------------------------------------------------
-        exit $?
+        exit \\\$?
 SLAVEEOF
-    echo "SLAVEEOF end ......................................"
+JUMPEREOF
     # 統計「執行狀態」/3[START]
     if [[ $? -eq 0 ]]; then
       echo "SLAVEEOF if come in ......................................"
@@ -1549,7 +1549,6 @@ SLAVEEOF
       variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
     fi
     # 統計「執行狀態」/3[END]
-JUMPEREOF
   done
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
@@ -1592,11 +1591,11 @@ function funcPublicCloudUnicornReinit_Common() {
   local variHttpPort=0
   local variGrpcPort=0
   case ${variModule} in
-    "adx")
+    "ADX")
         variHttpPort=8001
         variGrpcPort=9001
         ;;
-    "dsp")
+    "DSP")
         variHttpPort=8000
         variGrpcPort=9000
         ;;
@@ -2144,8 +2143,8 @@ function funcPublicCloudTccliReinit(){
         return 1
       fi
     fi
-    # --break-system-packages：centos7.9不支持， ubuntu24.04則需要//待確認？
-    pip3 install tccli --break-system-packages -q 2>/dev/null || pip3 install tccli -q
+    # --break-system-packages：centos7.9無需， ubuntu24.04需要
+    pip3 install tccli -q 2>/dev/null || pip3 install tccli --break-system-packages -q
   fi
   mkdir -p ${HOME}/.tccli
   cat > ${HOME}/.tccli/default.credential <<EOF
