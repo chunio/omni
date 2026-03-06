@@ -1444,7 +1444,7 @@ function funcPublicCloudUnicornReinit_Static() {
     # 彈性伸縮/2[START]
     if [ ${variAutoScalingStatus} -eq 1 ]; then
       variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
-      echo "${variModuleUpper} ${variEachDomain} ${variEachRegion} ${variBinMd5}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variModuleUpper}_${variEachDomain}_${variEachRegion}.envi"
+      echo "${variBranch}#${variBinMd5}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variModuleUpper}_${variEachDomain}_${variEachRegion}.envi"
     fi
     # 彈性伸縮/2[END]
     # 統計「執行狀態」/2[START]
@@ -1541,25 +1541,46 @@ SLAVEEOF
 JUMPEREOF
     # 統計「執行狀態」/3[START]
     if [[ $? -eq 0 ]]; then
-      echo "SLAVEEOF if come in ......................................"
       variSucceededCounter=$((variSucceededCounter + 1))
       # 統計「執行狀態」/4[END]
     else
-      echo "SLAVEEOF else come in ......................................"
       variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
     fi
     # 統計「執行狀態」/3[END]
   done
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
-    # TODO:{將配置/可執行文件}上傳至COS
-    echo "1"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Coscli
   fi
   # 彈性伸縮/3[START]
   # 統計「執行狀態」/4[START]
   echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
   [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
   # 統計「執行狀態」/4[END]
+  return 0
+}
+
+function funcPublicCloudUnicornReinit_Coscli(){
+  local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
+  local variCosBucketEndpoint=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_ENDPOINT")
+  local variCosBucket="cos://${variCosBucketName}.${variCosBucketEndpoint}"
+  local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
+  local variModule=""
+  local variBinName=""
+  for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
+    # ----------
+    local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
+    local variModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
+    local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
+    local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
+    # ----------
+    local variCosRemotePath=$(echo "release/${variModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
+    echo "[ COS ] uploaded : ${variEachBaseName}.envi"
+  done
+  variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
+  coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variCosRemotePath}/${variBinName}" || { echo "[ FATAL ] failed to upload ${variBinName}";}
+  echo "[ COS ] uploaded : ${variBinName}"
   return 0
 }
 
@@ -1619,7 +1640,6 @@ function funcPublicCloudUnicornReinit_Common() {
   # （一）envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
   export DEBIAN_FRONTEND=noninteractive
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
   # （一）envi[END]
   # --------------------------------------------------
   # （二）unicorn[START]
@@ -1657,13 +1677,11 @@ function funcPublicCloudUnicornReinit_Common() {
       cat /windows/runtime/${variBinName}.log
       echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
       echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-      # TODO:進去此分支才統計「執行狀態」
       break
     elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
       cat /windows/runtime/${variBinName}.log
       exit 1
     elif [[ ${variLaunchDuration} -ge ${variLaunchTimeout} ]]; then
-      # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
       echo "[ failed ] ${variBinName} launch exceeded ${variLaunchTimeout} second"
       cat /windows/runtime/${variBinName}.log
       exit 1
@@ -1696,7 +1714,10 @@ function funcPublicCloudUnicornReinit_Common() {
   ${variCrontabReloadCommand}
   # （三）crontab[END]
   # --------------------------------------------------
-  md5sum ${variGoPath}/src/unicorn/bin/${variBinName}
+  # （四）host[START]
+  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+  # （四）host[END]
+  # --------------------------------------------------
   return 0
 }
 
@@ -1733,10 +1754,10 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   fi
   # （1）${variLabel}[END]
   # （2）pull ${variBinName}[START]
-  coscli cp ${variCosBucket}/${variCosPrefix}/github.branch ${variScpPath}github.branch
+  coscli cp ${variCosBucket}/${variCosRemotePath}/github.branch ${variScpPath}github.branch
   # 「tr -d '[:space:]」表示移除空白符號（含：空格/換行/回車/製表）
   variBranch=$(cat ${variScpPath}github.branch | tr -d '[:space:]')
-  coscli cp ${variCosBucket}/${variCosPrefix}/${variBinName} ${variScpPath}${variBinName}
+  coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName} ${variScpPath}${variBinName}
   chmod +x ${variScpPath}${variBinName}
   # （2）pull ${variBinName}[END]
   # （一）envi[END]
