@@ -1390,6 +1390,72 @@ JUMPEREOF
 }
 
 :<<'MARK'
+[依賴]係統預裝：
+手動配置：ssh（含：admin_cicd，zengweitao_yx044r26）
+MARK
+function funcPublicCloudPodReinit(){
+  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
+  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
+  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variSlaveAccount="ubuntu"
+  local variIp="43.130.156.239"
+  local variPort="22"
+  local variScpPath="/tmp"
+  ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+      echo "===================================================================================================="
+      echo ">> [ SLAVE ] ${variEachValue} ..."
+      echo "===================================================================================================="
+      rm -rf ~/.ssh/known_hosts
+      if [[ ${variScpStatus} -eq 1 ]]; then
+        scp -P ${variPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variIp}:${variScpPath}/
+      fi
+      ssh -o StrictHostKeyChecking=no -A -p ${variPort} -T ${variSlaveAccount}@${variIp} "sudo bash -s" <<SLAVEEOF
+        # --------------------------------------------------
+        # （一）envi[START]
+        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
+        export DEBIAN_FRONTEND=noninteractive
+        # （一）envi[END]
+        # --------------------------------------------------
+        # （二）omni.system init[START]
+        if ! command -v git &> /dev/null; then
+          apt-get update && apt-get install -y git
+        fi
+        mkdir -p /windows/runtime
+        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
+          cd /windows/code/backend/chunio/omni
+        else
+          rm -rf /windows/code/backend/chunio/omni
+          mkdir -p /windows/code/backend/chunio
+          cd /windows/code/backend/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni
+        fi
+        # ----------
+        echo "[ omni ] git fetch origin ..."
+        git fetch origin
+        echo "[ omni ] git fetch origin finished"
+        # ----------
+        echo "[ omni ] git reset --hard origin/main ..."
+        git reset --hard origin/main
+        echo "[ omni ] git reset --hard origin/main finished"
+        # ----------
+        chmod 777 -R .
+        ./init/system/system.sh init
+        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+        [ -f /etc/bashrc ] && source /etc/bashrc
+        # （二）omni.system init[END]
+        # --------------------------------------------------
+        /usr/bin/cp -rf /tmp/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+        # --------------------------------------------------
+SLAVEEOF
+JUMPEREOF
+  return 0
+}
+
+
+:<<'MARK'
 兼容：centos && ubuntu
 MARK
 function funcPublicCloudUnicornReinit_Static() {
@@ -1726,10 +1792,11 @@ function funcPublicCloudUnicornReinit_Common() {
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh
-git
+ssh（含：admin_cicd，zengweitao_yx044r26）
+git install
 omni.system init
 omni.haohaiyou cloudCoscliReinit
+omni.haohaiyou cloudTccliReinit
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   local variParameterDescMulti=(
