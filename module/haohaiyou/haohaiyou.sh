@@ -1394,10 +1394,7 @@ JUMPEREOF
 :<<'MARK'
 [依賴]係統預裝：
 ssh（[backend]include：admin_cicd，zengweitao_yx044r26）
-git install
-omni.system init
-omni.haohaiyou cloudCoscliReinit
-omni.haohaiyou cloudTccliReinit
+omni.haohaiyou cloudPodReinit
 MARK
 function funcPublicCloudPodReinit(){
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
