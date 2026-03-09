@@ -1645,7 +1645,6 @@ function funcPublicCloudUnicornReinit_Coscli(){
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
   local variModule=""
-  local variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
   # 上傳{配置文件 && 編譯程序}[START]
   for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
     local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
@@ -1653,10 +1652,11 @@ function funcPublicCloudUnicornReinit_Coscli(){
     local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
     local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
     local variEachCosRemotePath=$(echo "unicorn/release/${variModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
     coscli cp "${variEachEnviUri}" "${variCosBucket}/${variCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
-    coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variBinName}" || { echo "[ FATAL ] failed to upload ${variBinName}"; continue; }
+    coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
     echo "[ COS ] upload successful : ${variEachBaseName}.envi"
-    echo "[ COS ] upload successful : ${variBinName}"
+    echo "[ COS ] upload successful : ${variEachBinName}"
   done
   # 上傳{配置文件 && 編譯程序}[END]
   return 0
