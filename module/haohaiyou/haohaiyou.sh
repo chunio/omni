@@ -174,16 +174,16 @@ function funcProtectedCloudSelector() {
     "04 ADX NOTICE 02 PADDLEWAVER USEAST 43.130.108.190 22 CENTOS --"
     "05 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 CENTOS --"
     "06 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 CENTOS --"
-    "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 CENTOS --"
-    "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 CENTOS --"
-    "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.59.14 22 CENTOS --"
-    "10 ADX BID 06 PADDLEWAVER SINGAPORE 43.134.190.133 22 CENTOS --"
-    "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 CENTOS --"
+    #  "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 CENTOS --"
+    #  "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 CENTOS --"
+    #  "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.59.14 22 CENTOS --"
+    #  "10 ADX BID 06 PADDLEWAVER SINGAPORE 43.134.190.133 22 CENTOS --"
+    #  "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 CENTOS --"
     "12 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 CENTOS --"
     "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 CENTOS --"
-    # "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
-    # "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
-    # "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
+    #  "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
+    #  "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
+    #  "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 CENTOS --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 CENTOS --"
@@ -206,13 +206,12 @@ function funcProtectedCloudSelector() {
     "19 DSP BID 13 PADDLEWAVER SINGAPORE 43.156.99.95 22 CENTOS --"
     "20 DSP BID 14 PADDLEWAVER SINGAPORE 43.156.108.53 22 CENTOS --"
     "21 DSP BID 15 PADDLEWAVER SINGAPORE 129.226.82.236 22 CENTOS --"
-    "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 CENTOS --"
-    "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 CENTOS --"
-    "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 CENTOS --"
-    "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
+    #  "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 CENTOS --"
+    #  "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 CENTOS --"
+    #  "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 CENTOS --"
+    #  "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
     "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
-    "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
-    "28 DSP BID 03 PADDLEWAVER USEAST 43.130.156.239 22 CENTOS --"
+    #  "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -1393,7 +1392,7 @@ JUMPEREOF
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（[backend]include：admin_cicd，zengweitao_yx044r26）
+ssh（[backend]include：admin_cicd）
 omni.haohaiyou cloudPodReinit
 MARK
 function funcPublicCloudPodReinit(){
@@ -1646,23 +1645,20 @@ function funcPublicCloudUnicornReinit_Coscli(){
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
   local variModule=""
-  local variBinName=""
-  # 上傳「配置文件」[START]
+  local variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
+  # 上傳{配置文件 && 編譯程序}[START]
   for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
     local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
     local variModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
     local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
     local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
-    local variCosRemotePath=$(echo "unicorn/release/${variModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachCosRemotePath=$(echo "unicorn/release/${variModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
     coscli cp "${variEachEnviUri}" "${variCosBucket}/${variCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
+    coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variBinName}" || { echo "[ FATAL ] failed to upload ${variBinName}"; continue; }
     echo "[ COS ] upload successful : ${variEachBaseName}.envi"
+    echo "[ COS ] upload successful : ${variBinName}"
   done
-  # 上傳「配置文件」[END]
-  # 上傳「編譯程序」[START]
-  variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
-  coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variCosRemotePath}/${variBinName}" || { echo "[ FATAL ] failed to upload ${variBinName}";}
-  echo "[ COS ] upload successful : ${variBinName}"
-  # 上傳「編譯程序」[END]
+  # 上傳{配置文件 && 編譯程序}[END]
   return 0
 }
 
@@ -1805,21 +1801,18 @@ function funcPublicCloudUnicornReinit_Common() {
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（include：admin_cicd，zengweitao_yx044r26）
-git install
-omni.system init
-omni.haohaiyou cloudCoscliReinit
-omni.haohaiyou cloudTccliReinit
+ssh（[backend]include：admin_cicd）
+omni.haohaiyou cloudPodReinit
 # ----------
-omni.haohaiyou cloudUnicornReinit_Dynamic DSP PADDLEWAVER SINGAPORE
-omni.haohaiyou cloudUnicornReinit_Dynamic DSP PADDLEWAVER USEAST
-omni.haohaiyou cloudUnicornReinit_Dynamic ADX PADDLEWAVER SINGAPORE
-omni.haohaiyou cloudUnicornReinit_Dynamic ADX PADDLEWAVER USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP PADDLEWAVER SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP PADDLEWAVER USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX PADDLEWAVER SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX PADDLEWAVER USEAST
 # ----------
-omni.haohaiyou cloudUnicornReinit_Dynamic DSP YONE SINGAPORE
-omni.haohaiyou cloudUnicornReinit_Dynamic DSP YONE USEAST
-omni.haohaiyou cloudUnicornReinit_Dynamic ADX YONE SINGAPORE
-omni.haohaiyou cloudUnicornReinit_Dynamic ADX YONE USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP YONE SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP YONE USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX YONE SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX YONE USEAST
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------

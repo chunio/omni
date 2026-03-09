@@ -319,11 +319,11 @@ for variValue in /etc/bash_completion.d/omni.*; do
   source "${variValue}"
 done
 # 兼容[bash]「自動補全」腳本[END]
-# 綁定組合按鍵[START]
+# 綁定「組合按鍵」[START]
 # 鍵碼序列計解釋器：zsh -> zle/zsh line editor（默認：不支持「fn+方向鍵」），bash -> readline（默認：支持「fn+方向鍵」）
 bindkey '^[[H' beginning-of-line
 bindkey '^[[F' end-of-line
-# 綁定組合按鍵[END]
+# 綁定「組合按鍵」[END]
 EOF
   # 設至默認命令解析器[START]
   echo "/usr/bin/zsh" >> /etc/shells

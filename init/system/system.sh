@@ -526,10 +526,10 @@ MARK
 }
 
 function funcProtectedCommandInit(){
-  local variAbleUnitFileURIList=${1}
+  local variAbleUnitFileUrlList=${1}
   # local variEtcBashrcReloadStatus=0
   rm -rf /usr/local/bin/"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
-  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
+  for variAbleUnitFileUri in ${variAbleUnitFileUrlList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
@@ -561,7 +561,7 @@ function funcProtectedCommandInit(){
 }
 
 function funcProtectedOptionInit(){
-  local variAbleUnitFileURIList=${1}
+  local variAbleUnitFileUrlList=${1}
   # 隔斷符號（echo $COMP_WORDBREAKS）"'><=;|&(:
   rm -rf /etc/bash_completion.d/${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}.*
   # inherit the public functions from builtin.sh[START]
@@ -581,7 +581,7 @@ function funcProtectedOptionInit(){
   # report1/3[START]
   declare -A variOptionReport
   # report1/3[END]
-  for variAbleUnitFileUri in ${variAbleUnitFileURIList}; do
+  for variAbleUnitFileUri in ${variAbleUnitFileUrlList}; do
     variEachUnitFilename=$(basename $variAbleUnitFileUri)
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     variFuncNameCollection=$(grep -oP 'function \KfuncPublic\w+' "$variAbleUnitFileUri") || true
@@ -702,10 +702,11 @@ function funcPublicInit(){
       variFindCommand="$variFindCommand -type d -regex \".*/$variEachIgnoreDirectory\" -prune -o"
   done
   variFindCommand="$variFindCommand -type f -name \"*${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}\" -print"
-  variAbleUnitFileURIList=$(eval "$variFindCommand" | sort -u)
+  variAbleUnitFileUrlList=$(eval "$variFindCommand" | sort -u)
   # pull *.sh list[END]
-  funcProtectedCommandInit "${variAbleUnitFileURIList}"
-  funcProtectedOptionInit "${variAbleUnitFileURIList}"
+  funcProtectedCommandInit "${variAbleUnitFileUrlList}"
+  funcProtectedOptionInit "${variAbleUnitFileUrlList}"
+  # TODO:[待解決]ZSH無法刷新自動補全，需手動執行「source ~/.zshrc」
   return 0
 }
 
