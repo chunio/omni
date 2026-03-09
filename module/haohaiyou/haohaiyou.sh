@@ -718,8 +718,8 @@ function funcPublicCloudJumperReinit() {
   ssh-keygen -R ${variJumperIp} 2>/dev/null
   ssh-keygen -R "[${variJumperIp}]:${variJumperPort}" 2>/dev/null
   # 兼容：係統重裝[END]
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:/
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:${variScpPath}/
+  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:${variScpPath}/
   ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
