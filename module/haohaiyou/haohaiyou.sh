@@ -720,7 +720,7 @@ function funcPublicCloudJumperReinit() {
   # 兼容：係統重裝[END]
   scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:${variScpPath}/
   scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:${variScpPath}/
-  ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<'JUMPEREOF'
+  ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<JUMPEREOF
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
     # --------------------------------------------------
@@ -733,19 +733,19 @@ function funcPublicCloudJumperReinit() {
     echo "StrictHostKeyChecking no" >> ~/.ssh/config
     # 追加密鑰（admin_cicd/對應權限：雲服務器/代碼倉庫）[START]
     touch ~/.ssh/authorized_keys
-    sed -i "\|$(cat ~/.ssh/id_rsa.pub)|d" ~/.ssh/authorized_keys 2>/dev/null
+    sed -i "\|\$(cat ~/.ssh/id_rsa.pub)|d" ~/.ssh/authorized_keys 2>/dev/null
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
     # 追加密鑰（admin_cicd/對應權限：雲服務器/代碼倉庫）[END]
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/*
-    chown $(whoami):$(whoami) ~/.ssh/*
+    chown \$(whoami):\$(whoami) ~/.ssh/*
     # ssh[END]
     # --------------------------------------------------
     # git[START]
     if ! command -v git &> /dev/null; then
-      local variOperatingSystem=""
-      [ -f /etc/os-release ] && variOperatingSystem=$(. /etc/os-release && echo "${ID}")
-      case "${variOperatingSystem}" in
+      variOperatingSystem=""
+      [ -f /etc/os-release ] && variOperatingSystem=\$(. /etc/os-release && echo "\${ID}")
+      case "\${variOperatingSystem}" in
         "centos"|"rhel"|"rocky"|"almalinux")
           yum install -y git
           ;;
