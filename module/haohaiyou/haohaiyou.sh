@@ -174,44 +174,30 @@ function funcProtectedCloudSelector() {
     "04 ADX NOTICE 02 PADDLEWAVER USEAST 43.130.108.190 22 CENTOS --"
     "05 ADX BID 01 PADDLEWAVER SINGAPORE 43.134.74.106 22 CENTOS --"
     "06 ADX BID 02 PADDLEWAVER SINGAPORE 101.32.254.10 22 CENTOS --"
-    #  "07 ADX BID 03 PADDLEWAVER SINGAPORE 43.159.52.147 22 CENTOS --"
-    #  "08 ADX BID 04 PADDLEWAVER SINGAPORE 43.156.84.25 22 CENTOS --"
-    #  "09 ADX BID 05 PADDLEWAVER SINGAPORE 43.133.59.14 22 CENTOS --"
-    #  "10 ADX BID 06 PADDLEWAVER SINGAPORE 43.134.190.133 22 CENTOS --"
-    #  "11 ADX BID 07 PADDLEWAVER SINGAPORE 43.156.4.112 22 CENTOS --"
-    "12 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 CENTOS --"
-    "13 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 CENTOS --"
-    #  "14 ADX BID 03 PADDLEWAVER USEAST 170.106.9.32 22 CENTOS --"
-    #  "15 ADX BID 04 PADDLEWAVER USEAST 43.166.253.225 22 CENTOS --"
-    #  "16 ADX BID 05 PADDLEWAVER USEAST 43.166.154.164 22 CENTOS --"
+    "07 ADX BID 01 PADDLEWAVER USEAST 43.166.250.183 22 CENTOS --"
+    "08 ADX BID 02 PADDLEWAVER USEAST 170.106.165.51 22 CENTOS --"
     # ==================================================
     "01 DSP NOTICE 01 PADDLEWAVER SINGAPORE 43.163.102.16 22 CENTOS --"
     "02 DSP NOTICE 02 PADDLEWAVER SINGAPORE 43.156.30.57 22 CENTOS --"
-    "03 DSP NOTICE 03 PADDLEWAVER SINGAPORE 43.134.90.124 22 CENTOS --"
-    "04 DSP NOTICE 04 PADDLEWAVER SINGAPORE 43.163.87.38 22 CENTOS --"
-    "05 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 CENTOS --"
-    "06 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 CENTOS --"
-    "07 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 CENTOS --"
-    "08 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 CENTOS --"
-    "09 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 CENTOS --"
-    "10 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 CENTOS --"
-    "11 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 CENTOS --"
-    "12 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 CENTOS --"
-    "13 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 CENTOS --"
-    "14 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 CENTOS --"
-    "15 DSP BID 09 PADDLEWAVER SINGAPORE 43.134.27.101 22 CENTOS --"
-    "16 DSP BID 10 PADDLEWAVER SINGAPORE 43.156.110.205 22 CENTOS --"
-    "17 DSP BID 11 PADDLEWAVER SINGAPORE 43.156.6.213 22 CENTOS --"
-    "18 DSP BID 12 PADDLEWAVER SINGAPORE 43.156.26.249 22 CENTOS --"
-    "19 DSP BID 13 PADDLEWAVER SINGAPORE 43.156.99.95 22 CENTOS --"
-    "20 DSP BID 14 PADDLEWAVER SINGAPORE 43.156.108.53 22 CENTOS --"
-    "21 DSP BID 15 PADDLEWAVER SINGAPORE 129.226.82.236 22 CENTOS --"
-    #  "22 DSP BID 16 PADDLEWAVER SINGAPORE 43.134.129.99 22 CENTOS --"
-    #  "23 DSP BID 17 PADDLEWAVER SINGAPORE 124.156.206.54 22 CENTOS --"
-    #  "24 DSP BID 18 PADDLEWAVER SINGAPORE 43.163.93.187 22 CENTOS --"
-    #  "25 DSP BID 19 PADDLEWAVER SINGAPORE 43.163.111.145 22 CENTOS --"
-    "26 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
-    #  "27 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
+    "03 DSP NOTICE 01 PADDLEWAVER USEAST 43.130.106.95 22 CENTOS --"
+    "04 DSP NOTICE 02 PADDLEWAVER USEAST 170.106.14.178 22 CENTOS --"
+    "05 DSP BID 01 PADDLEWAVER SINGAPORE 119.28.107.30 22 CENTOS --"
+    "06 DSP BID 02 PADDLEWAVER SINGAPORE 43.156.9.31 22 CENTOS --"
+    "07 DSP BID 03 PADDLEWAVER SINGAPORE 43.156.103.66 22 CENTOS --"
+    "08 DSP BID 04 PADDLEWAVER SINGAPORE 150.109.13.128 22 CENTOS --"
+    "09 DSP BID 05 PADDLEWAVER SINGAPORE 43.133.37.245 22 CENTOS --"
+    "10 DSP BID 06 PADDLEWAVER SINGAPORE 43.163.90.220 22 CENTOS --"
+    "11 DSP BID 07 PADDLEWAVER SINGAPORE 43.156.103.34 22 CENTOS --"
+    "12 DSP BID 08 PADDLEWAVER SINGAPORE 43.163.100.13 22 CENTOS --"
+    "13 DSP BID 09 PADDLEWAVER SINGAPORE 43.134.27.101 22 CENTOS --"
+    "14 DSP BID 10 PADDLEWAVER SINGAPORE 43.156.110.205 22 CENTOS --"
+    "15 DSP BID 11 PADDLEWAVER SINGAPORE 43.156.6.213 22 CENTOS --"
+    "16 DSP BID 12 PADDLEWAVER SINGAPORE 43.156.26.249 22 CENTOS --"
+    "17 DSP BID 13 PADDLEWAVER SINGAPORE 43.156.99.95 22 CENTOS --"
+    "18 DSP BID 14 PADDLEWAVER SINGAPORE 43.156.108.53 22 CENTOS --"
+    "19 DSP BID 15 PADDLEWAVER SINGAPORE 129.226.82.236 22 CENTOS --"
+    "20 DSP BID 01 PADDLEWAVER USEAST 43.130.90.22 22 CENTOS --"
+    "21 DSP BID 02 PADDLEWAVER USEAST 43.130.108.36 22 CENTOS --"
     # ==================================================
   )
   local variYoneCloudSlice=(
@@ -1644,17 +1630,16 @@ function funcPublicCloudUnicornReinit_Coscli(){
   local variCosBucketEndpoint=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_ENDPOINT")
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
-  local variModule=""
   # 上傳{配置文件 && 編譯程序}[START]
   for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
     local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
-    local variModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
+    local variEachModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
     local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
     local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
-    local variEachCosRemotePath=$(echo "unicorn/release/${variModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
-    local variEachBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z')
+    local variEachCosRemotePath=$(echo "unicorn/release/${variEachModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
     coscli cp "${variEachEnviUri}" "${variCosBucket}/${variCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
-    coscli cp "${variLocalPath}/${variBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
+    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
     echo "[ COS ] upload successful : ${variEachBaseName}.envi"
     echo "[ COS ] upload successful : ${variEachBinName}"
   done
