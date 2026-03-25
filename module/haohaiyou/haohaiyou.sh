@@ -1614,6 +1614,7 @@ JUMPEREOF
   done
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
+    # TODO:關閉所有動態機器
     /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Coscli
   fi
   # 彈性伸縮/3[START]
@@ -1856,7 +1857,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   # ----------
   local variFeishuTitle="${variDomain}/${variModule}/${variService}/${variRegion}/${variLabel}"
   if [[ "${variFileBinMd5}" != "${variEnviBinMd5}" ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "bin md5 mismatch ( expected : ${variEnviBinMd5} , current : ${variFileBinMd5})"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "BinMd5Mismatch"
     return 1
   fi
  # ----------
