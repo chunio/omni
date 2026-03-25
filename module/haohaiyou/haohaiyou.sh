@@ -1639,7 +1639,7 @@ function funcPublicCloudUnicornReinit_Coscli(){
     local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
     local variEachCosRemotePath=$(echo "unicorn/release/${variEachModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
     local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
-    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
+    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
     coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
     echo "[ COS ] upload successful : ${variEachBaseName}.envi"
     echo "[ COS ] upload successful : ${variEachBinName}"
