@@ -1821,8 +1821,8 @@ function funcPublicCloudUnicornReinit_Coscli(){
     variEachAutoScalingGroupName=$(echo "deployment-${variEachDomain}-${variEachModule}-${variEachService}-${variEachRegion}" | tr 'A-Z' 'a-z')
     # 獲取「關聯實例」列表
     local variDescribeAutoScalingInstancesJson=$(tccli as DescribeAutoScalingInstances --region "${variEachRegionOption}" --Limit 100 2>/dev/null)
-    local variInstanceIdSlice=$(echo "${variDescribeAutoScalingInstancesJson}" | jq -r ".AutoScalingInstanceSet[]? | select(.AutoScalingGroupName==\"${variEachAutoScalingGroupName}\") | .InstanceId")
-    local variAutoScalingGroupId=$(echo "${variDescribeAutoScalingInstancesJson}" | jq -r ".AutoScalingInstanceSet[]? | select(.AutoScalingGroupName==\"${variEachAutoScalingGroupName}\") | .AutoScalingGroupId" | head -n 1)
+    local variInstanceIdSlice=$(echo "${variDescribeAutoScalingInstancesJson}" | python3 -c "import sys, json; data=json.load(sys.stdin); print(' '.join([i.get('InstanceId') for i in data.get('AutoScalingInstanceSet', []) if i.get('AutoScalingGroupName') == '${variEachAutoScalingGroupName}']))" 2>/dev/null)
+    local variAutoScalingGroupId=$(echo "${variDescribeAutoScalingInstancesJson}" | python3 -c "import sys, json; data=json.load(sys.stdin); ids=[i.get('AutoScalingGroupId') for i in data.get('AutoScalingInstanceSet', []) if i.get('AutoScalingGroupName') == '${variEachAutoScalingGroupName}']; print(ids[0] if ids else '')" 2>/dev/null)
     local variInstanceNum=$(echo "${variInstanceIdSlice}" | wc -w)
     if [[ ${variInstanceNum} -gt 0 && -n "${variAutoScalingGroupId}" ]]; then
       # 構建「JSON/實例ID」[START]
