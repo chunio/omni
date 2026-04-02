@@ -217,9 +217,8 @@ function funcProtectedCloudSelector() {
     "10 ADX BID 06 YONE SINGAPORE 43.156.68.83 22 CENTOS --"
     "11 ADX BID 07 YONE SINGAPORE 43.163.1.233 22 CENTOS --"
     "12 ADX BID 08 YONE SINGAPORE 129.226.152.214 22 CENTOS --"
-    "13 ADX BID 09 YONE SINGAPORE 43.128.89.80 22 CENTOS --"
-    "14 ADX BID 01 YONE USEAST 43.130.134.51 22 CENTOS --"
-    "15 ADX BID 02 YONE USEAST 43.166.247.44 22 CENTOS --"
+    "13 ADX BID 01 YONE USEAST 43.130.134.51 22 CENTOS --"
+    "14 ADX BID 02 YONE USEAST 43.166.247.44 22 CENTOS --"
     # ==================================================
     "01 DSP NOTICE 01 YONE SINGAPORE 43.133.37.4 22 CENTOS --"
     "02 DSP NOTICE 02 YONE SINGAPORE 129.226.95.66 22 CENTOS --"
@@ -1460,14 +1459,16 @@ function funcPublicCloudUnicornReinit_Static() {
   local variParameterDescMulti=(
     "module : dsp，adx"
     "branch : main，feature/.../..."
+    "coscli : 1/able, 0/disable（default）"
   )
   funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variModule=$1
+  local variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
   local variBranch=$2
+  local variAutoScalingStatus=${3:-0}
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  local variAutoScalingStatus=1
   local variScpStatus=1
   local variScpOnce=0
   local variScpPath="/var/tmp"
@@ -1507,7 +1508,6 @@ function funcPublicCloudUnicornReinit_Static() {
     # 檢測目標節點環節是否支持當前模塊[END]
     # 彈性伸縮/2[START]
     if [ ${variAutoScalingStatus} -eq 1 ]; then
-      variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
       echo "${variBranch}#${variBinMd5}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variModuleUpper}_${variEachDomain}_${variEachRegion}.envi"
     fi
     # 彈性伸縮/2[END]
@@ -1597,7 +1597,8 @@ function funcPublicCloudUnicornReinit_Static() {
         # （四）omni.system init[END]
         # --------------------------------------------------
         # （五）common[START]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
+        echo " ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}"
+        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModuleUpper} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
         # （五）common[END]
         # --------------------------------------------------
         exit \\\$?
@@ -1622,29 +1623,6 @@ JUMPEREOF
   echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
   [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
   # 統計「執行狀態」/4[END]
-  return 0
-}
-
-function funcPublicCloudUnicornReinit_Coscli(){
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-  local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
-  local variCosBucketEndpoint=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_ENDPOINT")
-  local variCosBucket="cos://${variCosBucketName}"
-  local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
-  # 上傳{配置文件 && 編譯程序}[START]
-  for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
-    local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
-    local variEachModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
-    local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
-    local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
-    local variEachCosRemotePath=$(echo "unicorn/release/${variEachModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
-    local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
-    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
-    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
-    echo "[ COS ] upload successful : ${variEachBaseName}.envi"
-    echo "[ COS ] upload successful : ${variEachBinName}"
-  done
-  # 上傳{配置文件 && 編譯程序}[END]
   return 0
 }
 
@@ -1782,6 +1760,29 @@ function funcPublicCloudUnicornReinit_Common() {
   /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
   # （四）host[END]
   # --------------------------------------------------
+  return 0
+}
+
+function funcPublicCloudUnicornReinit_Coscli(){
+  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+  local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
+  # local variCosBucketEndpoint=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_ENDPOINT")
+  local variCosBucket="cos://${variCosBucketName}"
+  local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
+  # 上傳{配置文件 && 編譯程序}[START]
+  for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
+    local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
+    local variEachModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
+    local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
+    local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
+    local variEachCosRemotePath=$(echo "unicorn/release/${variEachModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
+    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
+    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
+    echo "[ COS ] upload successful : ${variEachBaseName}.envi"
+    echo "[ COS ] upload successful : ${variEachBinName}"
+  done
+  # 上傳{配置文件 && 編譯程序}[END]
   return 0
 }
 
