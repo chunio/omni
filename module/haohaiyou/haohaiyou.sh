@@ -1813,14 +1813,14 @@ function funcPublicCloudUnicornReinit_Coscli(){
 ssh（[backend]include：admin_cicd）
 omni.haohaiyou cloudPodReinit
 # ----------
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST（√）
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE（√）
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST（√）
 # ----------
 /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
 /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID USEAST
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE（√）
 /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID USEAST
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
