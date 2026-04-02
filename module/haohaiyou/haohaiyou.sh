@@ -1508,7 +1508,7 @@ function funcPublicCloudUnicornReinit_Static() {
     # 檢測目標節點環節是否支持當前模塊[END]
     # 彈性伸縮/2[START]
     if [ ${variAutoScalingStatus} -eq 1 ]; then
-      echo "${variBranch}#${variBinMd5}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variModuleUpper}_${variEachDomain}_${variEachRegion}.envi"
+      echo "${variBinMd5}#${variBranch}" > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variEachDomain}_${variModuleUpper}_${variEachService}_${variEachRegion}.envi"
     fi
     # 彈性伸縮/2[END]
     # 統計「執行狀態」/2[START]
@@ -1771,16 +1771,39 @@ function funcPublicCloudUnicornReinit_Coscli(){
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
   # 上傳{配置文件 && 編譯程序}[START]
   for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
-    local variEachBaseName=$(basename "${variEachEnviUri}" .envi)
-    local variEachModule=$(echo "${variEachBaseName}" | awk -F'_' '{print $1}')
-    local variEachDomain=$(echo "${variEachBaseName}" | awk -F'_' '{print $2}')
-    local variEachRegion=$(echo "${variEachBaseName}" | awk -F'_' '{print $3}')
-    local variEachCosRemotePath=$(echo "unicorn/release/${variEachModule}/${variEachDomain}/${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachEnviName=$(basename "${variEachEnviUri}" .envi)
+    local variEachCosRemotePath="unicorn/release/${variEachEnviName}"
+    # ----------
+    local variEachDomain=$(echo "${variEachEnviName}" | awk -F'_' '{print $1}')
+    local variEachModule=$(echo "${variEachEnviName}" | awk -F'_' '{print $2}')
+    local variEachService=$(echo "${variEachEnviName}" | awk -F'_' '{print $3}')
+    local variEachRegion=$(echo "${variEachEnviName}" | awk -F'_' '{print $4}')
+    # ----------
     local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
-    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBaseName}.envi" || { echo "[ FATAL ] failed to upload ${variEachBaseName}.envi"; continue; }
-    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}" || { echo "[ FATAL ] failed to upload ${variEachBinName}"; continue; }
-    echo "[ COS ] upload successful : ${variEachBaseName}.envi"
-    echo "[ COS ] upload successful : ${variEachBinName}"
+    local variEachBinMd5=$(cat "${variEachEnviUri}" | tr -d '[:space:]' | awk -F'#' '{print $1}')
+    # ----------
+    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}.${variEachBinMd5}" || { echo "[ FATAL ] failed to upload ${variEachBinName}.${variEachBinMd5}"; continue; }
+    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachEnviName}.envi" || { echo "[ FATAL ] failed to upload ${variEachEnviName}.envi"; continue; }
+    # ----------
+    echo "[ COS ] upload successful : ${variEachEnviName}.envi"
+    echo "[ COS ] upload successful : ${variEachBinName}.${variEachBinMd5}"
+    # 最多保留5個「備份/執行文件」[START]
+    # grep -v "\.envi" //排除配置
+    # sort -r -k 5 //時間倒序（基於「coscli ls/返回表格」）
+    # awk '{print $1}' //獲取相對路徑 KEY
+    coscli ls "${variCosBucket}/${variEachCosRemotePath}/" | grep "${variEachBinName}\." | grep -v "\.envi" | sort -r -k 5 | awk '{print $1}'
+    local variBinSlice=$(coscli ls "${variCosBucket}/${variEachCosRemotePath}/" | grep "${variEachBinName}\." | grep -v "\.envi" | sort -r -k 5 | awk '{print $1}')
+    local variBackupNum=5
+    local variCounterIndex=0
+    for variEachValue in ${variBinSlice}; do
+      variCounterIndex=$((variCounterIndex + 1))
+      if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
+        local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachValue}"
+        echo "[ COS ] coscli rm ${variEachRemoteBinUri}"
+        coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
+      fi
+    done
+    # 最多保留5個「備份/執行文件」[END]
   done
   # 上傳{配置文件 && 編譯程序}[END]
   return 0
@@ -1791,15 +1814,15 @@ function funcPublicCloudUnicornReinit_Coscli(){
 ssh（[backend]include：admin_cicd）
 omni.haohaiyou cloudPodReinit
 # ----------
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP PADDLEWAVER SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP PADDLEWAVER USEAST
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX PADDLEWAVER SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX PADDLEWAVER USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST
 # ----------
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP YONE SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic DSP YONE USEAST
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX YONE SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic ADX YONE USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID USEAST
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE
+/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID USEAST
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
@@ -1822,22 +1845,23 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   # omni.system init[END]
   # --------------------------------------------------
   local variParameterDescMulti=(
-    "module : DSP，ADX"
     "domain : PADDLEWAVER，YONE"
+    "module : DSP，ADX"
+    "service : BID，NOTICE，SINGLETON"
     "region : SINGAPORE，USEAST"
   )
-  funcProtectedCheckRequiredParameter 3 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variModule=$1
-  local variDomain=$2
-  local variRegion=$3
+  funcProtectedCheckRequiredParameter 4 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variDomain=$1
+  local variModule=$2
+  local variService=$3
+  local variRegion=$4
+  local variEnvi="PRODUCTION"
+  local variScpPath="/var/tmp"
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
   local variCosBucket="cos://${variCosBucketName}"
-  local variCosRemotePath=$(echo "unicorn/release/${variModule}/${variDomain}/${variRegion}" | tr 'A-Z' 'a-z')
-  local variEnviFilename="$(echo "${variModule}_${variDomain}_${variRegion}" | tr 'a-z' 'A-Z').envi"
+  local variCosRemotePath="unicorn/release/${variDomain}_${variModule}_${variService}_${variRegion}"
+  local variEnviFilename="${variDomain}_${variModule}_${variService}_${variRegion}.envi"
   local variBinName=$(echo "unicorn_${variModule}" | tr 'A-Z' 'a-z') # 確保小寫
-  local variEnvi="PRODUCTION"
-  local variService="BID"
-  local variScpPath="/var/tmp"
   # --------------------------------------------------
   # envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
@@ -1847,18 +1871,19 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   [[ -z "${variLabel}" ]] && variLabel=$(echo "$(date +%s%N)${RANDOM}$$" | md5sum | awk '{print $1}' | tr 'a-z' 'A-Z')
   # ----------
   coscli cp ${variCosBucket}/${variCosRemotePath}/${variEnviFilename} ${variScpPath}/${variEnviFilename}
-  coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName} ${variScpPath}/${variBinName}
   # 「tr -d '[:space:]」表示移除空白符號（含：空格/換行/回車/製表）
-  # 示例：main#9e141db7f404dae193a6d52fbc0e3210（branch#md5）
+  # 示例：9e141db7f404dae193a6d52fbc0e3210#main（md5#branch）
   local variEnviContent=$(cat ${variScpPath}/${variEnviFilename} | tr -d '[:space:]')
-  local variBranch=$(echo "${variEnviContent}" | awk -F'#' '{print $1}')
-  local variEnviBinMd5=$(echo "${variEnviContent}" | awk -F'#' '{print $2}')
-  local variFileBinMd5=$(md5sum ${variScpPath}/${variBinName} | awk '{print $1}')
+  local variRemoteBinMd5=$(echo "${variEnviContent}" | awk -F'#' '{print $1}')
+  local variBranch=$(echo "${variEnviContent}" | awk -F'#' '{print $2}')
+  # ----------
+  coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName}.${variRemoteBinMd5} ${variScpPath}/${variBinName}
+  local variLocalBinMd5=$(md5sum ${variScpPath}/${variBinName} | awk '{print $1}')
   chmod +x ${variScpPath}/${variBinName}
   # ----------
   local variFeishuTitle="${variDomain}/${variModule}/${variService}/${variRegion}/${variLabel}"
-  if [[ "${variFileBinMd5}" != "${variEnviBinMd5}" ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "BinMd5Mismatch"
+  if [[ "${variLocalBinMd5}" != "${variRemoteBinMd5}" ]]; then
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/BIN_MD5_UNMATCHED"
     return 1
   fi
  # ----------
@@ -1868,9 +1893,9 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variReturn=$?
   # common[END]
   if [[ ${variReturn} -eq 0 ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AutoScalingSucceeded"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_SUCCEEDED"
   else
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AutoScalingFailed"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/COMMON_RETURN_NOT0"
   fi
   return ${variReturn}
 }
