@@ -1616,7 +1616,7 @@ JUMPEREOF
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
     # TODO:關閉所有動態機器
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Coscli
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Ascli
   fi
   # 彈性伸縮/3[START]
   # 統計「執行狀態」/4[START]
@@ -1763,12 +1763,14 @@ function funcPublicCloudUnicornReinit_Common() {
   return 0
 }
 
-function funcPublicCloudUnicornReinit_Coscli(){
+# auto scaling command-line interface
+function funcPublicCloudUnicornReinit_Ascli(){
   /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
-  # local variCosBucketEndpoint=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_ENDPOINT")
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
+  # --------------------------------------------------
   # 上傳{配置文件 && 編譯程序}[START]
   for variEachEnviUri in $(find ${variLocalPath} -name "*.envi" -type f); do
     local variEachEnviName=$(basename "${variEachEnviUri}" .envi)
@@ -1803,6 +1805,7 @@ function funcPublicCloudUnicornReinit_Coscli(){
       fi
     done
     # 保留5個「備份/執行文件」[END]
+    # --------------------------------------------------
     # 重建「彈性伸縮>>關聯實例」[START]
     local variEachRegionOption=""
     case ${variEachRegion} in
@@ -1852,6 +1855,7 @@ function funcPublicCloudUnicornReinit_Coscli(){
       fi
     fi
     # 重建「彈性伸縮>>關聯實例」[END]
+    # --------------------------------------------------
   done
   # 上傳{配置文件 && 編譯程序}[END]
   return 0
