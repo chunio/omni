@@ -1803,6 +1803,55 @@ function funcPublicCloudUnicornReinit_Coscli(){
       fi
     done
     # 保留5個「備份/執行文件」[END]
+    # 重建「彈性伸縮>>關聯實例」[START]
+    local variEachRegionOption=""
+    case ${variEachRegion} in
+      "SINGAPORE")
+          # [--region]「singapore」對應「ap-singapore」
+          variEachRegionOption="ap-singapore"
+          ;;
+      "USEAST")
+          # [--region]「virginia」對應「na-ashburn」
+          variEachRegionOption="na-ashburn"
+          ;;
+      *)
+          return 1
+          ;;
+    esac
+    variEachAutoScalingGroupName=$(echo "deployment-${variEachDomain}-${variEachModule}-${variEachService}-${variEachRegion}" | tr 'A-Z' 'a-z')
+    # 獲取「關聯實例」列表
+    local variDescribeAutoScalingInstancesJson=$(tccli as DescribeAutoScalingInstances --region "${variEachRegionOption}" --Limit 100 2>/dev/null)
+    local variInstanceIdSlice=$(echo "${variDescribeAutoScalingInstancesJson}" | jq -r ".AutoScalingInstanceSet[]? | select(.AutoScalingGroupName==\"${variEachAutoScalingGroupName}\") | .InstanceId")
+    local variAutoScalingGroupId=$(echo "${variDescribeAutoScalingInstancesJson}" | jq -r ".AutoScalingInstanceSet[]? | select(.AutoScalingGroupName==\"${variEachAutoScalingGroupName}\") | .AutoScalingGroupId" | head -n 1)
+    local variInstanceNum=$(echo "${variInstanceIdSlice}" | wc -w)
+    if [[ ${variInstanceNum} -gt 0 && -n "${variAutoScalingGroupId}" ]]; then
+      # 構建「JSON/實例ID」[START]
+      # 示例：'["ins-qk8c1vo7","ins-o9mbwxef"]'
+      local variInstanceIdJson="["
+      local variIndex=0
+      for variEachInstanceId in ${variInstanceIdSlice}; do
+        if [[ ${variIndex} -gt 0 ]]; then
+          variInstanceIdJson="${variInstanceIdJson},"
+        fi
+        variInstanceIdJson="${variInstanceIdJson}\"${variEachInstanceId}\""
+        variIndex=$((variIndex + 1))
+      done
+      variInstanceIdJson="${variInstanceIdJson}]"
+      # 構建「JSON/實例ID」[END]
+      # 批量刪除多個實例
+      local variRemoveInstancesCommand="tccli cvm TerminateInstances --region \"${variEachRegionOption}\" --InstanceIds '${variInstanceIdJson}'"
+      echo "${variRemoveInstancesCommand}"
+      # 執行銷毀（「伸縮組」會自行拉起等量的「關聯實例」）
+      # 禁止：local variRemoveInstancesResult=$(eval "${variRemoveInstancesCommand}" 2>&1)，否則後續「$?」會獲取「local/賦值語句」的執行結果
+      local variRemoveInstancesResult
+      variRemoveInstancesResult=$(eval "${variRemoveInstancesCommand}" 2>&1)
+      if [[ $? -eq 0 ]]; then
+        echo "${variEachAutoScalingGroupName} rebuild succeeded"
+      else
+        echo "${variEachAutoScalingGroupName} rebuild failed : ${variRemoveInstancesResult}"
+      fi
+    fi
+    # 重建「彈性伸縮>>關聯實例」[END]
   done
   # 上傳{配置文件 && 編譯程序}[END]
   return 0
