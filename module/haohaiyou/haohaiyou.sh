@@ -1455,7 +1455,7 @@ JUMPEREOF
 :<<'MARK'
 兼容：centos && ubuntu
 MARK
-function funcPublicCloudUnicornReinit_Static() {
+function funcPublicCloudUnicornReinit() {
   local variParameterDescMulti=(
     "module : dsp，adx"
     "branch : main，feature/.../..."
