@@ -1377,7 +1377,7 @@ JUMPEREOF
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（[backend]include：admin_cicd）
+ssh（[backend]include：admin_cicd / zengweitao_yx044r26）
 omni.haohaiyou cloudPodReinit
 MARK
 function funcPublicCloudPodReinit(){
@@ -1839,8 +1839,8 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   # ----------
   chmod 777 -R .
   ./init/system/system.sh init
-  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
   [ -f /etc/bashrc ] && source /etc/bashrc
+  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
   # omni.system init[END]
   # --------------------------------------------------
   local variParameterDescMulti=(
