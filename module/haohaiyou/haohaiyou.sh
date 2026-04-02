@@ -1385,7 +1385,7 @@ function funcPublicCloudPodReinit(){
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
   local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
   local variSlaveAccount="ubuntu"
-  local variSlaveIp="43.130.156.239"
+  local variSlaveIp="101.32.126.179"
   local variSlavePort="22"
   local variScpPath="/var/tmp"
   ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
@@ -1787,23 +1787,22 @@ function funcPublicCloudUnicornReinit_Coscli(){
     # ----------
     echo "[ COS ] upload successful : ${variEachEnviName}.envi"
     echo "[ COS ] upload successful : ${variEachBinName}.${variEachBinMd5}"
-    # 最多保留5個「備份/執行文件」[START]
+    # 保留5個「備份/執行文件」[START]
     # grep -v "\.envi" //排除配置
     # sort -r -k 5 //時間倒序（基於「coscli ls/返回表格」）
-    # awk '{print $1}' //獲取相對路徑 KEY
-    coscli ls "${variCosBucket}/${variEachCosRemotePath}/" | grep "${variEachBinName}\." | grep -v "\.envi" | sort -r -k 5 | awk '{print $1}'
+    # awk '{print $1}' //相對路徑
     local variBinSlice=$(coscli ls "${variCosBucket}/${variEachCosRemotePath}/" | grep "${variEachBinName}\." | grep -v "\.envi" | sort -r -k 5 | awk '{print $1}')
     local variBackupNum=5
     local variCounterIndex=0
-    for variEachValue in ${variBinSlice}; do
+    for variEachSuffixUri in ${variBinSlice}; do
       variCounterIndex=$((variCounterIndex + 1))
       if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
-        local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachValue}"
+        local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachSuffixUri}"
         echo "[ COS ] coscli rm ${variEachRemoteBinUri}"
         coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
       fi
     done
-    # 最多保留5個「備份/執行文件」[END]
+    # 保留5個「備份/執行文件」[END]
   done
   # 上傳{配置文件 && 編譯程序}[END]
   return 0
