@@ -1787,8 +1787,8 @@ function funcPublicCloudUnicornReinit_Ascli(){
     coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}.${variEachBinMd5}" || { echo "[ FATAL ] failed to upload ${variEachBinName}.${variEachBinMd5}"; continue; }
     coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachEnviName}.envi" || { echo "[ FATAL ] failed to upload ${variEachEnviName}.envi"; continue; }
     # ----------
-    echo "[ COS ] upload successful : ${variEachEnviName}.envi"
-    echo "[ COS ] upload successful : ${variEachBinName}.${variEachBinMd5}"
+    echo "[ coscli ] upload successful : ${variEachEnviName}.envi"
+    echo "[ coscli ] upload successful : ${variEachBinName}.${variEachBinMd5}"
     # 保留5個「備份/執行文件」[START]
     # grep -v "\.envi" //排除配置
     # sort -r -k 5 //時間倒序（基於「coscli ls/返回表格」）
@@ -1800,7 +1800,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
       variCounterIndex=$((variCounterIndex + 1))
       if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
         local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachSuffixUri}"
-        echo "[ COS ] coscli rm ${variEachRemoteBinUri}"
+        echo "[ coscli ] coscli rm ${variEachRemoteBinUri}"
         coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
       fi
     done
@@ -1843,15 +1843,15 @@ function funcPublicCloudUnicornReinit_Ascli(){
       # 構建「JSON/實例ID」[END]
       # 批量刪除多個實例
       local variRemoveInstancesCommand="tccli cvm TerminateInstances --region \"${variEachRegionOption}\" --InstanceIds '${variInstanceIdJson}'"
-      echo "${variRemoveInstancesCommand}"
+      echo "[ tccli ] ${variRemoveInstancesCommand}"
       # 執行銷毀（「伸縮組」會自行拉起等量的「關聯實例」）
       # 禁止：local variRemoveInstancesResult=$(eval "${variRemoveInstancesCommand}" 2>&1)，否則後續「$?」會獲取「local/賦值語句」的執行結果
       local variRemoveInstancesResult
       variRemoveInstancesResult=$(eval "${variRemoveInstancesCommand}" 2>&1)
       if [[ $? -eq 0 ]]; then
-        echo "${variEachAutoScalingGroupName} rebuild succeeded"
+        echo "[ tccli ] ${variEachAutoScalingGroupName} rebuild succeeded"
       else
-        echo "${variEachAutoScalingGroupName} rebuild failed : ${variRemoveInstancesResult}"
+        echo "[ tccli ] ${variEachAutoScalingGroupName} rebuild failed : ${variRemoveInstancesResult}"
       fi
     fi
     # 重建「彈性伸縮>>關聯實例」[END]
