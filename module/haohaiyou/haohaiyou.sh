@@ -2036,7 +2036,7 @@ function funcPublicCloudUnicornSupervisor(){
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
   else
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HealthCheckFailed"
+    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEALTH_CHECK_FAILED"
     # supervisor[START]
     /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
     /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
