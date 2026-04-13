@@ -1022,6 +1022,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        # 超時限制（否則默認：60s）[START]
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        # 超時限制（否則默認：60s）[END]
     }
 }
 LOCALSKELETONCONF
@@ -1120,6 +1125,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        # 超時限制（否則默認：60s）[START]
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        # 超時限制（否則默認：60s）[END]
     }
 }
 # 443[END]
