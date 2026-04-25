@@ -1810,6 +1810,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
       variCounterIndex=$((variCounterIndex + 1))
       if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
         local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachSuffixUri}"
+        # TODO:無法刪除/待測試？
         echo "[ coscli ] coscli rm ${variEachRemoteBinUri}"
         coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
       fi
