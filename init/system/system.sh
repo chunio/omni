@@ -792,10 +792,10 @@ function funcPublicProxy() {
           # TODO:...
           ;;
       "UBUNTU"|"DEBIAN")
-          omni.ubuntu proxy $1
+          omni.ubuntu proxy $1 $2
           ;;
       "CENTOS"|"RHEL"|"REDHAT")
-          omni.centos proxy $1
+          omni.centos proxy $1 $2
           ;;
       *)
           return 1
