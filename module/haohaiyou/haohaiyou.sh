@@ -890,7 +890,7 @@ JUMPEREOF
   return 0
 }
 
-function funcPublicCloudSkeletonRinit() {
+function funcPublicCloudSkeletonReinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variBranchName=${1}
@@ -971,6 +971,7 @@ function funcPublicCloudSkeletonRinit() {
           echo "/usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env"
           /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env
           sed -i "s/^APP_SERVICE=.*/APP_SERVICE=${variEachService}/" .env
+          rm -rf runtime/container
           expect -c '
           set timeout -1
           spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
