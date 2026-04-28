@@ -163,8 +163,8 @@ function funcProtectedCloudSelector() {
   )
   local variPaddlewaverCloudSlice=(
     # ==================================================
-    "01 SKELETON SINGLETON 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 CENTOS --"
-    "02 SKELETON SINGLETON 01 PADDLEWAVER USEAST 43.130.116.28 22 CENTOS --"
+    "01 SKELETON MASTER 01 PADDLEWAVER SINGAPORE 43.133.61.186 22 CENTOS --"
+    "02 SKELETON MASTER 01 PADDLEWAVER USEAST 43.130.116.28 22 CENTOS --"
     "03 SKELETON SLAVE 01 PADDLEWAVER SINGAPORE 43.156.226.228 22 CENTOS --"
     "04 SKELETON SLAVE 01 PADDLEWAVER USEAST 43.130.150.62 22 CENTOS --"
     # ==================================================
@@ -202,8 +202,8 @@ function funcProtectedCloudSelector() {
   )
   local variYoneCloudSlice=(
     # ==================================================
-    "01 SKELETON SINGLETON 01 YONE SINGAPORE 43.134.87.222 22 CENTOS --"
-    "02 SKELETON SINGLETON 01 YONE USEAST 43.130.147.251 22 CENTOS --"
+    "01 SKELETON MASTER 01 YONE SINGAPORE 43.134.87.222 22 CENTOS --"
+    "02 SKELETON MASTER 01 YONE USEAST 43.130.147.251 22 CENTOS --"
     # ==================================================
     "01 ADX TRACK 01 YONE SINGAPORE 43.159.51.144 22 CENTOS --"
     "02 ADX TRACK 02 YONE SINGAPORE 43.133.63.172 22 CENTOS --"
@@ -1348,8 +1348,8 @@ function funcPublicCloudUnicornReinit_Official() {
           sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variEachCrontabEnviUri}"
         fi
         echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1" >> "${variEachCrontabEnviUri}"
-        # （2）僅使用於「variEachService=SINGLETON」
-        if [[ ${variEachService} == "SINGLETON" ]]; then
+        # （2）僅使用於「variEachService=MASTER」
+        if [[ ${variEachService} == "MASTER" ]]; then
           # TODO:[臨時]廢棄清理[START]
           if grep -Fq "cloudSclickArchived" "${variEachCrontabEnviUri}"; then
             sed -i '/cloudSclickArchived/d' "${variEachCrontabEnviUri}"
@@ -1639,7 +1639,7 @@ JUMPEREOF
 function funcPublicCloudUnicornReinit_Common() {
   local variParameterDescMulti=(
     "module : DSP，ADX"
-    "service : BID，TRACK，SINGLETON"
+    "service : BID，TRACK，MASTER"
     "label : 01，02，..."
     "domain : PADDLEWAVER，YONE"
     "region : SINGAPORE，USEAST"
@@ -1754,14 +1754,14 @@ function funcPublicCloudUnicornReinit_Common() {
   fi
   echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   # （1）supervisor/異常重啟[END]
-  # （2）僅限「variService=SINGLETON」[START]
-  if [[ ${variService} == "SINGLETON" ]]; then
+  # （2）僅限「variService=MASTER」[START]
+  if [[ ${variService} == "MASTER" ]]; then
     if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
       sed -i "/cloudUnicornMinutelyCrontab/d" "${variCrontabEnviUri}"
     fi
     echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   fi
-  # （2）僅限「variService=SINGLETON」[END]
+  # （2）僅限「variService=MASTER」[END]
   cat "${variCrontabEnviUri}"
   ${variCrontabReloadCommand}
   # （三）crontab[END]
@@ -1910,7 +1910,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variParameterDescMulti=(
     "domain : PADDLEWAVER，YONE"
     "module : DSP，ADX"
-    "service : BID，TRACK，SINGLETON"
+    "service : BID，TRACK，MASTER"
     "region : SINGAPORE，USEAST"
   )
   funcProtectedCheckRequiredParameter 4 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
