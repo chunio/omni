@@ -978,6 +978,8 @@ function funcPublicCloudSkeletonReinit() {
           expect "skeleton"
           send "composer install\r"
           expect "skeleton"
+          send "composer dump-autoload -o --no-dev\r"
+          expect "skeleton"
           send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
           expect "skeleton"
           send "exit\r"
@@ -1512,7 +1514,7 @@ function funcPublicCloudUnicornReinit() {
     variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
     # 檢測目標節點環節是否支持當前模塊[START]
     variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
-    if [[ $variEachValueLower != *${variModule}* && $variEachValueLower != *singleton* ]]; then
+    if [[ $variEachValueLower != *${variModule}* && $variEachValueLower != *master* ]]; then
       echo "invalid selection : [ ${variEachValue} ]"
       continue
     fi
@@ -1795,8 +1797,10 @@ function funcPublicCloudUnicornReinit_Ascli(){
     local variEachBinName=$(echo "unicorn_${variEachModule}" | tr 'A-Z' 'a-z')
     local variEachBinMd5=$(cat "${variEachEnviUri}" | tr -d '[:space:]' | awk -F'#' '{print $1}')
     # ----------
-    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}.${variEachBinMd5}" || { echo "[ FATAL ] failed to upload ${variEachBinName}.${variEachBinMd5}"; continue; }
-    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachEnviName}.envi" || { echo "[ FATAL ] failed to upload ${variEachEnviName}.envi"; continue; }
+    echo "coscli cp ${variLocalPath}/${variEachBinName} ${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}.${variEachBinMd5}"
+    coscli cp "${variLocalPath}/${variEachBinName}" "${variCosBucket}/${variEachCosRemotePath}/${variEachBinName}.${variEachBinMd5}" # || { echo "[ FATAL ] failed to upload ${variEachBinName}.${variEachBinMd5}"; continue; }
+    echo "coscli cp ${variEachEnviUri} ${variCosBucket}/${variEachCosRemotePath}/${variEachEnviName}.envi"
+    coscli cp "${variEachEnviUri}" "${variCosBucket}/${variEachCosRemotePath}/${variEachEnviName}.envi" #  || { echo "[ FATAL ] failed to upload ${variEachEnviName}.envi"; continue; }
     # ----------
     echo "[ coscli ] upload successful : ${variEachEnviName}.envi"
     echo "[ coscli ] upload successful : ${variEachBinName}.${variEachBinMd5}"
@@ -1811,8 +1815,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
       variCounterIndex=$((variCounterIndex + 1))
       if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
         local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachSuffixUri}"
-        # TODO:無法刪除/待測試？
-        echo "[ coscli ] coscli rm ${variEachRemoteBinUri}"
+        echo "[ coscli ] coscli rm -f ${variEachRemoteBinUri}"
         coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
       fi
     done
@@ -2308,7 +2311,8 @@ cos:
     - name: ${variTencentCosBucketName}
       endpoint: ${variTencentCosBucketEndpoint}
 EOF
-  if coscli ls cos://${variTencentCosBucketName} &> /dev/null; then
+  # chmod +x /usr/local/bin/coscli
+  if coscli ls cos://${variTencentCosBucketName}; then
     echo "the coscli connection succeeded"
     return 0
   else
