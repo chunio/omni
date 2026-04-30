@@ -10,7 +10,9 @@ ubuntu 24.04
 ## Install Wizard
 
 ```
-[root@localhost /]# # mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+[root@localhost /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+[root@localhost /]# [ -f /etc/redhat-release ] && yum install -y git
+[root@localhost /]# [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
 [root@localhost /]# git clone https://github.com/chunio/omni.git && chmod 777 -R ./omni
 [root@localhost /]# ./omni/init/system/system.sh init
 ```
