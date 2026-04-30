@@ -84,6 +84,15 @@ function funcProtectedCloudInit() {
 # ##################################################
 # public function[START]
 function funcPublicZshReinit(){
+  local variParameterDescList=("status : 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  local variStatus=${1:-0}
+  # 退出「zsh」[START]
+  if [ "${variStatus}" == "0" ]; then
+    chsh -s /bin/bash root
+    return 0
+  fi
+  # 退出「zsh」[END]
   apt remove -y zsh 2> /dev/null
   apt install -y gcc make libncurses-dev
   # 安裝「nerdfonts」字體[START]

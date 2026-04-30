@@ -526,42 +526,43 @@ MARK
 }
 
 function funcProtectedCommandInit(){
-  local variAbleUnitFileUrlList=${1}
-  # local variEtcBashrcReloadStatus=0
+  local variAbleUnitFileUriList=${1}
   rm -rf /usr/local/bin/"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
-  for variAbleUnitFileUri in ${variAbleUnitFileUrlList}; do
+  # [批量]模糊清理「alias」[START]
+  # 風險：誤殺，收益：徹底
+  # if [ -f "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" ]; then
+  #  sed -i "/^alias ${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}\..*=/d" "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+  # fi
+  # [批量]模糊清理「alias」[END]
+  for variAbleUnitFileUri in ${variAbleUnitFileUriList}; do
     variEachUnitFilename=$(basename ${variAbleUnitFileUri})
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[START]
-    local variDeletePattern="^alias ${variEachUnitCommand}="
-    [ -f /etc/bashrc ] && sed -i "/${variDeletePattern}/d" /etc/bashrc
+    # local variDeletePattern="^alias ${variEachUnitCommand}="
+    # [ -f /etc/bashrc ] && sed -i "/${variDeletePattern}/d" /etc/bashrc
     # TODO:已廢棄/待移除（直至：所有[local/haohaiyou]雲服務器皆重新執行一次「omni.system init」）[END]
-    ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
-    # if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
-        # 基於當前環境的命令（即：vim /etc/bashrc）[START]
-        # local variDeletePattern="^alias ${variEachUnitCommand}="
-        # local variDeletedCount=$(grep -c "${variDeletePattern}" /etc/bashrc || true)
-        # sed -i "/${variDeletePattern}/d" /etc/bashrc
-        # local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
-        # echo $variAddPattern >> /etc/bashrc
-        # if [ "${variDeletedCount}" -gt 0 ]; then
-        #   [ $variEtcBashrcReloadStatus -eq 0 ] && echo 'source /etc/bashrc' >> ${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}
-        #   variEtcBashrcReloadStatus=1
-        # fi
-        # echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-        # 基於當前環境的命令（即：vim /etc/bashrc）[END]
-    # else
-        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
-        # echo "ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-        # ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
-        # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
-    # fi
+    # ln -sf $variAbleUnitFileUri /usr/local/bin/$variEachUnitCommand
+    # 基於當前環境的命令（即：vim /etc/bashrc）[START]
+    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri}; then
+      # [單一]精確清理[START]
+      local variDeletePattern="^alias ${variEachUnitCommand}="
+      sed -i "/${variDeletePattern}/d" ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+      # [單一]精確清理[END]
+      local variAddPattern='alias '${variEachUnitCommand}'="source '${variAbleUnitFileUri}'"'
+      echo $variAddPattern >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    fi
+    # 基於當前環境的命令（即：vim /etc/bashrc）[END]
+    # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
+    # 檢索順序：alias > ln
+    # echo "ln -sf ${variAbleUnitFileUri} /usr/local/bin/${variEachUnitCommand}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+    ln -sf "${variAbleUnitFileUri}" /usr/local/bin/${variEachUnitCommand}
+    # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[END]
   done
   return 0
 }
 
 function funcProtectedOptionInit(){
-  local variAbleUnitFileUrlList=${1}
+  local variAbleUnitFileUriList=${1}
   # 隔斷符號（echo $COMP_WORDBREAKS）"'><=;|&(:
   rm -rf /etc/bash_completion.d/${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}.*
   # inherit the public functions from builtin.sh[START]
@@ -581,7 +582,7 @@ function funcProtectedOptionInit(){
   # report1/3[START]
   declare -A variOptionReport
   # report1/3[END]
-  for variAbleUnitFileUri in ${variAbleUnitFileUrlList}; do
+  for variAbleUnitFileUri in ${variAbleUnitFileUriList}; do
     variEachUnitFilename=$(basename $variAbleUnitFileUri)
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     variFuncNameCollection=$(grep -oP 'function \KfuncPublic\w+' "$variAbleUnitFileUri") || true
@@ -597,7 +598,7 @@ function funcProtectedOptionInit(){
     # remove leading and trailing whitespace/移除首末空格
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
     grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S" # TODO:已廢棄/待移除
-    funcProtectedBashCompletion "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+    funcProtectedCompletionStaticInit "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
     # report2/3[START]
     if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
       # 置頂
@@ -624,7 +625,8 @@ function funcProtectedOptionInit(){
   return 0
 }
 
-function funcProtectedBashCompletion(){
+# 需重載會話
+function funcProtectedCompletionStaticInit(){
   variCommand=$1
   variOptionList=$2
 # 添加當前腳本的命令補全邏輯
@@ -664,6 +666,7 @@ function funcPublicInit(){
           # TODO:...
           ;;
       "UBUNTU"|"DEBIAN")
+          # 升級用戶執行權限
           local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
           grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
           ;;
@@ -702,11 +705,32 @@ function funcPublicInit(){
       variFindCommand="$variFindCommand -type d -regex \".*/$variEachIgnoreDirectory\" -prune -o"
   done
   variFindCommand="$variFindCommand -type f -name \"*${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}\" -print"
-  variAbleUnitFileUrlList=$(eval "$variFindCommand" | sort -u)
+  variLikeUnitFileUriList=$(eval "$variFindCommand" | sort -u)
+  # 僅保留「父目錄名 == 文件名稱（不含後綴）」的[START]
+  local variMatchedUnitFileUriList=""
+  for variEachLikeUnitFileUri in ${variLikeUnitFileUriList}; do
+    local variEachFilename=$(basename "${variEachLikeUnitFileUri}" ".${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}")
+    local variEachParentDirectory=$(basename "$(dirname "${variEachLikeUnitFileUri}")")
+    if [ "${variEachFilename}" == "${variEachParentDirectory}" ]; then
+      variMatchedUnitFileUriList="${variMatchedUnitFileUriList} ${variEachLikeUnitFileUri}"
+    fi
+  done
+  variAbleUnitFileUriList=$(echo "${variMatchedUnitFileUriList}" | tr ' ' '\n' | sed '/^$/d')
+  # 僅保留「父目錄名 == 文件名稱（不含後綴）」的[END]
   # pull *.sh list[END]
-  funcProtectedCommandInit "${variAbleUnitFileUrlList}"
-  funcProtectedOptionInit "${variAbleUnitFileUrlList}"
-  # TODO:[待解決]ZSH無法刷新自動補全，需手動執行「source ~/.zshrc」
+  # ----------
+  local variBuiltinSourceUriMd5Before=""
+  [ -f "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" ] && variBuiltinSourceUriMd5Before=$(md5sum "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" | awk '{print $1}')
+  # ----------
+  funcProtectedCommandInit "${variAbleUnitFileUriList}"
+  funcProtectedOptionInit "${variAbleUnitFileUriList}"
+  # ----------
+  local variBuiltinSourceUriMd5After=""
+  [ -f "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" ] && variBuiltinSourceUriMd5After=$(md5sum "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" | awk '{print $1}')
+  if [ "${variBuiltinSourceUriMd5After}" != "${variBuiltinSourceUriMd5Before}" ]; then
+    echo "source ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+  fi
+  # ----------
   return 0
 }
 
@@ -725,12 +749,14 @@ function funcPublicVersion() {
 
 #「ohmyzsh」沒有分支/標籤的概念，鼓勵用戶使用最新（支持：使用「commit id」鎖定版本）
 function funcPublicZshReinit() {
+  local variParameterDescList=("status : 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
       "CENTOS"|"RHEL"|"REDHAT")
-        omni.centos zshReinit
+        omni.centos zshReinit $1
         ;;
       "UBUNTU"|"DEBIAN")
-        omni.ubuntu zshReinit
+        omni.ubuntu zshReinit $1
       ;;
       "MACOS")
           # TODO:...

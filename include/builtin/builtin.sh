@@ -161,10 +161,10 @@ function funcProtectedDestruct() {
   rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   echo "--------------------------------------------------"
   if [[ -s "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}" ]]; then
-    echo "[ todo : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]"
+    echo -e "\033[31m[ TODO : ${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo ]\033[0m"
     cat "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   else
-    echo "[ todo : -- ]"
+    echo "[ TODO : -- ]"
   fi
   rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   echo "--------------------------------------------------"

@@ -97,6 +97,26 @@ function funcProtectedCloudInit() {
 # ##################################################
 # public function[START]
 function funcPublicZshReinit(){
+  local variParameterDescList=("status : 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  local variStatus=${1:-0}
+  # 退出「zsh」[START]
+  if [ "${variStatus}" == "0" ]; then
+    for variEachFile in .bashrc .bash_profile .bash_logout; do
+      if [ ! -f "/root/${variEachFile}" ]; then
+        if [ -f "/etc/skel/${variEachFile}" ]; then
+          /usr/bin/cp -f "/etc/skel/${variEachFile}" "/root/${variEachFile}"
+        fi
+      fi
+    done
+    if [ ! -f /etc/bashrc ] || [ ! -s /etc/bashrc ]; then
+      /usr/bin/cp -f ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bashrc.centos0709 /etc/bashrc
+      chmod 644 /etc/bashrc
+    fi
+    chsh -s /bin/bash root
+    return 0
+  fi
+  # 退出「zsh」[END]
   yum remove -y zsh 2> /dev/null
   yum install -y gcc make ncurses-devel
   # 安裝「nerdfonts」字體[START]
