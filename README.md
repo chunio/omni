@@ -79,5 +79,5 @@ omni
 ## Common Symbol
 
 ```
-「」
+「1」
 ```
