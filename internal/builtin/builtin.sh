@@ -419,7 +419,7 @@ function funcProtectedUpdateVariGlobalBuiltinValue_Disable() {
   else
     variBuiltinOmniRootPath=${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}
   fi
-  local variBuiltinUri="${variBuiltinOmniRootPath}/include/builtin/builtin.sh"
+  local variBuiltinUri="${variBuiltinOmniRootPath}/internal/builtin/builtin.sh"
   local variNewRecord='VARI_GLOBAL["'${variIndex}'"]="'${variValue}'"'
   #「sed -i」工作原理（非原子操作，有文件誤刪的風險）：
   # 1創建「臨時文件」（sedBF4iTk）

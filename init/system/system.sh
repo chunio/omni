@@ -38,8 +38,8 @@ VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
-source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"
-source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.sh"
+source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
+source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 funcProtectedConstruct # 二次執行（目的：提前獲取係統信息）
@@ -49,7 +49,7 @@ funcProtectedConstruct # 二次執行（目的：提前獲取係統信息）
 variBuiltinOsDistroLower=$(echo "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" | tr '[:upper:]' '[:lower:]')
 VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.${variBuiltinOsDistroLower}.version"
 VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=0
-VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="include vendor"
+VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="internal vendor"
 VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 # ----------
 VARI_GLOBAL["OMNI_ENVI_PATH"]="${HOME}/.omni.${variBuiltinOsDistroLower}.envi" # 項目配置
@@ -645,18 +645,18 @@ function funcProtectedOptionInit(){
   local variAbleUnitFileUriList=${1}
   rm -rf "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}/"{_,}"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
   # inherit the public functions from builtin.sh[START]
-  local variIncludeOptionList=""
-  for variEachIncludeFuncName in $(grep -oE 'function +funcPublic\w+' "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/include/builtin/builtin.sh" | sed 's/^function *//'); do
+  local variInheritOptionList=""
+  for variEachInheritFuncName in $(grep -oE 'function +funcPublic\w+' "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/internal/builtin/builtin.sh" | sed 's/^function *//'); do
     # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
-    variOptionName=$(echo "$variEachIncludeFuncName" | sed 's/^funcPublic//')
+    variOptionName=$(echo "$variEachInheritFuncName" | sed 's/^funcPublic//')
     variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
     # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
-    variIncludeOptionList="$variIncludeOptionList $variOptionName"
+    variInheritOptionList="$variInheritOptionList $variOptionName"
   done
   # remove leading and trailing whitespace/移除首末空格
-  variIncludeOptionList=$(echo ${variIncludeOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variIncludeOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  variInheritOptionList=$(echo ${variInheritOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
+  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   # inherit the public functions from builtin.sh[END]
   # report1/3[START]
   declare -A variOptionReport
@@ -679,9 +679,9 @@ function funcProtectedOptionInit(){
     variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
     grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
     if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" == "LINUX" ]; then
-      funcProtectedCompletionInit_Linux "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+      funcProtectedCompletionInit_Linux "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
     elif [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" == "DARWIN" ]; then
-      funcProtectedCompletionInit_Darwin "$variEachUnitCommand" "${variIncludeOptionList} ${variEachOptionList}"
+      funcProtectedCompletionInit_Darwin "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
     fi
     # report2/3[START]
     if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
@@ -923,7 +923,7 @@ function funcPublicSaveUnit(){
   variArchivePath=${variSaveToThePath}/${variArchiveCommand}
   rm -rf ${variArchivePath} ${variSaveToThePath}/${variArchiveCommand}.tgz
   mkdir -p ${variArchivePath}/module
-  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,include,init} ${variArchivePath}
+  /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,internal,init} ${variArchivePath}
   /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/module/${variUnitName} ${variArchivePath}/module
   # flush the useless data[START]
   find ${variArchivePath} -type f -name "encrypt.envi" -exec truncate -s 0 {} \;
@@ -1193,4 +1193,4 @@ STANDALONERENEWSHELL
 # public function[END]
 # ##################################################
 
-source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/orchestrator/orchestrator.sh"
+source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/orchestrator/orchestrator.sh"
