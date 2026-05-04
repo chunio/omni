@@ -6,25 +6,30 @@
 :<<'MARK'
 1/「#!/usr/bin/env bash」表示使用「$PATH/搜尋路徑」中首個匹配的「bash」(注意：{. || source}來執行腳本時，係統將無視「#!/usr/bin/env bash」)
 2/etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶，弊端：執行「source /etc/profile」亦無法加載最新變更至當前終端））
-3/etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：單個用戶）））//
-4/find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
+3/etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：當前用戶）））
 # ----------
 兼容事項（即：LINUX支持，DARWIN缺失）：
 1/LINUX:「grep -P」，[解決方案]DARWIN:「grep -E」
 2/LINUX:「sed -i」，[解決方案]DARWIN:「sed -i '' # 額外依賴備份名稱」
 3/LINUX:「date {-d，%3N，strftime}」，[解決方案]DARWIN:「date perl」
 4/LINUX:「$(readlink -f "${BASH_SOURCE[0]}")」，[解決方案]DARWIN:「$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")」
+# ----------
+1/find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
 
 # required[START]
 if [ -z "$ZSH_VERSION" ]; then
   [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
 fi
-if [ -n "$ZSH_VERSION" ]; then
-  setopt NO_NOMATCH
-  setopt SH_WORD_SPLIT
-fi
 # required[END]
+# compatible[START]
+if [ -n "$ZSH_VERSION" ]; then
+  # 目的：調整語法，靠攏至「bash」
+  setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯
+  setopt KSH_ARRAYS # 數組索引從零開始
+  setopt SH_WORD_SPLIT # 支持空格拆分變量
+fi
+# compatible[END]
 
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
@@ -35,7 +40,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.s
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
-funcProtectedConstruct
+funcProtectedConstruct # 二次執行（目的：提前獲取係統信息）
 
 # ##################################################
 # global variable[START]
@@ -48,8 +53,7 @@ VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 VARI_GLOBAL["OMNI_ENVI_PATH"]="${HOME}/.omni.${variBuiltinOsDistroLower}.envi" # 項目配置
 VARI_GLOBAL["OMNI_BIN_PATH"]="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/bin" # 可執行的
 VARI_GLOBAL["OMNI_COMPLETION_PATH"]="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/completion" # 命令補全
-VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]='[ -f "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh" ] && source "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh"'
-# ----------
+VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]='[ -f "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh" ] && source "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh"' # 引導程序
 # global variable[END]
 # ##################################################
 
@@ -439,6 +443,7 @@ enabled=0
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 metadata_expire=never
+
 skip_if_unavailable=1
 MARK
   cat <<'MARK' > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/repository/CentOS-Fasttrack.repo
@@ -678,7 +683,7 @@ function funcProtectedOptionInit(){
     fi
     # report2/3[START]
     if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} == 'system' ]; then
-      # 置頂
+      # 置頂顯示
       variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
     else
       variEachIndex=${variEachBashEvni}_1_${variEachUnitCommand}
@@ -755,20 +760,35 @@ EOF
 }
 
 function funcProtectedCompletionRefresh(){
-  if [ -n "$ZSH_VERSION" ]; then
-    # 清理舊的[START]
+  if [ -n "$BASH_VERSION" ]; then
+    # unset[START]
+    for f in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/*; do
+      [ -f "$f" ] || continue
+      cmd=$(basename "$f")
+      complete -r "$cmd" 2>/dev/null || true
+      func="_${cmd}_complete"
+      unset -f "$func" 2>/dev/null || true
+    done
+    # unset[END]
+    # reload[START]
+    for f in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/*; do
+      [ -f "$f" ] && source "$f"
+    done
+    # reload[END]
+  elif [ -n "$ZSH_VERSION" ]; then
+    # unset[START]
     for f in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/_*; do
       fname=$(basename "$f")
-      fname="${fname#_}"              # 去掉前綴 _
-      func="_${fname//./_}_complete"  # 轉成函數名
+      fname="${fname#_}"
+      func="_${fname//./_}_complete"
       unfunction "$func" 2>/dev/null || true
     done
-    # 清理舊的[END]
-    # 重載新的[START]
+    # unset[END]
+    # reload[START]
     for f in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/_*; do
       [ -f "$f" ] && source "$f"
     done
-    # 重載新的[END]
+    # reload[END]
   fi
   return 0
 }
@@ -794,12 +814,6 @@ function funcPublicInit(){
     # funcProtectedUpdateVariGlobalBuiltinValue "BUILTIN_OMNI_ROOT_PATH" ${variOmniRootPath}
   fi
   # pull *.sh list[START]
-  # filter : ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"] && ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}
-  # find "/windows/code/backend/chunio/omni" \
-  # -type d -path "/windows/code/backend/chunio/omni/vendor" -prune -o \
-  # -type d -path "/windows/code/backend/chunio/omni/include" -prune -o \
-  # -type d -regex ".*/template" -prune -o \
-  # -type f -name "*.sh" -print
   local variFindCommand="find \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}\""
   for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]}; do
       variFindCommand="$variFindCommand -type d -path \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/$variEachIgnoreDirectory\" -prune -o"
@@ -827,12 +841,13 @@ function funcPublicInit(){
   # ----------
   # 係統兼容[START]
   if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
-    # 字符編碼
+    # 設置「字符編碼」
     localectl set-locale LANG=en_US.UTF-8 2>/dev/null || true
   fi
   funcProtectedShellrcInit
   funcProtectedCommandInit "${variAbleUnitFileUriList}"
   funcProtectedOptionInit "${variAbleUnitFileUriList}"
+  funcProtectedCompletionRefresh
   if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
     # 升級用戶執行權限
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
@@ -846,7 +861,6 @@ function funcPublicInit(){
     echo "source ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   fi
   # ----------
-  funcProtectedCompletionRefresh
   return 0
 }
 
@@ -930,14 +944,14 @@ function funcPublicSaveUnit(){
 # 驗證方法：curl https://www.google.com（由於ICMP協議不走HTTP代理，因此PING不通亦正常）
 function funcPublicProxy() {
   case ${VARI_GLOBAL["BUILTIN_OS_DISTRO"]} in
-      "MACOS")
-          # TODO:...
+      "CENTOS"|"RHEL"|"REDHAT")
+          omni.centos proxy $1 $2
           ;;
       "UBUNTU"|"DEBIAN")
           omni.ubuntu proxy $1 $2
           ;;
-      "CENTOS"|"RHEL"|"REDHAT")
-          omni.centos proxy $1 $2
+      "MACOS")
+          omni.macos proxy $1 $2
           ;;
       *)
           return 1

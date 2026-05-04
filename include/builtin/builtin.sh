@@ -9,26 +9,26 @@ MARK
 # ##################################################
 # global variable[START]
 VARI_GLOBAL["BUILTIN_START_TIME"]=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
-# 每次執行動態獲取[START]
+# 每次執行動態獲取（即：共享內存）[START]
 # enum : LINUX / DARWIN
 VARI_GLOBAL["BUILTIN_UNAME"]=""
 # enum : CENTOS / UBUNTU / MACOS
 VARI_GLOBAL["BUILTIN_OS_DISTRO"]=""
 VARI_GLOBAL["BUILTIN_SOURCE_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]=""
-# 每次執行動態獲取[END]
+# 每次執行動態獲取（即：共享內存）[END]
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/cloud"
 VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/runtime"
 # format :　YYYYMMDD.HHMMSS.mmm
 VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | TZ="Asia/Shanghai" perl -MPOSIX -lne 'print strftime("%Y%m%d.%H%M%S", localtime($_/1000)) . "." . substr($_, -3)')
-VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace"
 VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo"
+VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace"
 VARI_GLOBAL["BUILTIN_UNIT_COMMAND_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.command"
 VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]=""
-VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
-VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
+VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="SUCCEEDED"
+VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="FAILED"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
 # 0表示不限
 VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=10
@@ -92,16 +92,14 @@ function funcProtectedConstruct() {
   # [ -n "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] && return 0
   # --------------------------------------------------
   # 動態獲取項目目錄[START]
-  # 「$(readlink -f "${BASH_SOURCE[0]}")」等價於「$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")」（兼容：bash && zsh）
-  local variBuiltinOmniRootPath=""
   local variOmniRootMarkedFile=".3aa53cec161c587e51555bdfa5c56eff"
+  local variBuiltinOmniRootPath=""
   local variCurrentScript=""
   if [ -n "$ZSH_VERSION" ]; then
-    # Zsh 魔法：${(%):-%x} 會輸出「定義當前函數的實體腳本路徑」
-    # 用 eval + 單引號包起來，是為了對 Bash 隱藏這段代碼，防止 Bash 在預先掃描時報錯
+    # zsh
     eval 'variCurrentScript="${(%):-%x}"'
   else
-    # Bash 寫法：故意不加 [0]，Bash 預設會取陣列的第一個元素，同時能避開 Zsh 的陣列解析潔癖
+    # bash/無下標時，獲取數組首個元素
     variCurrentScript="${BASH_SOURCE}"
   fi
   local variBuiltinAbsolutePath="$(cd "$(dirname "${variCurrentScript}")" && pwd)/$(basename "${variCurrentScript}")"
@@ -137,12 +135,14 @@ MARK
 declare -A VARI_ENCRYPT
 ENCRYPTENVI
   fi
+  # ----------
   # 禁止：於當前環境執行（如：source interface.sh）
   if [[ ${VARI_GLOBAL["BUILTIN_BASH_ENVI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
       echo "the run mode is prohibited"
       echo "example : "'${symbolLink}'" | /${VARI_GLOBAL["BASH_NAME"]} | ./${VARI_GLOBAL["BASH_NAME"]} | bash ${VARI_GLOBAL["BASH_NAME"]}"
       return 1
   fi
+  # ----------
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
   if [ ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} != 0 ] && [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} ]; then
     rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.todo
@@ -283,31 +283,27 @@ function funcProtectedCheckOptionParameter_History() {
 function funcProtectedCheckOptionParameter() {
   local variRequiredNum=$1
   local variArrayName=$2
-
-  # 【核心修改 1】使用 eval 展開代替 bash 專屬的 ${!2}
+  # 使用「eval」展開替代「bash」專屬的「${!2}」[START]
   local localParameterDescList=()
   eval "localParameterDescList=(\"\${$variArrayName}\")"
-
+  # 使用「eval」展開替代「bash」專屬的「${!2}」[END]
   # 檢查結果，值：0失敗，1成功（默認）
   local variCheckLabel="option"
   # 重置至終端默認
   local COLOR_RESET='\033[0m'
   # 背景綠色，字體黑色
   local COLOR_GREEN_BLACK='\033[42;30m'
-
   local variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
   variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
-
-  # 【核心修改 2】改用 for...in 迴圈，避開 Bash 與 Zsh 索引差異
+  # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[START]
   local i=1
   for variEachDesc in "${localParameterDescList[@]}"; do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$i : ${variEachDesc}${COLOR_RESET}")
     ((i++))
   done
-
+  # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[END]
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
   echo -e "$variParameterExplain"
-
   return 0
 }
 

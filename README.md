@@ -3,20 +3,22 @@
 ## System Dependency
 
 ```
-centos 7.9
-ubuntu 24.04
-macos 26.4.1
+linux : centos 7.9 , ubuntu 24.04
+darwin : macos 26.4.1
 ```
 
 ## Install Wizard
 
 ```
+[root@linux /]# # linux[START]
 [root@linux /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [root@linux /]# [ -f /etc/redhat-release ] && yum install -y git
 [root@linux /]# [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
 [root@linux /]# git clone https://github.com/chunio/omni.git && chmod -R 777 ./omni
 [root@linux /]# ./omni/init/system/system.sh init
+[root@linux /]# # linux[END]
 
+[root@darwin /]# # darwin[START]
 [root@darwin /]# mkdir -p /Users/zengweitao/archived/workspace/repository/chunio && cd /Users/zengweitao/archived/workspace/repository/chunio
 [root@darwin /]# export http_proxy=http://192.168.3.163:7897 # ifconfig | grep inet
 [root@darwin /]# export https_proxy=http://192.168.3.163:7897 # ifconfig | grep inet
@@ -30,6 +32,7 @@ macos 26.4.1
 [root@darwin /]# git clone https://github.com/chunio/omni.git
 [root@darwin /]# find ./omni -type f -name "*.sh" ! -path "*/.git/*" -exec chmod +x {} \;
 [root@darwin /]# ./omni/init/system/system.sh init
+[root@darwin /]# # darwin[END]
 ```
 
 ## New Unit
