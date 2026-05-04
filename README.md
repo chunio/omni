@@ -68,11 +68,11 @@ omni
 │   │   ├── runtime
 │   │   ├── encrypt.envi
 │   │   └── utility.sh
-│   └── workflow
+│   └── orchestrator
 │   │   ├── cloud
 │   │   ├── runtime
 │   │   ├── encrypt.envi
-│   |   └── workflow.sh
+│   |   └── orchestrator.sh
 ├── init
 │   ├── system
 │   │   ├── cloud

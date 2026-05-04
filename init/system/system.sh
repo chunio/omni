@@ -18,11 +18,13 @@
 MARK
 
 # required[START]
+# zero length
 if [ -z "$ZSH_VERSION" ]; then
   [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
 fi
 # required[END]
 # compatible[START]
+# non-zero length
 if [ -n "$ZSH_VERSION" ]; then
   # 目的：調整語法，靠攏至「bash」
   setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯
@@ -1191,4 +1193,4 @@ STANDALONERENEWSHELL
 # public function[END]
 # ##################################################
 
-source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/workflow/workflow.sh"
+source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/orchestrator/orchestrator.sh"
