@@ -344,30 +344,30 @@ function funcPublicProxy() {
   if ! [[ "${variProxyPort}" =~ ^[0-9]+$ ]]; then # 檢查類型
     variProxyPort=0
   fi
-  local variProxyUrl="< NIL >"
+  local variProxyOrigin="< NIL >"
   local variNoProxyMulti="127.0.0.1,localhost,${variProxyDomain},.orb.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
   if [ ${variProxyPort} -gt 0 ]; then
-    variProxyUrl="http://${variProxyDomain}:${variProxyPort}"
+    variProxyOrigin="http://${variProxyDomain}:${variProxyPort}"
     #（1.1）yum (rhel/centos) [START]
     # if [ -f /etc/yum.conf ]; then
     #  sed -i '/^proxy=/d' /etc/yum.conf
-    #  echo "proxy=${variProxyUrl}" >> /etc/yum.conf
+    #  echo "proxy=${variProxyOrigin}" >> /etc/yum.conf
     # fi
     #（1.1）yum (rhel/centos) [END]
     #（1.2）apt (debian/ubuntu) [START]
     cat > /etc/apt/apt.conf.d/80proxy <<APT_CONF_D
-Acquire::http::Proxy "${variProxyUrl}";
-Acquire::https::Proxy "${variProxyUrl}";
+Acquire::http::Proxy "${variProxyOrigin}";
+Acquire::https::Proxy "${variProxyOrigin}";
 APT_CONF_D
     #（1.2）apt (debian/ubuntu) [END]
     #（2）http && https[START]
     sed -i -E '/^export (http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
     {
-      echo "export http_proxy=\"${variProxyUrl}\""
-      echo "export https_proxy=\"${variProxyUrl}\""
+      echo "export http_proxy=\"${variProxyOrigin}\""
+      echo "export https_proxy=\"${variProxyOrigin}\""
       echo "export no_proxy=\"${variNoProxyMulti}\""
-      echo "export HTTP_PROXY=\"${variProxyUrl}\""
-      echo "export HTTPS_PROXY=\"${variProxyUrl}\""
+      echo "export HTTP_PROXY=\"${variProxyOrigin}\""
+      echo "export HTTPS_PROXY=\"${variProxyOrigin}\""
       echo "export NO_PROXY=\"${variNoProxyMulti}\""
     } >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
     #（2）http && https[END]
@@ -375,8 +375,8 @@ APT_CONF_D
     mkdir -p /etc/systemd/system/docker.service.d
     cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
 [Service]
-Environment="HTTP_PROXY=${variProxyUrl}"
-Environment="HTTPS_PROXY=${variProxyUrl}"
+Environment="HTTP_PROXY=${variProxyOrigin}"
+Environment="HTTPS_PROXY=${variProxyOrigin}"
 Environment="NO_PROXY=${variNoProxyMulti}"
 HTTPPROXYCONF
     #（3）docker[END]
@@ -392,6 +392,7 @@ HTTPPROXYCONF
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
     #（3）docker[END]
   fi
+  source "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
   # systemctl restart network.service
   systemctl daemon-reload 2>/dev/null
   systemctl restart docker 2> /dev/null
@@ -399,9 +400,8 @@ HTTPPROXYCONF
     echo "/etc/apt/apt.conf.d/80proxy successfully modified"
     echo "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]} successfully modified"
     echo "/etc/systemd/system/docker.service.d/http-proxy.conf successfully modified"
-    echo "{apt && http(s) && docker} successfully updated : ${variProxyUrl}"
+    echo "{apt && http(s) && docker} successfully updated : ${variProxyOrigin}"
   } >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
-  # TODO:人工刷新
   return 0
 }
 # public function[END]

@@ -61,6 +61,59 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # ##################################################
 # public function[START]
 
+# clash:7897
+# v2rayn:10809（設置 >> 參數設置 >> 開啟「允許來自局域網的連接」）
+# 驗證方法：curl https://www.google.com
+# [臨時]禁用代理：env -i curl https://www.google.com
+# [臨時]啟用代理：curl -x http://127.0.0.1:7897 https://www.google.com
+# [MACOS]{brew && docker}幾乎基於「http(s)」 # TODO:待驗證？
+function funcPublicProxy() {
+  local variParameterDescMulti=(
+    "domain : enum（0/127.0.0.1，1/host.docker.internal）, example.com"
+    "port : 0/disable, 7897/clash, 10809/v2ray"
+  )
+  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variProxyDomain=${1:-"0"}
+  case ${variProxyDomain} in
+    "0") variProxyDomain="127.0.0.1" ;; # 本機
+    "1") variProxyDomain="host.docker.internal" ;; # docker/orbstack
+    *) ;; # custom
+  esac
+  local variProxyPort=${2:-0}
+  if ! [[ "${variProxyPort}" =~ ^[0-9]+$ ]]; then
+    variProxyPort=0
+  fi
+  local variProxyOrigin="< NIL >"
+  local variNoProxyMulti="127.0.0.1,localhost,${variProxyDomain},.local,.orb.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  if [ "${variProxyPort}" -gt 0 ]; then
+    variProxyOrigin="http://${variProxyDomain}:${variProxyPort}"
+    #（1）shell http && https[START]
+    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+    {
+      echo "export http_proxy=\"${variProxyOrigin}\""
+      echo "export https_proxy=\"${variProxyOrigin}\""
+      echo "export all_proxy=\"${variProxyOrigin}\""
+      echo "export no_proxy=\"${variNoProxyMulti}\""
+      echo "export HTTP_PROXY=\"${variProxyOrigin}\""
+      echo "export HTTPS_PROXY=\"${variProxyOrigin}\""
+      echo "export ALL_PROXY=\"${variProxyOrigin}\""
+      echo "export NO_PROXY=\"${variNoProxyMulti}\""
+    } >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+    #（1）shell http && https[END]
+  else
+    #（1）shell http && https[START]
+    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+    unset http_proxy https_proxy all_proxy no_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY
+    #（1）shell http && https[END]
+  fi
+  source "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+  {
+    echo "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]} successfully modified"
+    echo "{http(s)} successfully updated : ${variProxyOrigin}"
+  } >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  return 0
+}
+
 # public function[END]
 # ##################################################
 

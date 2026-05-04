@@ -356,9 +356,9 @@ function funcPublicProxy() {
   local variParameterDescMulti=("port")
   funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variProxyPort=${1:-0}
-  local variProxyUrl="< NIL >"
+  local variProxyOrigin="< NIL >"
   if [ ${variProxyPort} -gt 0 ]; then
-    variProxyUrl="http://192.168.255.1:${variProxyPort}"
+    variProxyOrigin="http://192.168.255.1:${variProxyPort}"
     #（1）common[START]
     sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
@@ -366,23 +366,23 @@ function funcPublicProxy() {
     sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    echo 'export http_proxy="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    echo 'export https_proxy="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export http_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export https_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo 'export no_proxy="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    echo 'export HTTP_PROXY="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
-    echo 'export HTTPS_PROXY="'${variProxyUrl}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export HTTP_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    echo 'export HTTPS_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     echo 'export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
     #（1）common[END]
     #（2）yum[START]
     sed -i '/^proxy=/d' /etc/yum.conf
-    echo "proxy=${variProxyUrl}" >> /etc/yum.conf
+    echo "proxy=${variProxyOrigin}" >> /etc/yum.conf
     #（2）yum[END]
     #（3）docker[START]
     mkdir -p /etc/systemd/system/docker.service.d
     cat <<HTTPPROXYCONF > /etc/systemd/system/docker.service.d/http-proxy.conf
 [Service]
-Environment="HTTP_PROXY=${variProxyUrl}"
-Environment="HTTPS_PROXY=${variProxyUrl}"
+Environment="HTTP_PROXY=${variProxyOrigin}"
+Environment="HTTPS_PROXY=${variProxyOrigin}"
 Environment="NO_PROXY=localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 HTTPPROXYCONF
     #（3）docker[END]
@@ -403,13 +403,14 @@ HTTPPROXYCONF
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
     #（3）docker[END]
   fi
+  source "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
   # systemctl restart network.service
   systemctl daemon-reload
   systemctl restart docker 2> /dev/null
   echo "update ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo "update /etc/yum.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo "update /etc/systemd/system/docker.service.d/http-proxy.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  echo "update http/https/yum/docker proxy : ${variProxyUrl}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "update http/https/yum/docker proxy : ${variProxyOrigin}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   return 0
 }
 # public function[END]
