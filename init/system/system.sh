@@ -891,7 +891,7 @@ function funcPublicZshReinit() {
         omni.ubuntu zshReinit $1
       ;;
       "MACOS")
-          # TODO:...
+          # 係統自帶
           ;;
       *)
           return 1
