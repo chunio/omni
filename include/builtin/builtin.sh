@@ -216,7 +216,7 @@ function funcProtectedUnameInit() {
 
 # --------------------------------------------------
 
-function funcProtectedCheckRequiredParameter() {
+function funcProtectedCheckRequiredParameter_History() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
@@ -239,7 +239,7 @@ function funcProtectedCheckRequiredParameter() {
     variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
   fi
   variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
-    variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
+  variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
   for (( i=0; i<${#variParameterDescList[@]}; i++ )); do
     variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$((i+1)) : ${variParameterDescList[$i]}${COLOR_RESET}")
   done
@@ -252,17 +252,62 @@ function funcProtectedCheckRequiredParameter() {
   fi
 }
 
+# --------------------------------------------------
+# call example :
+# local variParameterDescMulti=("parameter1 desc1" "parameter2 desc2")
+# funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+# --------------------------------------------------
+# parameter desc :
+# variParameterDescList[@] ： 數組引用
+# ${!2} ： 解除引用
+# --------------------------------------------------
+function funcProtectedCheckRequiredParameter() {
+  local variRequiredNum=$1
+  local variArrayName=$2
+  local variCurrentNum=$3
+  # 使用「eval/展開」替代「bash/專屬的${!2}」[START]
+  local localParameterDescList=()
+  eval "localParameterDescList=(\"\${$variArrayName}\")"
+  # 使用「eval/展開」替代「bash/專屬的${!2}」[END]
+  # 檢查結果，值：false失敗，true成功（默認）
+  local variCheckLabel=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
+  # 重置至終端默認
+  local COLOR_RESET='\033[0m'
+  # 背景綠色，字體黑色
+  local COLOR_GREEN_BLACK='\033[42;30m'
+  if [[ ${variCurrentNum} -lt ${variRequiredNum} ]]; then
+    variCheckLabel=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
+  fi
+  local variParameterExplain
+  variParameterExplain=$(printf "%s" ":<<PARAMETER [ ${variCheckLabel} ]\n")
+  variParameterExplain+=$(printf "%s\n" "${variRequiredNum} parameter(s) is(are) required :")
+  # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[START]
+  local variIndex=1
+  local variEachParameterDesc=""
+  for variEachParameterDesc in "${localParameterDescList[@]}"; do
+    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$${variIndex} : ${variEachParameterDesc}${COLOR_RESET}")
+    ((variIndex++))
+  done
+  # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[END]
+  variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
+  echo -e "${variParameterExplain}"
+  if [[ "${variCheckLabel}" == "${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}" ]]; then
+    return 1
+  fi
+  return 0
+}
+
+# --------------------------------------------------
+# call example :
+# local variParameterDescMulti=("parameter1 desc1" "parameter2 desc2")
+# funcProtectedCheckOptionParameter 2 variParameterDescMulti[@]
+# --------------------------------------------------
+# parameter desc :
+# variParameterDescList[@] ： 數組引用
+# ${!2} ： 解除引用
+# --------------------------------------------------
 function funcProtectedCheckOptionParameter_History() {
   variRequiredNum=$1
-  # --------------------------------------------------
-  # call example :
-  # local variParameterDescMulti=("parameter1 desc1" "parameter2 desc2")
-  # funcProtectedCheckOptionParameter 2 variParameterDescMulti[@]
-  # --------------------------------------------------
-  # parameter desc :
-  # variParameterDescList[@] ： 數組引用
-  # ${!2} ： 解除引用
-  # --------------------------------------------------
   variParameterDescList=("${!2}")
   # 檢查結果，值：0失敗，1成功（默認）
   variCheckLabel="option"
@@ -283,10 +328,10 @@ function funcProtectedCheckOptionParameter_History() {
 function funcProtectedCheckOptionParameter() {
   local variRequiredNum=$1
   local variArrayName=$2
-  # 使用「eval」展開替代「bash」專屬的「${!2}」[START]
+  # 使用「eval/展開」替代「bash/專屬的${!2}」[START]
   local localParameterDescList=()
   eval "localParameterDescList=(\"\${$variArrayName}\")"
-  # 使用「eval」展開替代「bash」專屬的「${!2}」[END]
+  # 使用「eval/展開」替代「bash/專屬的${!2}」[END]
   # 檢查結果，值：0失敗，1成功（默認）
   local variCheckLabel="option"
   # 重置至終端默認
@@ -296,10 +341,11 @@ function funcProtectedCheckOptionParameter() {
   local variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
   variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
   # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[START]
-  local i=1
-  for variEachDesc in "${localParameterDescList[@]}"; do
-    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$i : ${variEachDesc}${COLOR_RESET}")
-    ((i++))
+  local variIndex=1
+  local variEachParameterDesc=""
+  for variEachParameterDesc in "${localParameterDescList[@]}"; do
+    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$${variIndex} : ${variEachParameterDesc}${COLOR_RESET}")
+    ((variIndex++))
   done
   # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[END]
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
