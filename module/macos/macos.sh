@@ -17,7 +17,7 @@ macOS 專用入口（對標 Linux 的 system.sh）
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../include/builtin/builtin.sh"

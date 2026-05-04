@@ -4,19 +4,16 @@
 # datetime : 2024/05/20
 
 :<<MARK
-係統兼容：
-1，date命令，MACOS不支持「-d，%3N，strftime」，替代方案：「perl」
 MARK
 
 # ##################################################
 # global variable[START]
-# initialize the associative array（cannot be combined into one line of code）
-# declare -A VARI_GLOBAL
-# if [[ ${#VARI_GLOBAL[@]} -eq 0 ]]; then
 VARI_GLOBAL["BUILTIN_START_TIME"]=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
-# [/bin/bash]環境狀態，值：SLAVE/fork（default），MASTER/source
 # 每次執行動態獲取[START]
-VARI_GLOBAL["BUILTIN_OS_DISTRO"]="" # enum : CENTOS / UBUNTU / MACOS
+# enum : LINUX / DARWIN
+VARI_GLOBAL["BUILTIN_UNAME"]=""
+# enum : CENTOS / UBUNTU / MACOS
+VARI_GLOBAL["BUILTIN_OS_DISTRO"]=""
 VARI_GLOBAL["BUILTIN_SOURCE_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]=""
 # 每次執行動態獲取[END]
@@ -24,7 +21,7 @@ VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/cloud"
 VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/runtime"
-# YYYYMMDD.HHMMSS.mmm
+# format :　YYYYMMDD.HHMMSS.mmm
 VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]=$(echo "${VARI_GLOBAL["BUILTIN_START_TIME"]}" | TZ="Asia/Shanghai" perl -MPOSIX -lne 'print strftime("%Y%m%d.%H%M%S", localtime($_/1000)) . "." . substr($_, -3)')
 VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.trace"
 VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${VARI_GLOBAL["BUILTIN_UNIT_TEMP_FILENAME"]}.todo"
@@ -33,7 +30,7 @@ VARI_GLOBAL["BUILTIN_SEPARATOR_LINE"]=""
 VARI_GLOBAL["BUILTIN_TRUE_LABEL"]="succeeded"
 VARI_GLOBAL["BUILTIN_FALSE_LABEL"]="failed"
 VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]=200
-# 「VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0」表示不限
+# 0表示不限
 VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=10
 VARI_GLOBAL["BUILTIN_CURRENT_OPTION"]=""
 # global variable[END]
@@ -46,7 +43,7 @@ function funcProtectedDebugRecover() {
   return 0
 }
 
-function funcProtectedErrRecover() {
+function funcProtectedErrorRecover() {
   # include : 1/exit code，2/return code
   variCode=$1
   variLine=$2
@@ -92,13 +89,22 @@ function funcProtectedLocalInit(){
 }
 
 function funcProtectedConstruct() {
+  # [ -n "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] && return 0
   # --------------------------------------------------
   # 動態獲取項目目錄[START]
   # 「$(readlink -f "${BASH_SOURCE[0]}")」等價於「$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")」（兼容：bash && zsh）
   local variBuiltinOmniRootPath=""
   local variOmniRootMarkedFile=".3aa53cec161c587e51555bdfa5c56eff"
-  # local variBuiltinAbsolutePath=$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")
-  local variBuiltinAbsolutePath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+  local variCurrentScript=""
+  if [ -n "$ZSH_VERSION" ]; then
+    # Zsh 魔法：${(%):-%x} 會輸出「定義當前函數的實體腳本路徑」
+    # 用 eval + 單引號包起來，是為了對 Bash 隱藏這段代碼，防止 Bash 在預先掃描時報錯
+    eval 'variCurrentScript="${(%):-%x}"'
+  else
+    # Bash 寫法：故意不加 [0]，Bash 預設會取陣列的第一個元素，同時能避開 Zsh 的陣列解析潔癖
+    variCurrentScript="${BASH_SOURCE}"
+  fi
+  local variBuiltinAbsolutePath="$(cd "$(dirname "${variCurrentScript}")" && pwd)/$(basename "${variCurrentScript}")"
   local variCurrentPath=$(dirname "${variBuiltinAbsolutePath}")
   while [ "${variCurrentPath}" != "/" ] && [ -n "${variCurrentPath}" ]; do
     if [ -f "${variCurrentPath}/${variOmniRootMarkedFile}" ]; then
@@ -114,7 +120,7 @@ function funcProtectedConstruct() {
   VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]="${variBuiltinOmniRootPath}"
   # 動態獲取項目目錄[END]
   # --------------------------------------------------
-  funcProtectedOsDistroInit
+  funcProtectedUnameInit
   # --------------------------------------------------
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}"
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
@@ -123,7 +129,7 @@ function funcProtectedConstruct() {
 #!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
-# datetime : 2024/05/20
+# datetime : $(date '+%Y-%m-%d %H:%M:%S')
 
 :<<MARK
 MARK
@@ -143,23 +149,19 @@ ENCRYPTENVI
     rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.trace
   fi
   touch "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
-  # variStartTimeFormat="$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
   variStartTimeFormat=$(perl -MPOSIX -le 'print strftime("%Y-%m-%d %H:%M:%S", localtime($ARGV[0]/1000))' "${VARI_GLOBAL["BUILTIN_START_TIME"]}")
   funcProtectedTrace ":<<${variStartTimeFormat}"
   return 0
 }
 
 function funcProtectedDestruct() {
-  # variEndTime=$(date +%s%3N)
   variEndTime=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
   variExecuteTime=$((variEndTime - ${VARI_GLOBAL["BUILTIN_START_TIME"]}))
   variHour=$((variExecuteTime / 3600000))
   variMinute=$(((variExecuteTime % 3600000) / 60000))
   variSecond=$(((variExecuteTime % 60000) / 1000))
   variMillisecond=$((variExecuteTime % 1000))
-  # variStartTimeFormat="$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
   variStartTimeFormat=$(perl -MPOSIX -le 'print strftime("%Y-%m-%d %H:%M:%S", localtime($ARGV[0]/1000))' "${VARI_GLOBAL["BUILTIN_START_TIME"]}")
-  # variEndTimeFormat="$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
   variEndTimeFormat=$(perl -MPOSIX -le 'print strftime("%Y-%m-%d %H:%M:%S", localtime($ARGV[0]/1000))' "${variEndTime}")
   funcProtectedTrace "${variEndTimeFormat}"
   variUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
@@ -179,33 +181,34 @@ function funcProtectedDestruct() {
   fi
   rm -rf "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   echo "--------------------------------------------------"
-  # printf "start   : %s.%03d\n" "$(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${VARI_GLOBAL["BUILTIN_START_TIME"]}%1000))
-  # printf "end     : %s.%03d\n" "$(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')" $((${variEndTime}%1000))
-  # echo "start : $(date -d @$((${VARI_GLOBAL["BUILTIN_START_TIME"]}/1000)) '+%Y-%m-%d %H:%M:%S')"
-  # echo "end   : $(date -d @$((${variEndTime}/1000)) '+%Y-%m-%d %H:%M:%S')"
   echo "[ duration : ${variHour} hour ${variMinute} minute ${variSecond}.${variMillisecond} second ]"
   echo "--------------------------------------------------"
   return 0
 }
 
-function funcProtectedOsDistroInit() {
-  local variOsType=$(uname)
+function funcProtectedUnameInit() {
+  local variUname=$(uname)
   local variBuiltinOsDistro
   local variBuiltinSourceUri
-  if [ "$variOsType" = "Linux" ]; then
+  if [ "$variUname" = "Linux" ]; then
     if [[ -f /etc/centos-release || -f /etc/redhat-release ]]; then
       variBuiltinOsDistro="CENTOS"
-      variBuiltinSourceUri="/etc/profile.d/omni.centos.sh"
+      variBuiltinSourceUri="${HOME}/.omni.centos.envi/omni.centos.sh"
     elif [ -f /etc/debian_version ]; then
       variBuiltinOsDistro="UBUNTU"
-      variBuiltinSourceUri="/etc/profile.d/omni.ubuntu.sh"
+      variBuiltinSourceUri="${HOME}/.omni.ubuntu.envi/omni.ubuntu.sh"
     fi
-  elif [ "$variOsType" = "Darwin" ]; then
+  elif [ "$variUname" = "Darwin" ]; then
     variBuiltinOsDistro="MACOS"
-    variBuiltinSourceUri="${HOME}/.omni/omni.macos.sh"
+    variBuiltinSourceUri="${HOME}/.omni.macos.envi/omni.macos.sh"
   fi
-  [ -f "${variBuiltinSourceUri}" ] || install -m 755 <(echo '#!/usr/bin/env bash') "${variBuiltinSourceUri}"
+  if [ ! -f "${variBuiltinSourceUri}" ]; then
+    mkdir -p "$(dirname "${variBuiltinSourceUri}")"
+    echo '#!/usr/bin/env bash' > "${variBuiltinSourceUri}"
+    chmod 755 "${variBuiltinSourceUri}"
+  fi
   source ${variBuiltinSourceUri} || true
+  VARI_GLOBAL["BUILTIN_UNAME"]=$(echo "$variUname" | tr '[:lower:]' '[:upper:]')
   VARI_GLOBAL["BUILTIN_OS_DISTRO"]=${variBuiltinOsDistro}
   VARI_GLOBAL["BUILTIN_SOURCE_URI"]=${variBuiltinSourceUri}
   return 0
@@ -249,7 +252,7 @@ function funcProtectedCheckRequiredParameter() {
   fi
 }
 
-function funcProtectedCheckOptionParameter() {
+function funcProtectedCheckOptionParameter_History() {
   variRequiredNum=$1
   # --------------------------------------------------
   # call example :
@@ -274,6 +277,37 @@ function funcProtectedCheckOptionParameter() {
   done
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
   echo -e "$variParameterExplain" # >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  return 0
+}
+
+function funcProtectedCheckOptionParameter() {
+  local variRequiredNum=$1
+  local variArrayName=$2
+
+  # 【核心修改 1】使用 eval 展開代替 bash 專屬的 ${!2}
+  local localParameterDescList=()
+  eval "localParameterDescList=(\"\${$variArrayName}\")"
+
+  # 檢查結果，值：0失敗，1成功（默認）
+  local variCheckLabel="option"
+  # 重置至終端默認
+  local COLOR_RESET='\033[0m'
+  # 背景綠色，字體黑色
+  local COLOR_GREEN_BLACK='\033[42;30m'
+
+  local variParameterExplain=$(printf "%s" ":<<PARAMETER [ $variCheckLabel ]\n")
+  variParameterExplain+=$(printf "%s\n" "$variRequiredNum parameter(s) is(are) required :")
+
+  # 【核心修改 2】改用 for...in 迴圈，避開 Bash 與 Zsh 索引差異
+  local i=1
+  for variEachDesc in "${localParameterDescList[@]}"; do
+    variParameterExplain+=$(printf "\n%s" "${COLOR_GREEN_BLACK}\$$i : ${variEachDesc}${COLOR_RESET}")
+    ((i++))
+  done
+
+  variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
+  echo -e "$variParameterExplain"
+
   return 0
 }
 
@@ -335,7 +369,7 @@ function funcProtectedEchoGreen(){
 }
 
 # 已廢棄
-function funcProtectedUpdateVariGlobalBuiltinValueAbandoned() {
+function funcProtectedUpdateVariGlobalBuiltinValue_Disable() {
   local variIndex=${1}
   local variValue=${2}
   if [ ${variIndex} == "BUILTIN_OMNI_ROOT_PATH" ]; then
@@ -368,6 +402,5 @@ function funcPublicReleaseCloud(){
   omni.qiniu upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
   return 0
 }
-
 # public function[END]
 # ##################################################

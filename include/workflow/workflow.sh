@@ -19,7 +19,7 @@ else
   # EXIT : 「exit」命令觸發
   # ...
   # $?:退出狀態（編碼），${FUNCNAME[1]}:函數名稱，${BASH_LINENO[0]}:[基於函數]行號，$LINENO:[基於腳本]行號
-  trap 'funcProtectedErrRecover $? $LINENO' ERR
+  trap 'funcProtectedErrorRecover $? $LINENO' ERR
   trap 'funcProtectedExitRecover $? $LINENO' EXIT
   set -e
 fi
