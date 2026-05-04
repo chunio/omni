@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2025/08/31
 
 :<<'MARK'
+「#!/usr/bin/env bash」表示使用「$PATH/搜尋路徑」中首個匹配的「bash」
 MARK
 
 declare -A VARI_GLOBAL

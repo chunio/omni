@@ -13,8 +13,20 @@ ubuntu 24.04
 [root@localhost /]# mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [root@localhost /]# [ -f /etc/redhat-release ] && yum install -y git
 [root@localhost /]# [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
-[root@localhost /]# git clone https://github.com/chunio/omni.git && chmod 777 -R ./omni
+[root@localhost /]# git clone https://github.com/chunio/omni.git && chmod -R 777 ./omni
 [root@localhost /]# ./omni/init/system/system.sh init
+
+[root@macos /]# mkdir -p /Users/zengweitao/archived/workspace/repository/chunio && cd /Users/zengweitao/archived/workspace/repository/chunio
+[root@macos /]# xcode-select --install # 交互安裝
+[root@macos /]# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+[root@macos /]# brew install bash
+[root@macos /]# echo >> /Users/zengweitao/.zshrc # 確保換行
+[root@macos /]# echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/zengweitao/.zshrc
+[root@macos /]# eval "$(/opt/homebrew/bin/brew shellenv)"
+[root@macos /]# rehash # 重置命令路徑緩存
+[root@macos /]# git clone https://github.com/chunio/omni.git
+[root@macos /]# find ./omni -type f -name "*.sh" ! -path "*/.git/*" -exec chmod +x {} \;
+[root@macos /]# ./omni/init/system/system.sh init
 ```
 
 ## New Unit
@@ -79,5 +91,5 @@ omni
 ## Common Symbol
 
 ```
-「1」
+「」
 ```
