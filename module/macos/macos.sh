@@ -1,58 +1,67 @@
 #!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
-# datetime : 2026/05/03
+# datetime : 0000/00/00 00:00:00
 
 :<<'MARK'
-macOS 專用入口（對標 Linux 的 system.sh）
-- 用戶級安裝，不需要 sudo
-- alias / 命令鏈接 寫到 ~/.omni/
-- ~/.zshrc 只增加一行引導：[ -f ~/.omni/omni.macos.sh ] && source ~/.omni/omni.macos.sh
-- zsh 補全機制（不依賴 bash-completion）
-
-依賴：
-- bash 4+    （brew install bash）
-- perl       （macOS 自帶）
-- coreutils  （brew install coreutils，可選，僅當需要 GNU 工具時）
 MARK
+
+# required[START]
+# zero length
+if [ -z "$ZSH_VERSION" ]; then
+  [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
+fi
+# required[END]
+# compatible[START]
+# non-zero length
+if [ -n "$ZSH_VERSION" ]; then
+  # 目的：調整語法，靠攏至「bash」
+  setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯
+  setopt KSH_ARRAYS # 數組索引從零開始
+  setopt SH_WORD_SPLIT # 支持空格拆分變量
+fi
+# compatible[END]
 
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
-VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")")
-VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")")
+VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
+VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
+# history[START]
+# declare -A VARI_GLOBAL
+# VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解析軟鏈
+# VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
+# source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
+# source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
+# source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
+# history[END]
+
+# ##################################################
+# reset builtin variable[START]
+
+# reset builtin variable[END]
+# ##################################################
+
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="internal vendor"
-VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
-VARI_GLOBAL["VERSION_URI"]="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/init.version.${VARI_GLOBAL["BUILTIN_OS_DISTRO"],,}" # 「${vari,,}」轉至小寫
-VARI_GLOBAL["MOUNT_USERNAME"]=""
-VARI_GLOBAL["MOUNT_PASSWORD"]=""
 
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
-# 要求：基於純淨係統（macos26.4.1/https://ipsw.me/）
-# 人工執行
-function funcProtectedManualInit(){
-  return 0
-}
-
-function funcProtectedCloudInit() {
-  return 0
-}
-
-# 創建用戶級目錄結構 + 主入口腳本 + ~/.zshrc 引導行
-
-
-
-
-
 
 # protected function[END]
 # ##################################################
+
+# ##################################################
+# public function[START]
+
+# public function[END]
+# ##################################################
+
+source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/orchestrator/orchestrator.sh"
