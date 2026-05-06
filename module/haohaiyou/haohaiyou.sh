@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -492,7 +492,7 @@ function funcPublicUnicorn()
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
   rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
+#!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
 touch /etc/bashrc
 chmod 644 /etc/bashrc
@@ -613,7 +613,7 @@ function funcPublicSkeleton(){
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   variImagePattern=${1:-"chunio/php:haohaiyou"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
+#!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
 return 0
 ENTRYPOINTSH
@@ -1816,7 +1816,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
       if [[ ${variCounterIndex} -gt ${variBackupNum} ]]; then
         local variEachRemoteBinUri="cos://${variCosBucketName}/${variEachSuffixUri}"
         echo "[ coscli ] coscli rm -f ${variEachRemoteBinUri}"
-        coscli rm "${variEachRemoteBinUri}" > /dev/null 2>&1
+        coscli rm -f "${variEachRemoteBinUri}" > /dev/null 2>&1
       fi
     done
     # 保留5個「備份/執行文件」[END]

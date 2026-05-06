@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# author : [Your Name]
+# author : zengweitao@gmail.com
 # datetime : 2024/05/20
 
 :<<MARK
@@ -23,9 +23,13 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # global variable[START]
 VARI_GLOBAL["CLICKHOUSE_USERNAME"]=""
 VARI_GLOBAL["CLICKHOUSE_PASSWORD"]=""
-VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')
-VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/clickhouse
+VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/clickhouse"
 # global variable[END]
+# ##################################################
+
+# ##################################################
+# protected function[START]
+# protected function[END]
 # ##################################################
 
 # ##################################################
@@ -33,16 +37,16 @@ VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_
 function funcPublicRunNode(){
   # local variParameterDescList=("SQL version（default : 0 / example : 20240828）")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  # -----
-  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
-  # -----
-  rm -rf ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
-  chmod 777 -R /linux ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
-  # -----
-  variUsername=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_USERNAME")
-  variPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_PASSWORD")
-  variPasswordSha256=$(echo -n "${variPassword}" | sha256sum | cut -d' ' -f1)
-  cat <<CONFIGXML > ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/config.xml
+  # ----------
+  rm -rf ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
+  mkdir -p ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
+  chmod -R 777 ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
+  # ----------
+  local variSchemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema"
+  local variUsername=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_USERNAME")
+  local variPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_PASSWORD")
+  local variPasswordSha256=$(echo -n "${variPassword}" | sha256sum | cut -d' ' -f1)
+  cat <<CONFIGXML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/config.xml
 <yandex>
     <logger>
         <level>trace</level>
@@ -74,7 +78,7 @@ function funcPublicRunNode(){
 </yandex>
 CONFIGXML
   # [固定]文件名稱「users.xml」
-  cat <<USERSXML > ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/users.xml
+  cat <<USERSXML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.xml
 <yandex>
     <users>
         <${variUsername}>
@@ -120,11 +124,11 @@ services:
       - "8123:8123"
       - "9000:9000"
     volumes:
-      - ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/config.xml:/etc/clickhouse-server/config.xml
-      - ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/users.xml:/etc/clickhouse-server/users.xml
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/config.xml:/etc/clickhouse-server/config.xml
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.xml:/etc/clickhouse-server/users.xml
       - clickhouse-data:/var/lib/clickhouse
-      - /windows:/windows
-      # - ${variSQLPath}:/docker-entrypoint-initdb.d
+      # - /windows:/windows
+      # - ${variSchemaPath}:/docker-entrypoint-initdb.d
     ulimits:
       nofile:
         soft: 262144
@@ -157,26 +161,28 @@ DOCKERCOMPOSEYML
     echo "[ check ] attempt : ${variRetryIndex}/120 ..."
     sleep 1
   done
-  variRetryNum=120
-  for variEachSQL in ${variSQLPath}/*.sql; do
-    if [ -f "$variEachSQL" ]; then
-      for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
-        echo "[ import ] attempt : ${variRetryIndex}/${variRetryNum} ..."
-        # docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"
-        if docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSQL"; then
-          echo "import : $variEachSQL"
-          echo "docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < ${variEachSQL}"
-          echo "successfully imported ${variEachSQL}"
-          break
-        else
-          if [ $variRetryIndex -eq $variRetryNum ]; then
-            echo "failed to import ${variEachSQL}"
+  if false; then
+    local variRetryNum=120
+    for variEachSql in ${variSchemaPath}/*.sql; do
+      if [ -f "$variEachSql" ]; then
+        for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+          echo "[ import ] attempt : ${variRetryIndex}/${variRetryNum} ..."
+          # docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSql"
+          if docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < "$variEachSql"; then
+            echo "import : $variEachSql"
+            echo "docker exec -i clickhouse clickhouse-client --user=${variUsername} --password=${variPassword} < ${variEachSql}"
+            echo "successfully imported ${variEachSql}"
+            break
+          else
+            if [ $variRetryIndex -eq $variRetryNum ]; then
+              echo "failed to import ${variEachSql}"
+            fi
+            sleep 1
           fi
-          sleep 1
-        fi
-      done
-    fi
-  done
+        done
+      fi
+    done
+  fi
   return 0
 }
 # public function[END]

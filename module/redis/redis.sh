@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -15,20 +15,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 # ##################################################
-# reset builtin variable[START]
-
-# reset builtin variable[END]
-# ##################################################
-
-# ##################################################
 # global variable[START]
-
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
-
 # protected function[END]
 # ##################################################
 
@@ -65,7 +57,6 @@ DOCKERCOMPOSEYML
   docker ps -a | grep redis
   return 0
 }
-
 # public function[END]
 # ##################################################
 

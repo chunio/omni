@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -51,7 +51,7 @@ function funcPublicRunNode()
   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
+#!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
 if [ ! -d "${variMasterPath}/gopath/src/${variModuleName}" ]; then
   mkdir -p ${variMasterPath}/gopath/src/${variModuleName}

@@ -1,29 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
 
 :<<MARK
-1，mongodb://root:0000@192.168.255.131:27017/test?authSource=admin&replicaSet=rs0
-2，已設置副本集（即：支持事務）
+1，已啟用「replica set」（即：支持事務）
+2，mongodb://root:0000@192.168.255.131:27017/test?authSource=admin&replicaSet=rs0
 MARK
 
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
-
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
-VARI_GLOBAL["MONGO_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mongo
+# ##################################################
+# global variable[START]
+# 使用限制：「volumes.driver_opt.device」要求符合「linux file system」，解決方案：「... | sed 's/windows/linux/'」(兼容:vmware.[windows]/etc/fstab)
+VARI_GLOBAL["MONGO_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mongo"
+# global variable[END]
+# ##################################################
 
+# ##################################################
+# protected function[START]
+# protected function[END]
+# ##################################################
+
+# ##################################################
+# public function[START]
 function funcPublicRunNode(){
-    variCurrentIP=$(hostname -I | awk '{print $1}')
+    local variCurrentIp=$(hostname -I | awk '{print $1}')
+    # orbstack[START]
+    [ -d "/mnt/machines/$(hostname)" ] && variCurrentIp="$(hostname).orb.local"
+    # orbstack[END]
     rm -rf ${VARI_GLOBAL["MONGO_DATA_PATH"]}
     mkdir -p ${VARI_GLOBAL["MONGO_DATA_PATH"]}
     chmod -R 777 ${VARI_GLOBAL["MONGO_DATA_PATH"]}
-    cat <<EOF > ${VARI_GLOBAL["MONGO_DATA_PATH"]}/mongod.conf
+    cat <<EOF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/mongod.conf
 storage:
   dbPath: /data/db
 net:
@@ -45,11 +59,10 @@ services:
       - "27017:27017"
     volumes:
       - ${VARI_GLOBAL["MONGO_DATA_PATH"]}:/data/db
-      - ${VARI_GLOBAL["MONGO_DATA_PATH"]}/mongod.conf:/etc/mongod.conf
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/mongod.conf:/etc/mongod.conf
     command: ["mongod", "--config", "/etc/mongod.conf"]
     networks:
       - common
-
 networks:
   common:
     driver: bridge
@@ -78,7 +91,7 @@ DOCKERCOMPOSEYML
         fi
     done
     # check status[END]
-    docker exec mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '${variCurrentIP}:27017'}]})"
+    docker exec mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '${variCurrentIp}:27017'}]})"
     for i in {1..10}; do
         if docker exec mongo mongosh --eval "rs.status().ok" --quiet | grep -q "1"; then
             echo "replica set initialized successfully"
@@ -96,5 +109,7 @@ DOCKERCOMPOSEYML
     docker ps -a | grep mongo
     return 0
 }
+# public function[END]
+# ##################################################
 
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/orchestrator/orchestrator.sh"

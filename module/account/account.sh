@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -52,7 +52,7 @@ function funcPublicRestart(){
   variModuleName="account"
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
+#!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
 return 0
 ENTRYPOINTSH

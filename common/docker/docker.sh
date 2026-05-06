@@ -25,7 +25,6 @@ VARI_GLOBAL["SEPARATOR_LINE"]="-------------------------------------------------
 
 # ##################################################
 # private function[START]
-
 # private function[END]
 # ##################################################
 
@@ -115,11 +114,11 @@ function funcPublicDevelopmentEnvironmentInit(){
   docker rm -f $(docker ps -aq) 2> /dev/null || true
   docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | xargs -r docker network rm
   if [ ${variStatus} -eq 1 ]; then
-    omni.mysql runNode
     omni.redis runNode
     omni.mongo runNode
-    omni.clickhouse runNode 
     omni.kafka runNode
+    omni.mysql runNode
+    omni.clickhouse runNode 
     omni.apollo runNode 0602
   fi
   docker ps -a

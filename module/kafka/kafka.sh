@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -21,20 +21,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 # ##################################################
-# reset builtin variable[START]
-
-# reset builtin variable[END]
-# ##################################################
-
-# ##################################################
 # global variable[START]
-
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
-
 # protected function[END]
 # ##################################################
 
@@ -46,7 +38,7 @@ function funcPublicRunNode()
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.7
+    image: zookeeper:3.7
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -55,7 +47,7 @@ services:
     networks:
       - common
   kafka:
-    image: bitnami/kafka:3.7
+    image: apache/kafka:3.7.0
     container_name: kafka
     ports:
       - "9092:9092"
@@ -88,7 +80,6 @@ DOCKERCOMPOSEYML
   docker ps -a | grep -E 'zookeeper|kafka'
   return 0
 }
-
 # public function[END]
 # ##################################################
 

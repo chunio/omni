@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -48,7 +48,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 #「claude code」僅支持「HTTP/HTTPS」VPN/代理，不支持「SOCKS」VPN/代理（原因：底層使用「node.js」的HTTP客戶端，默认僅識別「HTTP_PROXY/HTTPS_PROXY」環境變量）
 function funcPublicClaudeCodeReinit(){
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/bin/bash
+#!/usr/bin/env bash
 apt update
 apt install -y npm
 npm install -g @anthropic-ai/claude-code

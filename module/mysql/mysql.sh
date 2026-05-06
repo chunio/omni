@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -16,43 +16,36 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 # ##################################################
-# reset builtin variable[START]
-
-# reset builtin variable[END]
-# ##################################################
-
-# ##################################################
 # global variable[START]
 VARI_GLOBAL["MYSQL_USERNAME"]=""
 VARI_GLOBAL["MYSQL_PASSWORD"]=""
-# 「volumes.driver_opt.device」要求符合「linux文件係統」
-VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')
-VARI_GLOBAL["MYSQL_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mysql
+# 使用限制：「volumes.driver_opt.device」要求符合「linux file system」，解決方案：「... | sed 's/windows/linux/'」(兼容:vmware.[windows]/etc/fstab)
+VARI_GLOBAL["MYSQL_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mysql"
 VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface can be insecure."
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
-
 # protected function[END]
 # ##################################################
 
 # ##################################################
 # public function[START]
 function funcPublicRunNode(){
-  local variParameterDescList=("SQL version（defualt : 0 / example : 20240527）")
+  local variParameterDescList=("[ sql ] version（ default : 0 / example : 20240527 ）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  # -----
-  variSQLVersion=${1:-0}
-  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
-  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-  if [ $variSQLVersion != 0 ] && [ -d "${variSQLVersionPath}" ];then
-    variSQLPath=${variSQLVersionPath}
+  # restore version[START]
+  variSqlVersion=${1:-0}
+  variSchemaPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema
+  variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/schema/${variSqlVersion}
+  if [ $variSqlVersion != 0 ] && [ -d "${variSqlVersionPath}" ];then
+    variSchemaPath=${variSqlVersionPath}
   fi
-  # -----
-  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
-  chmod 777 -R /linux
+  # restore version[END]
+  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  mkdir -p ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  chmod -R 777 ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   # variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
 #  cat <<MYCNF > ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/my.cnf
@@ -74,9 +67,11 @@ services:
     volumes:
       # [數據目錄等於空時]自動按名稱順序執行./*.sh && *.sql
       # - ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/my.cnf:/etc/mysql/conf.d/my.cnf
-      - ${variSQLPath}:/docker-entrypoint-initdb.d
+      # - ${variSchemaPath}:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
-      - /windows:/windows
+      # - 主機路徑:容器路徑
+      # - /windows:/windows
+      # - ${VARI_GLOBAL["MYSQL_DATA_PATH"]}:${VARI_GLOBAL["MYSQL_DATA_PATH"]}
       # - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
       # - /etc/localtime:/etc/localtime:ro
     command: mysqld --host_cache_size=0
@@ -111,17 +106,17 @@ DOCKERCOMPOSEYML
 #     "account"
 #   )
 #   variDefault=$(date "+%Y%m%d")
-#   variSQLVersion=${1:-$variDefault}
-#   variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-#   mkdir -p ${variSQLVersionPath}
-#   echo "version ：${variSQLVersion}"
+#   variSqlVersion=${1:-$variDefault}
+#   variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSqlVersion}
+#   mkdir -p ${variSqlVersionPath}
+#   echo "version ：${variSqlVersion}"
 #   for variEachDatabase in "${variDatabaseList[@]}"; do
-#     cat <<INITSQL >> ${variSQLVersionPath}/00init.sql
+#     cat <<INITSQL >> ${variSqlVersionPath}/00init.sql
 # CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
 # USE ${variEachDatabase};
 # SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
 # INITSQL
-#     variEachSQLUri="${variSQLVersionPath}/01${variEachDatabase}.sql"
+#     variEachSQLUri="${variSqlVersionPath}/01${variEachDatabase}.sql"
 #     docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
 #     if [ $? -eq 0 ]; then
 #       echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"

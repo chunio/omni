@@ -31,6 +31,7 @@ darwin : macos 26.4.1
 [root@darwin /]# rehash # 重置命令路徑緩存
 [root@darwin /]# git clone https://github.com/chunio/omni.git
 [root@darwin /]# find ./omni -type f -name "*.sh" ! -path "*/.git/*" -exec chmod +x {} \;
+[root@darwin /]# chmod -R 777 ./omni
 [root@darwin /]# ./omni/init/system/system.sh init
 [root@darwin /]# # darwin[END]
 ```

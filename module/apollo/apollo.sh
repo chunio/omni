@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
 # datetime : 2024/05/20
@@ -18,21 +18,24 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 # ##################################################
-# reset builtin variable[START]
-VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
-# reset builtin variable[END]
 # global variable[START]
-VARI_GLOBAL["SERVICE_DOMAIN"]="http://192.168.255.131"
+# VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]=0
+# ----------
+VARI_GLOBAL["SERVICE_DOMAIN"]="http://$(hostname -I | awk '{print $1}')"
+# orbstack[START]
+[ -d "/mnt/machines/$(hostname)" ] && VARI_GLOBAL["SERVICE_DOMAIN"]="http://$(hostname).orb.local"
+# ----------
+# orbstack[END]
 # 端口詳情：
 # [宿主]{13306/{[開發]數據庫/[沙箱]數據庫/[生產]數據庫}} >> [容器]{3306}
 # [宿主]{18080/[開發]配置服務 18081/[沙箱]配置服務 18082/[生產]配置服務} >> [容器]{8080}
 # [宿主]{18090/[開發]管理服務 18091/[沙箱]管理服務 18092/[生產]管理服務} >> [容器]{8090}
 # [宿主]{8070/管理服務} >> [容器]{8070}
-VARI_GLOBAL["PORT_LIST"]="3306 13306 13307 13308 8080 18080 18081 18082 8090 18090 18091 18092 8070"
 VARI_GLOBAL["MYSQL_USERNAME"]=""
 VARI_GLOBAL["MYSQL_PASSWORD"]=""
-# 「volumes.driver_opt.device」要求符合「linux文件係統」
-VARI_GLOBAL["MYSQL_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mysql
+VARI_GLOBAL["PORT_LIST"]="3306 13306 13307 13308 8080 18080 18081 18082 8090 18090 18091 18092 8070"
+# 使用限制：「volumes.driver_opt.device」要求符合「linux file system」，解決方案：「... | sed 's/windows/linux/'」(兼容:vmware.[windows]/etc/fstab)
+VARI_GLOBAL["MYSQL_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mysql"
 VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface can be insecure."
 # global variable[END]
 # ##################################################
@@ -45,17 +48,19 @@ VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface
 # ##################################################
 # public function[START]
 function funcPublicRunNode() {
-  local variParameterDescList=("SQL version（defualt : 0 / example : 20240527010100）")
+  local variParameterDescList=("sql version（default : 0 / example : 20240527010100）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  # -----
-  variSQLVersion=${1:-0}
-  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
-  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-  if [ $variSQLVersion != 0 ] && [ -d "${variSQLVersionPath}" ];then
-    variSQLPath=${variSQLVersionPath}
+  # ----------
+  variSqlVersion=${1:-0}
+  variSchemaPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema
+  variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/schema/${variSqlVersion}
+  if [ $variSqlVersion != 0 ] && [ -d "${variSqlVersionPath}" ];then
+    variSchemaPath=${variSqlVersionPath}
   fi
-  # -----
-  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  # ----------
+  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  mkdir -p ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  chmod -R 777 ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   # 「apollo-env.properties」設置宿主端口（使用於客戶端拉取配置）[START]
   variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
@@ -84,7 +89,7 @@ services:
       - "13306:3306"
     volumes:
       # [數據目錄等於空時]自動按名稱順序執行./*.sh && *.sql
-      - ${variSQLPath}:/docker-entrypoint-initdb.d
+      - ${variSchemaPath}:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
       - /windows:/windows
       # - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
@@ -245,27 +250,26 @@ function funcPublicBackup(){
     "apolloportaldb_common"
   )
   variDefault=$(date "+%Y%m%d")
-  variSQLVersion=${1:-$variDefault}
-  variSQLVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql/${variSQLVersion}
-  mkdir -p ${variSQLVersionPath}
-  echo "version ：${variSQLVersion}"
+  variSqlVersion=${1:-$variDefault}
+  variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/schema/${variSqlVersion}
+  mkdir -p ${variSqlVersionPath}
+  echo "version ：${variSqlVersion}"
   for variEachDatabase in "${variDatabaseList[@]}"; do
-    cat <<INITSQL >> ${variSQLVersionPath}/00init.sql
+    cat <<INITSQL >> ${variSqlVersionPath}/00init.sql
 CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
 USE ${variEachDatabase};
 SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
 INITSQL
-    variEachSQLUri="${variSQLVersionPath}/01${variEachDatabase}.sql"
-    docker exec apollo-mysql mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
+    variEachSqlUri="${variSqlVersionPath}/01${variEachDatabase}.sql"
+    docker exec apollo-mysql mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSqlUri
     if [ $? -eq 0 ]; then
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
+      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSqlUri} backup succeeded"
     else
-      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup failed"
+      echo "${variContainer} -> ${variEachDatabase} >> ${variEachSqlUri} backup failed"
     fi
   done
   return 0
 }
-
 # public function[END]
 # ##################################################
 
