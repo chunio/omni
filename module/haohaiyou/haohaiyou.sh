@@ -433,7 +433,7 @@ ETCBASHRC
 # function funcPublicUnicorn()
 # {
 #   variMasterPath="/windows/code/backend/haohaiyou"
-#   variDockerWorkSpace="/windows/code/backend/haohaiyou"
+#   variDockerWorkspace="/windows/code/backend/haohaiyou"
 #   variModuleName="unicorn"
 #   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
 #   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
@@ -444,7 +444,7 @@ ETCBASHRC
 #     container_name: ${variModuleName}
 #     environment:
 #       - GOENV=/windows/code/backend/golang/go.env.linux
-#       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+#       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkspace}/gopath/bin
 #     volumes:
 #       - /windows/code/backend/haohaiyou/go.env.linux:/windows/code/backend/golang/go.env.linux
 #       - /windows/code/backend/haohaiyou:/windows/code/backend/golang
@@ -484,30 +484,32 @@ ETCBASHRC
 # apt-get install -y vim
 function funcPublicUnicorn()
 {
-  variMasterPath="/windows/code/backend/haohaiyou"
-  variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  variModuleName="unicorn"
-  docker rm -f ${variModuleName} 2> /dev/null
-  mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
-  mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
-  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+  local variContainerName="unicorn"
+  docker rm -f ${variContainerName} 2> /dev/null
+  local variHostMachineEnviPath="/Users/zengweitao/archived/workspace/application/golang/source"
+  local variHostMachineProjectPath="/Users/zengweitao/archived/workspace/repository/haohaiyou/unicorn"
+  mkdir -p ${variHostMachineEnviPath}/{gopath,gocache}
+  mkdir -p ${variHostMachineEnviPath}/gopath/{bin,pkg,src}
+  mkdir -p ${variHostMachineEnviPath}/gopath/bin/{darwin,linux,windows}
+  mkdir -p ${variHostMachineEnviPath}/gocache/{darwin,linux,windows}
+  # rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
 touch /etc/bashrc
 chmod 644 /etc/bashrc
-# /windows/code/backend/chunio/omni/init/system/system.sh init && source /etc/bashrc
 # 禁止「return」
 # return 0
 ENTRYPOINTSH
-  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
+  # rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
   cat <<GOENVLINUX > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux
 CGO_ENABLED=0
 GO111MODULE=on
-GOBIN=${variDockerWorkSpace}/gopath/bin
-GOCACHE=${variDockerWorkSpace}/gocache.linux
-GOMODCACHE=${variDockerWorkSpace}/gopath/pkg/mod
-GOPATH=${variDockerWorkSpace}/gopath
+GOTOOLCHAIN=auto
+GOPATH=${variHostMachineEnviPath}/gopath
+GOBIN=${variHostMachineEnviPath}/gopath/bin/linux
+GOMODCACHE=${variHostMachineEnviPath}/gopath/pkg/mod
+GOCACHE=${variHostMachineEnviPath}/gocache/linux
 GOPROXY=https://goproxy.cn,direct
 GOROOT=/usr/local/go
 GOSUMDB=sum.golang.google.cn
@@ -528,26 +530,30 @@ GOENVLINUX
 # TODO:chunio/go:1.25.0/error[END]
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${variModuleName}:
+  ${variContainerName}:
     image: chunio/go:1.25.0
-    container_name: ${variModuleName}
+    container_name: ${variContainerName}
     environment:
-      - HTTP_PROXY=http://192.168.255.1:10809
-      - HTTPS_PROXY=http://192.168.255.1:10809
+      # - HTTP_PROXY=http://192.168.255.1:10809
+      # - HTTPS_PROXY=http://192.168.255.1:10809
+      - HTTP_PROXY=http://host.docker.internal:7897
+      - HTTPS_PROXY=http://host.docker.internal:7897
       - NO_PROXY=localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       - GOENV=/go.env.linux
-      - PATH=$PATH:/usr/local/go/bin:${variDockerWorkSpace}/gopath/bin
+      - PATH=$PATH:/usr/local/go/bin:${variHostMachineEnviPath}/gopath/bin/linux
     volumes:
-      - /windows:/windows
+      - /mnt/mac/Users:/Users
       - /mnt:/mnt
-      # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variDockerWorkSpace}/gopath/bin
+      # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variHostMachineEnviPath}/gopath/bin
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${variModuleName}
+    working_dir: ${variHostMachineProjectPath}
     networks:
       - common
-    extra_hosts:
-      - "host.docker.internal:192.168.255.1"
+    # 僅適用於「linux」[START]
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # 僅適用於「linux」[END]
     ports:
       - "2345:2345"
       - "8000:8000"
@@ -567,11 +573,11 @@ networks:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker compose down -v
-  docker compose -p ${variModuleName} up --build -d
-  docker update --restart=always ${variModuleName}
-  docker ps -a | grep ${variModuleName}
-  cd ${variMasterPath}/gopath/src/${variModuleName}
-  docker exec -it ${variModuleName} /bin/bash
+  docker compose -p ${variContainerName} up --build -d
+  docker update --restart=always ${variContainerName}
+  docker ps -a | grep ${variContainerName}
+  cd ${variHostMachineProjectPath}
+  docker exec -it ${variContainerName} /bin/bash
   return 0
 }
 
@@ -605,11 +611,8 @@ root@${variContainerId}:/# exit
 docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
 MARK
 function funcPublicSkeleton(){
-  # [MASTER]persistence
-  variMasterPath="/windows/code/backend/haohaiyou"
-  # [DOCKER]temporary
-  variDockerWorkSpace="/windows/code/backend/haohaiyou"
-  variModuleName="skeleton"
+  variHostMachineProjectPath="/Users/zengweitao/archived/workspace/repository/haohaiyou/skeleton"
+  variContainerName="skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   variImagePattern=${1:-"chunio/php:haohaiyou"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
@@ -619,9 +622,9 @@ return 0
 ENTRYPOINTSH
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${variModuleName}:
+  ${variContainerName}:
     image: ${variImagePattern}
-    container_name: ${variModuleName}
+    container_name: ${variContainerName}
     # 開啟VPN/代理[START]
     # environment:
     #   HTTP_PROXY: http://192.168.255.1:10809
@@ -631,10 +634,11 @@ services:
     #   - "host.docker.internal:host-gateway"
     # 開啟VPN/代理[END]
     volumes:
-      - /windows:/windows
+      # - /windows:/windows
+      - /mnt/mac/Users:/Users
       - /mnt:/mnt
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/gopath/src/${variModuleName}
+    working_dir: ${variHostMachineProjectPath}
     networks:
       - common
     ports:
@@ -649,11 +653,11 @@ DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   docker rm -f skeleton 2> /dev/null
   docker compose down -v
-  docker compose -p ${variModuleName} up --build -d
-  docker update --restart=always ${variModuleName}
-  docker ps -a | grep ${variModuleName}
-  cd ${variMasterPath}/gopath/src/${variModuleName}
-  docker exec -it ${variModuleName} /bin/bash
+  docker compose -p ${variContainerName} up --build -d
+  docker update --restart=always ${variContainerName}
+  docker ps -a | grep ${variContainerName}
+  cd ${variHostMachineProjectPath}
+  docker exec -it ${variContainerName} /bin/bash
   return 0
 }
 

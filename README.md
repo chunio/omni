@@ -15,6 +15,7 @@ darwin : macos 26.4.1
 [root@linux /]# [ -f /etc/redhat-release ] && yum install -y git
 [root@linux /]# [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
 [root@linux /]# git clone https://github.com/chunio/omni.git && chmod -R 777 ./omni
+[root@linux /]# sudo -i # ubuntu
 [root@linux /]# ./omni/init/system/system.sh init
 [root@linux /]# # linux[END]
 

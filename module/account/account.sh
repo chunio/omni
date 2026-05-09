@@ -15,19 +15,13 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
 # ##################################################
-# reset builtin variable[START]
-
-# reset builtin variable[END]
-# ##################################################
-
-# ##################################################
 # global variable[START]
 VARI_GLOBAL["MYSQL_USERNAME"]=""
 VARI_GLOBAL["MYSQL_PASSWORD"]=""
 # 「volumes.driver_opt.device」要求符合「linux文件係統」
+VARI_GLOBAL["REDIS_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/redis
 VARI_GLOBAL["MYSQL_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/mysql
 VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface can be insecure."
-VARI_GLOBAL["REDIS_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/redis
 # global variable[END]
 # ##################################################
 
@@ -41,15 +35,15 @@ VARI_GLOBAL["REDIS_DATA_PATH"]=$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"
 # public function[START]
 function funcPublicRestart(){
   echo "[MYSQL]LATEST VERSION : $(cat ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version)"
-  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["MYSQL_DATA_PATH"]} 
-  rm -rf ${VARI_GLOBAL["REDIS_DATA_PATH"]} && mkdir -p /windows ${VARI_GLOBAL["REDIS_DATA_PATH"]} 
-  chmod 777 -R /linux
+  rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
+  rm -rf ${VARI_GLOBAL["REDIS_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["REDIS_DATA_PATH"]}
+  # chmod 777 -R /linux
   variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
   # [MASTER]persistence
-  variMasterPath="/windows/code/backend/chunio"
+  # variMasterPath="/Users/zengweitao/archived/workspace/repository/chunio/account/"
   # [DOCKER]temporary
-  variDockerWorkSpace="/windows/code/backend/chunio"
-  variModuleName="account"
+  variContainerWorkPath="/Users/zengweitao/archived/workspace/repository/chunio/account/"
+  variContainerName="account"
   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/usr/bin/env bash
@@ -58,11 +52,11 @@ return 0
 ENTRYPOINTSH
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${variModuleName}-nginx:
+  ${variContainerName}-nginx:
     image: nginx:1.27.0
-    container_name: ${variModuleName}-nginx
+    container_name: ${variContainerName}-nginx
     volumes:
-      - /windows:/windows
+      # - /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/nginx/localhost.chunio.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
@@ -70,9 +64,9 @@ services:
       - common
   # ##################################################
   # mysql[START]
-  ${variModuleName}-mysql:
+  ${variContainerName}-mysql:
     image: mysql:8.0
-    container_name: ${variModuleName}-mysql
+    container_name: ${variContainerName}-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${variPassword}
       # MYSQL_INITDB_SKIP_TZINFO: 1
@@ -83,7 +77,7 @@ services:
       # [數據目錄等於空時]自動按名稱順序執行./*.sh && *.sql
       - ${variSQLPath}:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
-      - /windows:/windows
+      # - /windows:/windows
       # - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
       # - /etc/localtime:/etc/localtime:ro
     command: mysqld --host_cache_size=0
@@ -91,9 +85,9 @@ services:
       - common
   # mysql[END]
   # ##################################################
-  ${variModuleName}-redis:
+  ${variContainerName}-redis:
     image: redis:7.2.5
-    container_name: ${variModuleName}-redis
+    container_name: ${variContainerName}-redis
     ports:
       - "6379:6379"
     volumes:
@@ -102,22 +96,22 @@ services:
       - common
     # 「--appendonly yes」表示是否開啟「AOF (Append Only File)」 /持久化機制
     command: redis-server --appendonly yes --requirepass 0000
-  ${variModuleName}-php:
+  ${variContainerName}-php:
     image: hyperf/hyperf:7.4-alpine-v3.13-swoole-v4.8
-    container_name: ${variModuleName}-php
+    container_name: ${variContainerName}-php
     volumes:
-      - /windows:/windows
+      #　- /windows:/windows
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variDockerWorkSpace}/${variModuleName}/backend
+    working_dir: ${variContainerWorkPath}/backend
     networks:
       - common
     ports:
       - "18306:18306"
     command: ["tail", "-f", "/dev/null"]
     depends_on:
-      - ${variModuleName}-nginx
-      - ${variModuleName}-mysql
-      - ${variModuleName}-redis
+      - ${variContainerName}-nginx
+      - ${variContainerName}-mysql
+      - ${variContainerName}-redis
 networks:
   common:
     driver: bridge
@@ -145,10 +139,10 @@ DOCKERCOMPOSEYML
   docker compose down -v
   # 強制清除未使用的「volume」
   docker volume prune -f
-  docker compose -p ${variModuleName} up --build -d
-  docker ps -a | grep ${variModuleName}
-  cd ${variDockerWorkSpace}/${variModuleName}/backend
-  docker exec -it ${variModuleName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"
+  docker compose -p ${variContainerName} up --build -d
+  docker ps -a | grep ${variContainerName}
+  cd ${variContainerWorkPath}/backend
+  docker exec -it ${variContainerName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"
   return 0
 }
 

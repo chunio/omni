@@ -8,13 +8,15 @@ MARK
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["BUILTIN_START_TIME"]=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
+# [已驗證]純淨版本的「ubuntu」不支持「perl」
+# VARI_GLOBAL["BUILTIN_START_TIME"]=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
+VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s)000
 # 每次執行動態獲取（即：共享內存）[START]
 # enum : LINUX / DARWIN
 VARI_GLOBAL["BUILTIN_UNAME"]=""
 # enum : CENTOS / UBUNTU / MACOS
 VARI_GLOBAL["BUILTIN_OS_DISTRO"]=""
-VARI_GLOBAL["BUILTIN_SOURCE_URI"]=""
+VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]=""
 # 每次執行動態獲取（即：共享內存）[END]
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
@@ -155,7 +157,9 @@ ENCRYPTENVI
 }
 
 function funcProtectedDestruct() {
-  variEndTime=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
+  # [已驗證]純淨版本的「ubuntu」不支持「perl」
+  # variEndTime=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
+  variEndTime=$(date +%s)000
   variExecuteTime=$((variEndTime - ${VARI_GLOBAL["BUILTIN_START_TIME"]}))
   variHour=$((variExecuteTime / 3600000))
   variMinute=$(((variExecuteTime % 3600000) / 60000))
@@ -210,7 +214,7 @@ function funcProtectedUnameInit() {
   source ${variBuiltinSourceUri} || true
   VARI_GLOBAL["BUILTIN_UNAME"]=$(echo "$variUname" | tr '[:lower:]' '[:upper:]')
   VARI_GLOBAL["BUILTIN_OS_DISTRO"]=${variBuiltinOsDistro}
-  VARI_GLOBAL["BUILTIN_SOURCE_URI"]=${variBuiltinSourceUri}
+  VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=${variBuiltinSourceUri}
   return 0
 }
 

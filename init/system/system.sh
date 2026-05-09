@@ -191,9 +191,9 @@ function funcProtectedCloudInit_Centos(){
 
 function funcProtectedCloudInit_Ubuntu(){
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[START]
-  rm -f /var/lib/dpkg/lock
-  rm -f /var/lib/dpkg/lock-frontend
-  rm -f /var/cache/apt/archives/lock
+  sudo rm -f /var/lib/dpkg/lock
+  sudo rm -f /var/lib/dpkg/lock-frontend
+  sudo rm -f /var/cache/apt/archives/lock
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
   variPackageList=(
     # ubuntu[START]
@@ -562,7 +562,7 @@ MARK
 
 function funcProtectedShellrcInit() {
   mkdir -p "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" "${VARI_GLOBAL["OMNI_BIN_PATH"]}" "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"
-  cat > "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" <<EOF
+  cat > "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" <<EOF
 #!/usr/bin/env bash
 
 # author : zengweitao@gmail.com
@@ -579,7 +579,7 @@ EOF
   local variShellrcUri=""
   if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" == "LINUX" ]; then
     variShellrcUri="${HOME}/.bashrc"
-    cat >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" <<EOF
+    cat >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" <<EOF
 # [BASH]啟用命令補全機制[START]
 if [ -n "\$BASH_VERSION" ]; then
   for variEachCompletion in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/*; do
@@ -590,7 +590,7 @@ fi
 EOF
   elif [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" == "DARWIN" ]; then
     variShellrcUri="${HOME}/.zshrc"
-    cat >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" <<EOF
+    cat >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" <<EOF
 # [ZSH]啟用命令補全機制[START]
 if [ -n "\$ZSH_VERSION" ]; then
   # 檢查是否已經啟動了補全引擎，若無則啟動 (此判斷可加速終端啟動)
@@ -626,11 +626,11 @@ function funcProtectedCommandInit() {
       sed -e "/^alias ${variEachUnitCommand}=/d" \
           -e "/^function ${variEachUnitCommand}()/d" \
           -e "/^${variEachUnitCommand}()/d" \
-          "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" > "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}.temp"
-      /bin/mv "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}.temp" "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+          "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" > "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}.temp"
+      /bin/mv "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}.temp" "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
       # [單一]精確清理[END]
       local variAddPattern="function ${variEachUnitCommand}() { source \"${variAbleUnitFileUri}\" \"\$@\"; }"
-      echo "$variAddPattern" >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+      echo "$variAddPattern" >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
     fi
     # 基於當前環境的命令[END]
     # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
@@ -700,12 +700,15 @@ function funcProtectedOptionInit(){
   # pull public function list/自動補全選項列表[END]
   # report3/3[START]
   # command sort：0-9a-zA-Z
+  # array_keys()[START]
   local variOptionReportMap=""
   if [ -n "$ZSH_VERSION" ]; then
-    eval 'variOptionReportMap="${(@k)variOptionReport}"'
+    # eval 'variOptionReportMap="${(@k)variOptionReport}"'
+    eval 'variOptionReportMap="${(@k)variOptionReport[@]}"'
   else
     eval 'variOptionReportMap="${!variOptionReport[@]}"'
   fi
+  # array_keys()[END]
   for variEachIndex in $(echo "${variOptionReportMap}" | tr ' ' '\n' | sort); do
     IFS='_' read -r variEachBashEvni variDevNull variEachUnitCommand <<< "${variEachIndex}"
     # option sort：0-9a-zA-Z
@@ -804,7 +807,9 @@ function funcPublicInit(){
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variInitModel=${1:-0}
   if [ -z "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}" ] || [ ${variInitModel} -eq 1 ]; then
-    install -m 755 <(echo '#!/usr/bin/env bash') ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}
+    # install -m 755 <(echo '#!/usr/bin/env bash') ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]} # 兼容不好
+    echo '#!/usr/bin/env bash' > "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    chmod 755 "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
     echo '' > ${VARI_GLOBAL["VERSION_URI"]}
     # 檢查間隔（要求：大於3秒）[START]
     # 避免首次「omni.system init 1」時，觸發兩次「funcProtectedCloudInit」
@@ -839,7 +844,7 @@ function funcPublicInit(){
   # pull *.sh list[END]
   # ----------
   local variBuiltinSourceUriMd5Before=""
-  [ -f "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" ] && variBuiltinSourceUriMd5Before=$(openssl md5 "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" | awk '{print $NF}')
+  [ -f "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" ] && variBuiltinSourceUriMd5Before=$(openssl md5 "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" | awk '{print $NF}')
   # ----------
   # 係統兼容[START]
   if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
@@ -853,29 +858,29 @@ function funcPublicInit(){
   if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
     # 升級用戶執行權限
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
-    grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}"
+    grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
   fi
   # 係統兼容[END]
   # ----------
   local variBuiltinSourceUriMd5After=""
-  [ -f "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" ] && variBuiltinSourceUriMd5After=$(openssl md5 "${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" | awk '{print $NF}')
+  [ -f "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" ] && variBuiltinSourceUriMd5After=$(openssl md5 "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" | awk '{print $NF}')
   if [ "${variBuiltinSourceUriMd5After}" != "${variBuiltinSourceUriMd5Before}" ]; then
-    echo "source ${VARI_GLOBAL["BUILTIN_SOURCE_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
+    echo "source ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   fi
   # ----------
   return 0
 }
 
 function funcPublicVersion() {
+    echo "--------------------------------------------------"
     echo "[ https://github.com/chunio/omni.git ] version 1.0.0"
-    local variLineNum=$(tac "${VARI_GLOBAL["VERSION_URI"]}" | awk '/releaseCloud/ {print NR; exit}')
-    if [ -z "$variLineNum" ]; then
-        return 1
-    else
-        local variTotalLineNum=$(wc -l < "${VARI_GLOBAL["VERSION_URI"]}")
-        local variForwardLineNum=$((variTotalLineNum - variLineNum + 1))
-        tail -n +$variForwardLineNum "${VARI_GLOBAL["VERSION_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    fi
+    echo "--------------------------------------------------"
+    echo "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    echo "--------------------------------------------------"
+    cat "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    echo "--------------------------------------------------"
+    cat "${VARI_GLOBAL["VERSION_URI"]}"
+    echo "--------------------------------------------------"
     return 0
 }
 
@@ -897,6 +902,72 @@ function funcPublicZshReinit() {
           return 1
           ;;
   esac
+  return 0
+}
+
+function funcPublicStarshipReinit() {
+  local variParameterDescList=("status : 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  local variStatus=${1:-1}
+  local variShellType=""
+  case ${VARI_GLOBAL["BUILTIN_UNAME"]} in
+    "DARWIN")
+      variShellType="zsh"
+      ;;
+    "LINUX")
+      variShellType="bash"
+      ;;
+    *)
+      echo "unsupported os : ${VARI_GLOBAL["BUILTIN_UNAME"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+      return 1
+      ;;
+  esac
+  local variStartMark="# OMNI_STARSHIP_INIT[START]"
+  local variEndMark="# OMNI_STARSHIP_INIT[END]"
+
+  [ ! -f "${variShellrcUri}" ] && touch "${variShellrcUri}"
+
+  # 移除舊配置[START]
+  awk -v start="${variStartMark}" -v end="${variEndMark}" '
+    $0 == start {skip=1; next}
+    $0 == end {skip=0; next}
+    skip != 1 {print}
+  ' "${variShellrcUri}" > "${variShellrcUri}.temp"
+  /bin/mv "${variShellrcUri}.temp" "${variShellrcUri}"
+  # 移除舊配置[END]
+
+  # disable
+  if [ "${variStatus}" == "0" ]; then
+    echo "starship disabled : ${variShellrcUri}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+    return 0
+  fi
+
+  # install starship[START]
+  if ! command -v starship >/dev/null 2>&1; then
+    mkdir -p "${VARI_GLOBAL["OMNI_BIN_PATH"]}"
+
+    if command -v curl >/dev/null 2>&1; then
+      curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${VARI_GLOBAL["OMNI_BIN_PATH"]}"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO- https://starship.rs/install.sh | sh -s -- -y -b "${VARI_GLOBAL["OMNI_BIN_PATH"]}"
+    else
+      echo "curl/wget not found, cannot install starship" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+      return 1
+    fi
+  fi
+  # install starship[END]
+
+  # enable
+  cat >> "${variShellrcUri}" <<EOF
+
+${variStartMark}
+if command -v starship >/dev/null 2>&1; then
+  eval "\$(starship init ${variShellType})"
+fi
+${variEndMark}
+EOF
+
+  echo "starship enabled : ${variShellrcUri}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   return 0
 }
 
