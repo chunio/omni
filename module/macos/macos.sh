@@ -88,7 +88,7 @@ function funcPublicProxy() {
   if [ "${variProxyPort}" -gt 0 ]; then
     variProxyOrigin="http://${variProxyDomain}:${variProxyPort}"
     #（1）shell http && https[START]
-    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     {
       echo "export http_proxy=\"${variProxyOrigin}\""
       echo "export https_proxy=\"${variProxyOrigin}\""
@@ -98,17 +98,17 @@ function funcPublicProxy() {
       echo "export HTTPS_PROXY=\"${variProxyOrigin}\""
       echo "export ALL_PROXY=\"${variProxyOrigin}\""
       echo "export NO_PROXY=\"${variNoProxyMulti}\""
-    } >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    } >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     #（1）shell http && https[END]
   else
     #（1）shell http && https[START]
-    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    sed -i '' -E '/^export (http_proxy|https_proxy|all_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     unset http_proxy https_proxy all_proxy no_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY
     #（1）shell http && https[END]
   fi
-  source "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   {
-    echo "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]} successfully modified"
+    echo "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]} successfully modified"
     echo "{http(s)} successfully updated : ${variProxyOrigin}"
   } >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   return 0

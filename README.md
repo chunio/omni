@@ -21,8 +21,8 @@ darwin : macos 26.4.1
 
 [root@darwin /]# # darwin[START]
 [root@darwin /]# mkdir -p /Users/zengweitao/archived/workspace/repository/chunio && cd /Users/zengweitao/archived/workspace/repository/chunio
-[root@darwin /]# export http_proxy=http://192.168.3.163:7897 # ifconfig | grep inet
-[root@darwin /]# export https_proxy=http://192.168.3.163:7897 # ifconfig | grep inet
+[root@darwin /]# export http_proxy=http://192.168.3.132:7897 # ifconfig | grep inet
+[root@darwin /]# export https_proxy=http://192.168.3.132:7897 # ifconfig | grep inet
 [root@darwin /]# xcode-select --install # 交互安裝
 [root@darwin /]# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" # 交互安裝
 [root@darwin /]# echo >> /Users/zengweitao/.zshrc # 確保換行

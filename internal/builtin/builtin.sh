@@ -15,8 +15,11 @@ VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s)000
 # enum : LINUX / DARWIN
 VARI_GLOBAL["BUILTIN_UNAME"]=""
 # enum : CENTOS / UBUNTU / MACOS
-VARI_GLOBAL["BUILTIN_OS_DISTRO"]=""
+VARI_GLOBAL["BUILTIN_OS_DISTRO"]="" # 大寫字母
+# enum : ZSH / BASH
+VARI_GLOBAL["BUILTIN_SHELL_TYPE"]="" # 大寫字母
 VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=""
+VARI_GLOBAL["BUILTIN_OMNIRC_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]=""
 # 每次執行動態獲取（即：共享內存）[END]
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
@@ -139,7 +142,7 @@ ENCRYPTENVI
   fi
   # ----------
   # 禁止：於當前環境執行（如：source interface.sh）
-  if [[ ${VARI_GLOBAL["BUILTIN_BASH_ENVI"]} == "SLATER" ]] && [[ "$0" == "bash" || "$0" == "-bash" || "$0" == "sh" || "$0" == "-sh" ]]; then
+  if [[ ${VARI_GLOBAL["BUILTIN_BASH_ENVI"]} = "SLATER" ]] && [[ "$0" = "bash" || "$0" = "-bash" || "$0" = "sh" || "$0" = "-sh" ]]; then
       echo "the run mode is prohibited"
       echo "example : "'${symbolLink}'" | /${VARI_GLOBAL["BASH_NAME"]} | ./${VARI_GLOBAL["BASH_NAME"]} | bash ${VARI_GLOBAL["BASH_NAME"]}"
       return 1
@@ -147,8 +150,11 @@ ENCRYPTENVI
   # ----------
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
   if [ ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} != 0 ] && [ $(ls -1 "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | wc -l) -gt ${VARI_GLOBAL["BUILTIN_RUNTIME_LIMIT"]} ]; then
-    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.todo
-    rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.trace
+    # ----------
+    # rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.todo
+    # rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/*.trace
+    find "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" -maxdepth 1 -type f \( -name "*.todo" -o -name "*.trace" \) -exec rm -f {} \; 2>/dev/null
+    # ----------
   fi
   touch "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}" "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   variStartTimeFormat=$(perl -MPOSIX -le 'print strftime("%Y-%m-%d %H:%M:%S", localtime($ARGV[0]/1000))' "${VARI_GLOBAL["BUILTIN_START_TIME"]}")
@@ -193,28 +199,36 @@ function funcProtectedDestruct() {
 function funcProtectedUnameInit() {
   local variUname=$(uname)
   local variBuiltinOsDistro
-  local variBuiltinSourceUri
+  local variBuiltinShellType="BASH" # default
+  local variBuiltinShellrcUri
+  local variBuiltinOmnircUri
   if [ "$variUname" = "Linux" ]; then
     if [[ -f /etc/centos-release || -f /etc/redhat-release ]]; then
       variBuiltinOsDistro="CENTOS"
-      variBuiltinSourceUri="${HOME}/.omni.centos.envi/omni.centos.sh"
+      variBuiltinOmnircUri="${HOME}/.omni.centos.envi/omni.centos.sh"
     elif [ -f /etc/debian_version ]; then
       variBuiltinOsDistro="UBUNTU"
-      variBuiltinSourceUri="${HOME}/.omni.ubuntu.envi/omni.ubuntu.sh"
+      variBuiltinOmnircUri="${HOME}/.omni.ubuntu.envi/omni.ubuntu.sh"
     fi
+    [ -n "$ZSH_VERSION" ] && variBuiltinShellType="ZSH"
+    variBuiltinShellrcUri="${HOME}/.bashrc"
   elif [ "$variUname" = "Darwin" ]; then
     variBuiltinOsDistro="MACOS"
-    variBuiltinSourceUri="${HOME}/.omni.macos.envi/omni.macos.sh"
+    variBuiltinShellType="ZSH"
+    variBuiltinShellrcUri="${HOME}/.zshrc"
+    variBuiltinOmnircUri="${HOME}/.omni.macos.envi/omni.macos.sh"
   fi
-  if [ ! -f "${variBuiltinSourceUri}" ]; then
-    mkdir -p "$(dirname "${variBuiltinSourceUri}")"
-    echo '#!/usr/bin/env bash' > "${variBuiltinSourceUri}"
-    chmod 755 "${variBuiltinSourceUri}"
+  if [ ! -f "${variBuiltinOmnircUri}" ]; then
+    mkdir -p "$(dirname "${variBuiltinOmnircUri}")"
+    echo '#!/usr/bin/env bash' > "${variBuiltinOmnircUri}"
+    chmod 755 "${variBuiltinOmnircUri}"
   fi
-  source ${variBuiltinSourceUri} || true
+  source ${variBuiltinOmnircUri} || true
   VARI_GLOBAL["BUILTIN_UNAME"]=$(echo "$variUname" | tr '[:lower:]' '[:upper:]')
   VARI_GLOBAL["BUILTIN_OS_DISTRO"]=${variBuiltinOsDistro}
-  VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=${variBuiltinSourceUri}
+  VARI_GLOBAL["BUILTIN_SHELL_TYPE"]=${variBuiltinShellType}
+  VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=${variBuiltinShellrcUri}
+  VARI_GLOBAL["BUILTIN_OMNIRC_URI"]=${variBuiltinOmnircUri}
   return 0
 }
 
@@ -249,7 +263,7 @@ function funcProtectedCheckRequiredParameter_History() {
   done
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
   echo -e "$variParameterExplain" # >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-  if [[ $variCheckLabel == ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ]]; then
+  if [[ $variCheckLabel = ${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]} ]]; then
       return 1
   else
       return 0
@@ -295,7 +309,7 @@ function funcProtectedCheckRequiredParameter() {
   # 使用「for...in...」遍歷，以免「bash」與「zsh」的索引差異[END]
   variParameterExplain+=$(printf "\n%s\n" "PARAMETER")
   echo -e "${variParameterExplain}"
-  if [[ "${variCheckLabel}" == "${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}" ]]; then
+  if [[ "${variCheckLabel}" = "${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}" ]]; then
     return 1
   fi
   return 0
@@ -418,7 +432,7 @@ function funcProtectedEchoGreen(){
 function funcProtectedUpdateVariGlobalBuiltinValue_Disable() {
   local variIndex=${1}
   local variValue=${2}
-  if [ ${variIndex} == "BUILTIN_OMNI_ROOT_PATH" ]; then
+  if [ ${variIndex} = "BUILTIN_OMNI_ROOT_PATH" ]; then
     variBuiltinOmniRootPath=${variValue}
   else
     variBuiltinOmniRootPath=${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}

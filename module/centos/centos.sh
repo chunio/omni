@@ -360,18 +360,18 @@ function funcPublicProxy() {
   if [ ${variProxyPort} -gt 0 ]; then
     variProxyOrigin="http://192.168.255.1:${variProxyPort}"
     #（1）common[START]
-    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export http_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export https_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export no_proxy="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export HTTP_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export HTTPS_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    echo 'export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
+    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export http_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export https_proxy="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export no_proxy="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export HTTP_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export HTTPS_PROXY="'${variProxyOrigin}'"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    echo 'export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"' >> ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
     #（1）common[END]
     #（2）yum[START]
     sed -i '/^proxy=/d' /etc/yum.conf
@@ -388,12 +388,12 @@ HTTPPROXYCONF
     #（3）docker[END]
   else
     #（1）common[START]
-    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
-    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}
+    sed -i '/^export http_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export https_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export no_proxy=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export HTTP_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export HTTPS_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
+    sed -i '/^export NO_PROXY=/d' ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}
     unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY
     #（1）common[END]
     #（2）yum[START]
@@ -403,11 +403,11 @@ HTTPPROXYCONF
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
     #（3）docker[END]
   fi
-  source "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   # systemctl restart network.service
   systemctl daemon-reload
   systemctl restart docker 2> /dev/null
-  echo "update ${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
+  echo "update ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo "update /etc/yum.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo "update /etc/systemd/system/docker.service.d/http-proxy.conf" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
   echo "update http/https/yum/docker proxy : ${variProxyOrigin}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}

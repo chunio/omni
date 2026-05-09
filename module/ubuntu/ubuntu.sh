@@ -361,7 +361,7 @@ Acquire::https::Proxy "${variProxyOrigin}";
 APT_CONF_D
     #（1.2）apt (debian/ubuntu) [END]
     #（2）http && https[START]
-    sed -i -E '/^export (http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    sed -i -E '/^export (http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     {
       echo "export http_proxy=\"${variProxyOrigin}\""
       echo "export https_proxy=\"${variProxyOrigin}\""
@@ -369,7 +369,7 @@ APT_CONF_D
       echo "export HTTP_PROXY=\"${variProxyOrigin}\""
       echo "export HTTPS_PROXY=\"${variProxyOrigin}\""
       echo "export NO_PROXY=\"${variNoProxyMulti}\""
-    } >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    } >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     #（2）http && https[END]
     #（3）docker[START]
     mkdir -p /etc/systemd/system/docker.service.d
@@ -385,20 +385,20 @@ HTTPPROXYCONF
     rm -f /etc/apt/apt.conf.d/80proxy 2>/dev/null
     #（1.2）apt (debian/ubuntu) [END]
     #（2）common[START]
-    sed -i -E '/^export (http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    sed -i -E '/^export (http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=/d' "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY
     #（2）common[END]
     #（3）docker[START]
     rm -rf /etc/systemd/system/docker.service.d/http-proxy.conf 2> /dev/null
     #（3）docker[END]
   fi
-  source "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   # systemctl restart network.service
   systemctl daemon-reload 2>/dev/null
   systemctl restart docker 2> /dev/null
   {
     echo "/etc/apt/apt.conf.d/80proxy successfully modified"
-    echo "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]} successfully modified"
+    echo "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]} successfully modified"
     echo "/etc/systemd/system/docker.service.d/http-proxy.conf successfully modified"
     echo "{apt && http(s) && docker} successfully updated : ${variProxyOrigin}"
   } >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
