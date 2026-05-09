@@ -26,13 +26,13 @@ fi
 # compatible[START]
 # non-zero length
 # TODO：待移除
-if [ -n "$ZSH_VERSION" ]; then
+# if [ -n "$ZSH_VERSION" ]; then
   # 目的：調整語法，靠攏至「bash」
   # setopt LOCAL_OPTIONS  # 内存狀態，開啟/棧，注釋/堆
   # setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯（區別：zsh/默認報錯，bash/不會報錯）
-  setopt KSH_ARRAYS # 數組索引從零開始
-  setopt SH_WORD_SPLIT # 支持空格拆分變量
-fi
+  # setopt KSH_ARRAYS # 數組索引從零開始
+  # setopt SH_WORD_SPLIT # 支持空格拆分變量
+# fi
 # compatible[END]
 
 declare -A VARI_GLOBAL
@@ -633,7 +633,7 @@ function funcProtectedCommandInit() {
   # rm -rf "${VARI_GLOBAL["OMNI_BIN_PATH"]}/${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
   find "${VARI_GLOBAL["OMNI_BIN_PATH"]}" -maxdepth 1 -type l -name "${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.*" -exec rm -f {} \; 2>/dev/null
   # ----------
-  for variAbleUnitFileUri in ${variAbleUnitFileUriList}; do
+  for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
     variEachUnitFilename=$(basename "${variAbleUnitFileUri}")
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # 基於當前環境的命令[START]
@@ -683,13 +683,13 @@ function funcProtectedOptionInit(){
   declare -A variOptionReport
   # report1/3[END]
   # pull public function list/自動補全選項列表[START]
-  for variAbleUnitFileUri in ${variAbleUnitFileUriList}; do
+  for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
     variEachUnitFilename=$(basename $variAbleUnitFileUri)
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     variFuncNameCollection=$(grep -oE 'function +funcPublic\w+' "$variAbleUnitFileUri" 2>/dev/null | sed 's/^function *//' || true)
     [ -z "$variFuncNameCollection" ] && continue
     local variEachOptionList=""
-    for variEachFuncName in $variFuncNameCollection; do
+    for variEachFuncName in ${=variFuncNameCollection}; do
       # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
       variOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
       variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
