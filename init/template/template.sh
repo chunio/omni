@@ -24,7 +24,7 @@ fi
 
 # archived version[START]
 # declare -A VARI_GLOBAL
-# VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
+# VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解析軟鏈
 # VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 # source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
@@ -33,7 +33,7 @@ fi
 # archived version[END]
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SLAVE"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"

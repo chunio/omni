@@ -11,6 +11,7 @@ MARK
 # [已驗證]純淨版本的「ubuntu」不支持「perl」
 # VARI_GLOBAL["BUILTIN_START_TIME"]=$(perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000')
 VARI_GLOBAL["BUILTIN_START_TIME"]=$(date +%s)000
+# ----------
 # 每次執行動態獲取（即：共享內存）[START]
 # enum : LINUX / DARWIN
 VARI_GLOBAL["BUILTIN_UNAME"]=""
@@ -22,6 +23,7 @@ VARI_GLOBAL["BUILTIN_SHELLRC_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNIRC_URI"]=""
 VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]=""
 # 每次執行動態獲取（即：共享內存）[END]
+# ----------
 VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]="sh"
 VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]="omni"
 VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]="${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/cloud"

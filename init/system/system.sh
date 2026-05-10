@@ -13,6 +13,10 @@
 2/LINUX:「sed -i」，[解決方案]DARWIN:「sed -i '' # 額外依賴備份名稱」
 3/LINUX:「date {-d，%3N，strftime}」，[解決方案]DARWIN:「date perl」
 4/LINUX:「$(readlink -f "${BASH_SOURCE[0]}")」，[解決方案]DARWIN:「$(perl -MCwd -le 'print Cwd::abs_path(shift)' "${BASH_SOURCE[0]}")」
+5/setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯（區別：zsh/默認報錯，bash/不會報錯）
+6/setopt KSH_ARRAYS # 數組索引從零開始（區別：zsh/從1開始，bash/從0開始）
+7/setopt SH_WORD_SPLIT # 支持空格拆分變量（區別：zsh/不支持，bash/支持）
+8/...
 # ----------
 1/find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
@@ -23,20 +27,9 @@ if [ -z "$ZSH_VERSION" ]; then
   [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
 fi
 # required[END]
-# compatible[START]
-# non-zero length
-# TODO：待移除
-# if [ -n "$ZSH_VERSION" ]; then
-  # 目的：調整語法，靠攏至「bash」
-  # setopt LOCAL_OPTIONS  # 内存狀態，開啟/棧，注釋/堆
-  # setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯（區別：zsh/默認報錯，bash/不會報錯）
-  # setopt KSH_ARRAYS # 數組索引從零開始
-  # setopt SH_WORD_SPLIT # 支持空格拆分變量
-# fi
-# compatible[END]
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="MASTER"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SOURCE"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
 VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
@@ -178,7 +171,7 @@ function funcProtectedCloudInit_Centos(){
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    if [ ${variCloudInstallResult[${variEachPackage}]} = ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
+    if [ "${variCloudInstallResult[${variEachPackage}]}" = ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
       local variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
       echo "${variEachPackageInstalledLabel}" >> "${VARI_GLOBAL["VERSION_URI"]}"
     else
@@ -280,7 +273,7 @@ function funcProtectedCloudInit_Ubuntu(){
   # --------------------------------------------------
   for variEachPackage in "${!variCloudInstallResult[@]}"; do
     echo "${variEachPackage} : ${variCloudInstallResult[${variEachPackage}]}" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
-    if [ ${variCloudInstallResult[${variEachPackage}]} = ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
+    if [ "${variCloudInstallResult[${variEachPackage}]}" = ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]} ]; then
       local variEachPackageInstalledLabel="apt install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
       echo "${variEachPackageInstalledLabel}" >> "${VARI_GLOBAL["VERSION_URI"]}"
     else
@@ -633,11 +626,14 @@ function funcProtectedCommandInit() {
   # rm -rf "${VARI_GLOBAL["OMNI_BIN_PATH"]}/${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
   find "${VARI_GLOBAL["OMNI_BIN_PATH"]}" -maxdepth 1 -type l -name "${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.*" -exec rm -f {} \; 2>/dev/null
   # ----------
-  for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
+  # for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
+  for variAbleUnitFileUri in $(echo "${variAbleUnitFileUriList}" | tr ' ' '\n'); do
+    [ -z "$variAbleUnitFileUri" ] && continue
+  # ----------
     variEachUnitFilename=$(basename "${variAbleUnitFileUri}")
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # 基於當前環境的命令[START]
-    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' "${variAbleUnitFileUri}"; then
+    if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="SOURCE"' "${variAbleUnitFileUri}"; then
       # [單一]精確清理[START]
       sed -e "/^alias ${variEachUnitCommand}=/d" \
           -e "/^function ${variEachUnitCommand}()/d" \
@@ -676,20 +672,28 @@ function funcProtectedOptionInit(){
   done
   # remove leading and trailing whitespace/移除首末空格
   variInheritOptionList=$(echo ${variInheritOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
-  printf "%-5s %-15s -> %-70s\n" "[ - ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+  printf "%-5s %-15s -> %-70s\n" "[ COMMON ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
+  printf "%-5s %-15s -> %-70s\n" "[ COMMON ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   # inherit the public functions from builtin.sh[END]
   # report1/3[START]
   declare -A variOptionReport
   # report1/3[END]
   # pull public function list/自動補全選項列表[START]
-  for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
+  # ----------
+  # for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
+  for variAbleUnitFileUri in $(echo "${variAbleUnitFileUriList}" | tr ' ' '\n'); do
+    [ -z "$variAbleUnitFileUri" ] && continue
+  # ----------
     variEachUnitFilename=$(basename $variAbleUnitFileUri)
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     variFuncNameCollection=$(grep -oE 'function +funcPublic\w+' "$variAbleUnitFileUri" 2>/dev/null | sed 's/^function *//' || true)
     [ -z "$variFuncNameCollection" ] && continue
     local variEachOptionList=""
-    for variEachFuncName in ${=variFuncNameCollection}; do
+    # ----------
+    # for variEachFuncName in ${=variFuncNameCollection}; do
+    for variEachFuncName in $(echo "${variFuncNameCollection}" | tr ' ' '\n'); do
+      [ -z "$variEachFuncName" ] && continue
+    # ----------r
       # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
       variOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
       variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
@@ -697,30 +701,34 @@ function funcProtectedOptionInit(){
       variEachOptionList="$variEachOptionList $variOptionName"
     done
     # remove leading and trailing whitespace/移除首末空格
-    variEachOptionList=$(echo $variEachOptionList | sed 's/^[ \t]*//;s/[ \t]*$//')
-    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="MASTER"' ${variAbleUnitFileUri} && variEachBashEvni="M" || variEachBashEvni="S"
+    variEachOptionList=$(echo "$variEachOptionList" | sed 's/^[ \t]*//;s/[ \t]*$//')
+    grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="SOURCE"' ${variAbleUnitFileUri} && variEachBashEnvi="SOURCE" || variEachBashEnvi="DETACH"
     if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
       funcProtectedCompletionInit_Linux "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
     elif [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "DARWIN" ]; then
       funcProtectedCompletionInit_Darwin "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
     fi
-    # report2/3[START]
-    if [ ${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}} = 'system' ]; then
-      # 置頂顯示
-      variEachIndex=${variEachBashEvni}_0_${variEachUnitCommand}
+    # report2/3 && 分配權重（規則：越小越前）[START]
+    local variEachSortWeight="99"
+    if [ "${variEachBashEnvi}" = "SOURCE" ]; then
+      if [ "${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}" = 'system' ]; then
+        variEachSortWeight="10"
+      else
+        variEachSortWeight="11"
+      fi
     else
-      variEachIndex=${variEachBashEvni}_1_${variEachUnitCommand}
+      variEachSortWeight="20"
     fi
+    variEachIndex="${variEachSortWeight}_${variEachBashEnvi}_${variEachUnitCommand}"
     variOptionReport[${variEachIndex}]="${variEachOptionList}"
-    # report2/3[END]
+    # report2/3 && 分配權重（規則：越小越前）[END]
   done
   if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
     # 「source /usr/share/bash-completion/bash_completion」成功返回：exit 1
     source /usr/share/bash-completion/bash_completion 2>/dev/null || true
   fi
   # pull public function list/自動補全選項列表[END]
-  # report3/3[START]
-  # command sort：0-9a-zA-Z
+  # report3/3 && 執行排序（command sort：0-9a-zA-Z）[START]
   # array_keys()[START]
   local variOptionReportMap=""
   if [ -n "$ZSH_VERSION" ]; then
@@ -731,16 +739,16 @@ function funcProtectedOptionInit(){
   fi
   # array_keys()[END]
   for variEachIndex in $(echo "${variOptionReportMap}" | tr ' ' '\n' | sort); do
-    IFS='_' read -r variEachBashEvni variDevNull variEachUnitCommand <<< "${variEachIndex}"
+    # 欄位對應 ：1/排序權重(丟棄) 2/執行環境 3/命令名稱
+    IFS='_' read -r variDevNull variEachBashEnvi variEachUnitCommand <<< "${variEachIndex}"
     # option sort：0-9a-zA-Z
     variEachOptionList=$(echo "${variOptionReport[$variEachIndex]}" | tr ' ' '\n' | sort | xargs)
-    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
-    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEvni} ]" "$variEachUnitCommand" "$variEachOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEnvi} ]" "$variEachUnitCommand" "$variEachOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
+    printf "%-5s %-15s -> %-70s\n" "[ ${variEachBashEnvi} ]" "$variEachUnitCommand" "$variEachOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   done
-  # report3/3[END]
+  # report3/3 && 執行排序（command sort：0-9a-zA-Z）[END]
   return 0
 }
-
 function funcProtectedCompletionInit_Linux(){
   local variCommand=$1
   local variOptionList=$2
@@ -1007,7 +1015,7 @@ EOF
       cat >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
 
 ${variExtensionStartMark}
-$(echo -e "${variCommandMulti}")
+${variCommandMulti}
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
 bindkey "^[OA" history-substring-search-up
@@ -1109,7 +1117,7 @@ function funcPublicPort(){
   funcProtectedEchoGreen "command >> lsof -i :${variPort} -t | xargs -r ps -fp"
   lsof -i :${variPort} -t | xargs -r ps -fp
   #（2）是否終止
-  if [ ${variExpectAction} = "kill" ];then
+  if [ "${variExpectAction}" = "kill" ];then
     variInput="kill"
   else
     read -p "do you want to kill the ${variProcessCount} process(es) listening on port '${variPort}' ? ( type 'kill' to confirm ) : " variInput
