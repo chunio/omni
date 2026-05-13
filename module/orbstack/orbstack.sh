@@ -40,6 +40,23 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
+function funcPublicServiceReinit(){
+  return 0
+}
+
+function funcPublicReadmeUpset(){
+  cat > /README.md <<EOF
+sudo -i
+cd /Users/zengweitao/archived/workspace/repository/chunio
+./omni/init/system/system.sh init 1
+source /root/.omni.ubuntu/omni.ubuntu.sh
+omni.docker deveEnviReinit 1
+EOF
+  echo "--------------------------------------------------"
+  cat /README.md
+  echo "--------------------------------------------------"
+  return 0
+}
 # public function[END]
 # ##################################################
 

@@ -430,7 +430,7 @@ ETCBASHRC
 }
 
 # [已驗證/官方容器]成功啟動
-# function funcPublicUnicorn()
+# function funcPublicUnicorn_History()
 # {
 #   variMasterPath="/windows/code/backend/haohaiyou"
 #   variDockerWorkspace="/windows/code/backend/haohaiyou"

@@ -107,19 +107,26 @@ function funcPublicExec(){
   return 0
 }
 
-function funcPublicDevelopmentEnvironmentInit(){
-  variParameterDescMulti=("status，value：1/build，0/clean")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variStatus=${1:-1}
+function funcPublicDeveEnviReinit(){
+  local variParameterDescMulti=("status, value: 0/stop(default), 1/run")
+  funcProtectedCheckOptionParameter 1 'variParameterDescMulti[@]' $# || return "${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}"
+  local variStatus=${1:-0}
   docker rm -f $(docker ps -aq) 2> /dev/null || true
   docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | xargs -r docker network rm
   if [ ${variStatus} -eq 1 ]; then
-    omni.redis runNode
-    omni.mongo runNode
-    omni.kafka runNode
-    omni.mysql runNode
-    omni.clickhouse runNode 
-    omni.apollo runNode 0602
+    omni.redis docker
+    omni.mongo docker
+    omni.kafka docker
+    omni.mysql docker
+    omni.clickhouse docker 
+    # omni.apollo docker 0602
+    # import business data[START]
+    if true;then
+      omni.kafka importBusinessData_Haohaiyou
+      omni.mysql importBusinessData_Haohaiyou
+      omni.clickhouse importBusinessData_Haohaiyou
+    fi
+    # import business data[END]
   fi
   docker ps -a
   return 0

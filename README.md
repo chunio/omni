@@ -16,7 +16,7 @@ mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
 git clone https://github.com/chunio/omni.git && chmod -R 777 ./omni
 sudo -i # ubuntu
-./omni/init/system/system.sh init
+./omni/init/system/system.sh init 1
 # linux[END]
 
 # darwin[START]
@@ -33,7 +33,7 @@ rehash # 重置命令路徑緩存
 git clone https://github.com/chunio/omni.git
 find ./omni -type f -name "*.sh" ! -path "*/.git/*" -exec chmod +x {} \;
 chmod -R 777 ./omni
-./omni/init/system/system.sh init
+./omni/init/system/system.sh init 1
 # darwin[END]
 ```
 

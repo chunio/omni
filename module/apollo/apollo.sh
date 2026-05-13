@@ -47,7 +47,7 @@ VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode() {
+function funcPublicDocker() {
   local variParameterDescList=("sql version（default : 0 / example : 20240527010100）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   # ----------

@@ -34,17 +34,17 @@ VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface
 # ##################################################
 # public function[START]
 function funcPublicRestart(){
-  echo "[MYSQL]LATEST VERSION : $(cat ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version)"
+  echo "[MYSQL]LATEST VERSION : $(cat ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/version)"
   rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   rm -rf ${VARI_GLOBAL["REDIS_DATA_PATH"]} && mkdir -p ${VARI_GLOBAL["REDIS_DATA_PATH"]}
   # chmod 777 -R /linux
-  variSQLPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql
+  local variShemaPath=${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema
   # [MASTER]persistence
   # variMasterPath="/Users/zengweitao/archived/workspace/repository/chunio/account/"
   # [DOCKER]temporary
-  variContainerWorkPath="/Users/zengweitao/archived/workspace/repository/chunio/account/"
-  variContainerName="account"
-  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  local variContainerWorkPath="/Users/zengweitao/archived/workspace/repository/chunio/account/"
+  local variContainerName="account"
+  local variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/usr/bin/env bash
 # 會被「docker run」中指定命令覆蓋
@@ -75,7 +75,7 @@ services:
       - "3306:3306"
     volumes:
       # [數據目錄等於空時]自動按名稱順序執行./*.sh && *.sql
-      - ${variSQLPath}:/docker-entrypoint-initdb.d
+      - ${variShemaPath}:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
       # - /windows:/windows
       # - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
@@ -131,55 +131,55 @@ volumes:
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
   # 徹底重啟[START]
-  docker rm -f account-php 2> /dev/null
-  docker rm -f account-redis 2> /dev/null
-  docker rm -f account-mysql 2> /dev/null
-  docker rm -f account-nginx 2> /dev/null
+  docker rm -f "${variContainerName}-php" 2> /dev/null
+  docker rm -f "${variContainerName}-redis" 2> /dev/null
+  docker rm -f "${variContainerName}-mysql" 2> /dev/null
+  docker rm -f "${variContainerName}-nginx" 2> /dev/null
   # 徹底重啟[END]
   docker compose down -v
   # 強制清除未使用的「volume」
   docker volume prune -f
   docker compose -p ${variContainerName} up --build -d
   docker ps -a | grep ${variContainerName}
-  cd ${variContainerWorkPath}/backend
+  cd "${variContainerWorkPath}/backend"
   docker exec -it ${variContainerName}-php /bin/bash -c "php bin/swoft http:restart; exec /bin/bash"
   return 0
 }
 
 function funcPublicBackup(){
   local variParameterDescMulti=("custom version（default：YYYYMMDD）")
-  funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
-  variContainer="account-mysql"
-  variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
-  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
-  variDatabaseList=(
+  funcProtectedCheckOptionParameter 1 'variParameterDescMulti[@]'
+  local variContainerName="account-mysql"
+  local variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+  local variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  local variDatabaseList=(
     "account"
   )
-  variDefault=$(date "+%Y%m%d%H%M%S")
-  variSqlVersion=${1:-$variDefault}
-  variSqlVersionPath=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/sql
-  mkdir -p ${variSqlVersionPath}
-  echo "version ：${variSqlVersion}"
+  local variDefault=$(date "+%Y%m%d%H%M%S")
+  local variShemaVersion=${1:-$variDefault}
+  local variShemaVersionPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/shema"
+  mkdir -p "${variShemaVersionPath}"
+  echo "version ：${variShemaVersion}"
   for variEachDatabase in "${variDatabaseList[@]}"; do
-    variLatestSqlVersionUri="${variSqlVersionPath}/${variSqlVersion}.sql"
-    # docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variLatestSqlVersionUri
-    docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} > $variLatestSqlVersionUri
+    variLatestSqlUrl="${variShemaVersionPath}/${variShemaVersion}.sql"
+    # docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variLatestSqlUrl
+    docker exec ${variContainerName} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} > $variLatestSqlUrl
     if [ $? -eq 0 ]; then
-      echo "${variContainer} -> ${variEachDatabase} >> ${variLatestSqlVersionUri} backup succeeded"
+      echo "${variContainerName} -> ${variEachDatabase} >> ${variLatestSqlUrl} backup succeeded"
       # update [cloud]latest version[START]
-      cat <<INITSQL > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/00init.sql
+      cat <<INITSQL > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/00init.sql
 CREATE DATABASE IF NOT EXISTS ${variEachDatabase};
 USE ${variEachDatabase};
 SOURCE /docker-entrypoint-initdb.d/01account.sql;
 INITSQL
       # -----
-      /usr/bin/cp -rf ${variLatestSqlVersionUri} ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql
-      sed -i '1iCREATE DATABASE IF NOT EXISTS account;\nUSE account;\n' ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql
-      echo ${variSqlVersion} > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/version
-      echo "${variContainer} -> ${variEachDatabase} >> ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/sql/01account.sql update succeeded"
+      /usr/bin/cp -rf ${variLatestSqlUrl} ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/01account.sql
+      sed -i '1iCREATE DATABASE IF NOT EXISTS account;\nUSE account;\n' ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/01account.sql
+      echo ${variShemaVersion} > ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/version
+      echo "${variContainerName} -> ${variEachDatabase} >> ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/01account.sql update succeeded"
       # update [cloud]latest version[END]
       # version quantity control[START]
-      variAllSqlVersionUriSlice=$(ls -t ${variSqlVersionPath}/*.sql)
+      variAllSqlVersionUriSlice=$(ls -t ${variShemaVersionPath}/*.sql)
       variKeepSqlVersionUriSlice=$(echo "${variAllSqlVersionUriSlice}" | head -n 10)
       for variEachSqlVersionUri in $variAllSqlVersionUriSlice; do
         if ! echo "$variKeepSqlVersionUriSlice" | grep -q "^${variEachSqlVersionUri}$"; then
@@ -188,7 +188,7 @@ INITSQL
       done
       # version quantity control[END]
     else
-      echo "${variContainer} -> ${variEachDatabase} >> ${variLatestSqlVersionUri} backup failed"
+      echo "${variContainerName} -> ${variEachDatabase} >> ${variLatestSqlUrl} backup failed"
     fi
   done
   return 0

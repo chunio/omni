@@ -35,7 +35,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode()
+function funcPublicDocker()
 {
   # [MASTER]persistence
   variMasterPath="/windows/code/backend/golang"

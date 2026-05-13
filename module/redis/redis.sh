@@ -26,7 +26,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode()
+function funcPublicDocker()
 {
   cat <<REDISCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/redis.conf
 bind 0.0.0.0
@@ -51,7 +51,7 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker compose -p redis down -v
+  docker compose -p redis down -v 2> /dev/null
   docker compose -p redis up --build -d
   docker update --restart=always redis
   docker ps -a | grep redis

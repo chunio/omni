@@ -29,7 +29,7 @@ VARI_GLOBAL["MONGO_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode(){
+function funcPublicDocker(){
     local variCurrentIp=$(hostname -I | awk '{print $1}')
     # orbstack[START]
     [ -d "/mnt/machines/$(hostname)" ] && variCurrentIp="$(hostname).orb.local"
@@ -68,7 +68,8 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
     cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-    docker compose down -v
+    # docker compose down -v
+    docker compose -p mongo down -v 2> /dev/null
     docker compose -p mongo up --build -d
     # check status[START]
     for i in {1..120}; do

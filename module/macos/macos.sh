@@ -12,15 +12,6 @@ if [ -z "$ZSH_VERSION" ]; then
   [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
 fi
 # required[END]
-# compatible[START]
-# non-zero length
-if [ -n "$ZSH_VERSION" ]; then
-  # 目的：調整語法，靠攏至「bash」
-  setopt NO_NOMATCH # 通配符號沒有匹配亦不報錯
-  setopt KSH_ARRAYS # 數組索引從零開始
-  setopt SH_WORD_SPLIT # 支持空格拆分變量
-fi
-# compatible[END]
 
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SOURCE"
@@ -30,9 +21,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
 
+funcProtectedConstruct # 二次執行（目的：提前獲取係統信息）
+
 # ##################################################
 # global variable[START]
-
+variBuiltinOsDistroLower=$(echo "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" | tr '[:upper:]' '[:lower:]')
+VARI_GLOBAL["OMNI_ENVI_PATH"]="${HOME}/.omni.${variBuiltinOsDistroLower}.envi" # 項目配置
 # global variable[END]
 # ##################################################
 
@@ -56,7 +50,7 @@ function funcPublicProxy() {
     "domain : enum（0/127.0.0.1，1/host.docker.internal）, example.com"
     "port : 0/disable, 7897/clash, 10809/v2ray"
   )
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 2 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variProxyDomain=${1:-"0"}
   case ${variProxyDomain} in
     "0") variProxyDomain="127.0.0.1" ;; # 本機
@@ -97,7 +91,6 @@ function funcPublicProxy() {
   } >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   return 0
 }
-
 # public function[END]
 # ##################################################
 

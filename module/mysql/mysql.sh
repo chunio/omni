@@ -32,7 +32,7 @@ VARI_GLOBAL["MYSQL_EXEC_IGNORE"]="Using a password on the command line interface
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode(){
+function funcPublicDocker(){
   local variParameterDescList=("[ sql ] version（ default : 0 / example : 20240527 ）")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   # restore version[START]
@@ -46,8 +46,8 @@ function funcPublicRunNode(){
   rm -rf ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   mkdir -p ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
   chmod -R 777 ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
-  # variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
-  variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  # variMysqlUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+  variMysqlPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
 #  cat <<MYCNF > ${VARI_GLOBAL["LINUX_UNIT_RUNTIME_PATH"]}/my.cnf
 #[mysqld]
 #bind-address = 0.0.0.0
@@ -59,7 +59,7 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${variPassword}
+      MYSQL_ROOT_PASSWORD: ${variMysqlPassword}
       # MYSQL_INITDB_SKIP_TZINFO: 1
     ports:
       # 宿主端口:容器端口
@@ -89,7 +89,8 @@ volumes:
       device: ${VARI_GLOBAL["MYSQL_DATA_PATH"]}
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker compose down -v
+  # docker compose down -v
+  docker compose -p mysql down -v 2> /dev/null
   docker compose -p mysql up --build -d
   docker update --restart=always mysql
   docker ps -a | grep mysql
@@ -100,8 +101,8 @@ DOCKERCOMPOSEYML
 #   local variParameterDescMulti=("custom version（default：YYYYMMDD）")
 #   funcProtectedCheckOptionParameter 1 variParameterDescMulti[@]
 #   variContainer="mysql"
-#   variUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
-#   variPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+#   variMysqlUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+#   variMysqlPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
 #   variDatabaseList=(
 #     "account"
 #   )
@@ -117,7 +118,7 @@ DOCKERCOMPOSEYML
 # SOURCE /docker-entrypoint-initdb.d/01${variEachDatabase}.sql;
 # INITSQL
 #     variEachSQLUri="${variSqlVersionPath}/01${variEachDatabase}.sql"
-#     docker exec ${variContainer} mysqldump -u${variUsername} -p${variPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
+#     docker exec ${variContainer} mysqldump -u${variMysqlUsername} -p${variMysqlPassword} ${variEachDatabase} 2>&1 | grep -v "${VARI_GLOBAL["MYSQL_EXEC_IGNORE"]}" > $variEachSQLUri
 #     if [ $? -eq 0 ]; then
 #       echo "${variContainer} -> ${variEachDatabase} >> ${variEachSQLUri} backup succeeded"
 #     else
@@ -126,6 +127,54 @@ DOCKERCOMPOSEYML
 #   done
 #   return 0
 # }
+
+function funcPublicImportBusinessData_Haohaiyou() {
+  local variContainerName="mysql"
+  local variShemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/haohaiyou"
+  local variMysqlUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+  local variMysqlPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  if [ ! -d "${variShemaPath}" ]; then
+    echo "[ warn ] ${variShemaPath} is empty(0)"
+    return 1
+  fi
+  shopt -s nullglob
+  local variSqlUriSlice=("${variShemaPath}"/*.sql)
+  shopt -u nullglob
+  if [ ${#variSqlUriSlice[@]} -eq 0 ]; then
+    echo "[ warn ] ${variShemaPath} is empty(1)"
+    return 0
+  fi
+  local variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null)
+  if [ "$variContainerStatus" != "running" ]; then
+    echo "[ error ] '${variContainerName}' is ${variContainerStatus}"
+    return 1
+  fi
+  local variRetryNum=30 # 重試次數
+  local variRetryInterval=2 # 重試間隔(unit:second)
+  local variEachSqlUri variImportStatus variEachCommand
+  for variEachSqlUri in "${variSqlUriSlice[@]}"; do
+    echo "[ import ] ${variEachSqlUri}"
+    variImportStatus="failed" # default
+    for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+      variEachCommand="docker exec -i ${variContainerName} mysql -u${variMysqlUsername}"
+      if [ -n "${variMysqlPassword}" ]; then
+        variEachCommand="${variEachCommand} -p${variMysqlPassword}"
+      fi
+      if cat "${variEachSqlUri}" | eval "${variEachCommand}"; then
+        variImportStatus="succeeded"
+        funcProtectedTrace "${variEachSqlUri} import ${variImportStatus}"
+        break
+      else
+        echo "[ retry ] ${variRetryIndex}/${variRetryNum}  ..."
+        sleep ${variRetryInterval}
+      fi
+    done
+    if [ "$variImportStatus" = "failed" ]; then
+      funcProtectedTodo "${variEachSqlUri} import ${variImportStatus}"
+    fi
+  done
+  return 0
+}
 # public function[END]
 # ##################################################
 

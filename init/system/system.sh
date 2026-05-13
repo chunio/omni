@@ -7,6 +7,7 @@
 1/「#!/usr/bin/env bash」表示使用「$PATH/搜尋路徑」中首個匹配的「bash」(注意：{. || source}來執行腳本時，係統將無視「#!/usr/bin/env bash」)
 2/etc/profile : 「登錄」時執行一次（含：1/ssh，2終端）>> [自動執行]/etc/profile.d/*.sh（影響：所有用戶，弊端：執行「source /etc/profile」亦無法加載最新變更至當前終端））
 3/etc/bashrc : 開啟「新的終端窗口」時執行一次（影響：所有用戶（~/.bashrc（影響：當前用戶）））
+4/「for...in...」&&「read...」所產生的迭代變量，默認全域（即：非「local」）
 # ----------
 兼容事項（即：LINUX支持，DARWIN缺失）：
 1/LINUX:「grep -P」，[解決方案]DARWIN:「grep -E」
@@ -21,12 +22,14 @@
 1/find /windows/code/backend/chunio/omni -type f -name "*.sh" -exec dos2unix {} \;
 MARK
 
-# required[START]
-# zero length
+# ##################################################
+# compatible && validator[START]
+# [zero length]bash
 if [ -z "$ZSH_VERSION" ]; then
   [ "${BASH_VERSION%%.*}" -ge 4 ] 2>/dev/null || { echo "[ required ] {bash 4.0+ || zsh}"; return 1 2>/dev/null || exit 1; }
 fi
-# required[END]
+# compatible && validator[END]
+# ##################################################
 
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SOURCE"
@@ -47,10 +50,11 @@ VARI_GLOBAL["CLOUD_INIT_REFRESH_TIMESTAMP"]=0
 VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]="internal vendor"
 VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]="template"
 # ----------
-VARI_GLOBAL["OMNI_ENVI_PATH"]="${HOME}/.omni.${variBuiltinOsDistroLower}.envi" # 項目配置
-VARI_GLOBAL["OMNI_BIN_PATH"]="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/bin" # 可執行的
-VARI_GLOBAL["OMNI_COMPLETION_PATH"]="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/completion" # 命令補全
-VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]='[ -f "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh" ] && source "'${VARI_GLOBAL["OMNI_ENVI_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh"' # 引導程序
+VARI_GLOBAL["OMNI_INIT_PATH"]="${HOME}/.omni.${variBuiltinOsDistroLower}" # 配置目錄
+VARI_GLOBAL["OMNI_ENVI_PATH"]="${VARI_GLOBAL["OMNI_INIT_PATH"]}/envi" # 其他配置
+VARI_GLOBAL["OMNI_BIN_PATH"]="${VARI_GLOBAL["OMNI_INIT_PATH"]}/bin" # 可執行的
+VARI_GLOBAL["OMNI_COMPLETION_PATH"]="${VARI_GLOBAL["OMNI_INIT_PATH"]}/completion" # 命令補全
+VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]='[ -f "'${VARI_GLOBAL["OMNI_INIT_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh" ] && source "'${VARI_GLOBAL["OMNI_INIT_PATH"]}'/omni.'${variBuiltinOsDistroLower}'.sh"' # 引導程序
 # global variable[END]
 # ##################################################
 
@@ -77,7 +81,7 @@ function funcProtectedCloudInit() {
 function funcProtectedCloudInit_Centos(){
   funcProtectedCentos7YumRepositoryUpdater
   rm -f /var/run/yum.pid
-  variPackageList=(
+  local variPackageList=(
     # centos[START]
     yum-utils
     # Extra Packages for Enterprise Linux/企業係統額外套件
@@ -89,6 +93,8 @@ function funcProtectedCloudInit_Centos(){
     lsof
     tree
     wget
+    make
+    gawk
     expect
     telnet
     dos2unix
@@ -104,9 +110,11 @@ function funcProtectedCloudInit_Centos(){
   local variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
   grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null && return 0
   # 檢查整體套件安裝狀態，已完成則退出[END]
-  local variRetry=10
+  local variRetryNum=10
+  local variRetryIndex
   local variSleep=2
   declare -A variCloudInstallResult
+  local variEachPackage
   for variEachPackage in "${variPackageList[@]}"; do
     # 檢查單個套件安裝狀態，已完成則跳過[START]
     local variEachPackageInstalledLabel="yum install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
@@ -121,8 +129,15 @@ function funcProtectedCloudInit_Centos(){
     case ${variEachPackage} in
       "chrony")
         if yum install -y chrony 2>/dev/null; then
-          # 服務名稱：[centos]chronyd，[ubuntu]chrony
-          systemctl start chronyd && systemctl enable chronyd && chronyc makestep
+          # ----------
+          # [orbstack]無需啟用:
+          # 1會自動同步宿主機器係統時間
+          # 2當「arm64」虛擬化至「amd64（即：orbstack.x86-64(emulated)」時不兼容（報錯：Fatal error : Failed to load seccomp rules）
+          if [ ! -d "/mnt/machines/$(hostname)" ];then
+          # ----------
+            # 服務名稱：[centos]chronyd，[ubuntu]chrony
+            systemctl start chronyd && systemctl enable chronyd && chronyc makestep
+          fi
           variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
         ;;
@@ -140,14 +155,14 @@ function funcProtectedCloudInit_Centos(){
         yum remove -y docker docker-engine docker-common docker-latest docker-client docker-client-latest docker-logrotate docker-latest-logrotate docker-compose-plugin
         yum install -y lvm2 device-mapper-persistent-data
         yum update -y nss curl openssl
-        for ((i=1; i<variRetry; i++)); do
+        for ((variRetryIndex=1; variRetryIndex<variRetryNum; variRetryIndex++)); do
           if yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo; then
             sed -i 's/gpgcheck=1/gpgcheck=0/g' /etc/yum.repos.d/docker-ce.repo
             break
           fi
           sleep $variSleep
         done
-        for ((i=1; i<variRetry; i++)); do
+        for ((variRetryIndex=1; variRetryIndex<variRetryNum; variRetryIndex++)); do
           if yum install -y containerd.io docker-ce docker-ce-cli docker-compose-plugin; then
             systemctl enable docker
             systemctl restart docker
@@ -158,7 +173,7 @@ function funcProtectedCloudInit_Centos(){
         done
         ;;
       *)
-        for ((i=1; i<variRetry; i++)); do
+        for ((variRetryIndex=1; variRetryIndex<variRetryNum; variRetryIndex++)); do
           if yum install -y "${variEachPackage}"; then
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
@@ -190,7 +205,7 @@ function funcProtectedCloudInit_Ubuntu(){
   sudo rm -f /var/lib/dpkg/lock-frontend
   sudo rm -f /var/cache/apt/archives/lock
   # 針對「ubuntu/debian」，移除「apt/dpkg」鎖定檔案以防止先前的執行衝突[END]
-  variPackageList=(
+  local variPackageList=(
     # ubuntu[START]
     apt-utils
     dialog
@@ -201,6 +216,8 @@ function funcProtectedCloudInit_Ubuntu(){
     lsof
     tree
     wget
+    make
+    gawk
     expect
     telnet
     dos2unix
@@ -210,14 +227,16 @@ function funcProtectedCloudInit_Ubuntu(){
     docker
     bash-completion
   )
-  variCloudInitSucceeded=1
-  variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
+  local variCloudInitSucceeded=1
+  local variAllPackageInstalledLabel="${variPackageList[*]} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
   grep -qF "${variAllPackageInstalledLabel}" "${VARI_GLOBAL["VERSION_URI"]}" 2> /dev/null
   [ $? -eq 0 ] && return 0
   apt update
-  local variRetry=10
+  local variRetryNum=10
+  local variRetryIndex
   local variSleep=2
   declare -A variCloudInstallResult
+  local variEachPackage
   for variEachPackage in "${variPackageList[@]}"; do
     # 檢查單個套件安裝狀態，已完成則跳過[START]
     local variEachPackageInstalledLabel="apt install -y ${variEachPackage} ${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}"
@@ -231,9 +250,18 @@ function funcProtectedCloudInit_Ubuntu(){
     variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_FALSE_LABEL"]}
     case ${variEachPackage} in
       "chrony")
+        sudo mkdir -p /var/log/chrony
+        sudo chown _chrony:_chrony /var/log/chrony
         if apt install -y chrony 2>/dev/null; then
-          # 服務名稱：[centos]chronyd，[ubuntu]chrony
-          systemctl start chrony && systemctl enable chrony && chronyc makestep
+          # ----------
+          # [orbstack]無需啟用:
+          # 1會自動同步宿主機器係統時間
+          # 2當「arm64」虛擬化至「amd64（即：orbstack.x86-64(emulated)」時不兼容（報錯：Fatal error : Failed to load seccomp rules）
+          if [ ! -d "/mnt/machines/$(hostname)" ];then
+          # ----------
+            # 服務名稱：[centos]chronyd，[ubuntu]chrony
+            systemctl start chrony && systemctl enable chrony && chronyc makestep
+          fi
           variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
         fi
         ;;
@@ -249,7 +277,7 @@ function funcProtectedCloudInit_Ubuntu(){
         # 動態構建資源倉庫
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
         apt update
-        for ((i=1; i<variRetry; i++)); do
+        for ((variRetryIndex=1; variRetryIndex<variRetryNum; variRetryIndex++)); do
           if apt install -y containerd.io docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin; then
             systemctl enable docker
             systemctl restart docker
@@ -260,7 +288,7 @@ function funcProtectedCloudInit_Ubuntu(){
         done
         ;;
       *)
-        for ((i=1; i<variRetry; i++)); do
+        for ((variRetryIndex=1; variRetryIndex<variRetryNum; variRetryIndex++)); do
           if apt install -y "${variEachPackage}"; then
             variCloudInstallResult["${variEachPackage}"]=${VARI_GLOBAL["BUILTIN_TRUE_LABEL"]}
             break
@@ -557,7 +585,10 @@ MARK
 
 # omni run command
 function funcProtectedOmnircInit() {
-  mkdir -p "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" "${VARI_GLOBAL["OMNI_BIN_PATH"]}" "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"
+  mkdir -p "${VARI_GLOBAL["OMNI_INIT_PATH"]}" \
+           "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" \
+           "${VARI_GLOBAL["OMNI_BIN_PATH"]}" \
+           "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"
   cat > "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
 #!/usr/bin/env bash
 
@@ -570,11 +601,19 @@ case ":\$PATH:" in
   *) export PATH="${VARI_GLOBAL["OMNI_BIN_PATH"]}:\$PATH" ;;
 esac
 # 更新係統搜尋目錄[END]
-
+# 加載「額外配置」[START]
+if [ -d "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" ]; then
+  # 使用獨立的文件描述符號（如：4~9）讀取數據，避免佔用「fd0/標準輸入（即：物理鍵盤）」，防止依賴終端檢測的腳本誤判（如：[ -t 0 ]）
+  while IFS= read -u 9 -r variEachEnviUri; do
+    if [ -f "\$variEachEnviUri" ]; then
+      source "\$variEachEnviUri"
+    fi
+  done 9< <(find "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" -maxdepth 1 -type f 2>/dev/null | sort)
+  unset variEachEnviUri
+fi
+# 加載「額外配置」[END]
 EOF
-  local variShellrcUri=""
   if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
-    variShellrcUri="${HOME}/.bashrc"
     cat >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
 # [BASH]啟用命令補全機制[START]
 if [ -n "\$BASH_VERSION" ]; then
@@ -583,14 +622,14 @@ if [ -n "\$BASH_VERSION" ]; then
   #   [ -f "\$variEachCompletion" ] && source "\$variEachCompletion"
   # done
   # 通配符號沒有匹配時會報錯[END]
-  find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f 2>/dev/null | while IFS= read -r variEachCompletion; do
+  while IFS= read -r variEachCompletion; do
     source "\$variEachCompletion"
-  done
+  done < <(find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f 2>/dev/null)
+  unset variEachCompletion # 以免污染全局變量
 fi
 # [BASH]啟用命令補全機制[END]
 EOF
   elif [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "DARWIN" ]; then
-    variShellrcUri="${HOME}/.zshrc"
     cat >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
 # [ZSH]啟用命令補全機制[START]
 if [ -n "\$ZSH_VERSION" ]; then
@@ -603,18 +642,19 @@ if [ -n "\$ZSH_VERSION" ]; then
   #  [ -f "\$variEachCompletion" ] && source "\$variEachCompletion"
   # done
   # 通配符號沒有匹配時會報錯[END]
-  find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f 2>/dev/null | while IFS= read -r variEachCompletion; do
+  while IFS= read -r variEachCompletion; do
     source "\$variEachCompletion"
-  done
+  done < <(find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f 2>/dev/null)
+  unset variEachCompletion # 以免污染全局變量
 fi
 # [ZSH]啟用命令補全機制[END]
 EOF
   fi
   # 添加項目引導程序[START]
-  [ ! -f "${variShellrcUri}" ] && touch "${variShellrcUri}"
-  if ! grep -qF "${VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]}" "${variShellrcUri}"; then
-    echo "" >> "${variShellrcUri}"
-    echo "${VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]}" >> "${variShellrcUri}"
+  [ ! -f "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" ] && touch "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+  if ! grep -qF "${VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]}" "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"; then
+    echo "" >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    echo "${VARI_GLOBAL["OMNI_SH_BOOTSTRAP"]}" >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
   fi
   # 添加項目引導程序[END]
   return 0
@@ -627,11 +667,12 @@ function funcProtectedCommandInit() {
   find "${VARI_GLOBAL["OMNI_BIN_PATH"]}" -maxdepth 1 -type l -name "${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.*" -exec rm -f {} \; 2>/dev/null
   # ----------
   # for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
+  local variAbleUnitFileUri
   for variAbleUnitFileUri in $(echo "${variAbleUnitFileUriList}" | tr ' ' '\n'); do
     [ -z "$variAbleUnitFileUri" ] && continue
   # ----------
-    variEachUnitFilename=$(basename "${variAbleUnitFileUri}")
-    variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+    local variEachUnitFilename=$(basename "${variAbleUnitFileUri}")
+    local variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     # 基於當前環境的命令[START]
     if grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="SOURCE"' "${variAbleUnitFileUri}"; then
       # [單一]精確清理[START]
@@ -656,22 +697,37 @@ function funcProtectedCommandInit() {
 function funcProtectedOptionInit(){
   local variAbleUnitFileUriList=${1}
   # ----------
+  local variDevNull=""
+  local variEachIndex=""
+  local variEachBashEnvi=""
+  local variEachFuncName=""
+  local variEachOptionList=""
+  local variEachOptionName=""
+  local variEachSortWeight=""
+  local variAbleUnitFileUri=""
+  local variEachUnitCommand=""
+  local variOptionReportMap=""
+  local variEachUnitFilename=""
+  local variInheritOptionList=""
+  local variFuncNameCollection=""
+  local variEachInheritFuncName=""
+  # ----------
   # rm -rf "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}/"{_,}"${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}."*
   find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f \
   \( -name "${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.*" -o -name "_${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.*" \) \
   -exec rm -f {} \; 2>/dev/null
   # ----------
   # inherit the public functions from builtin.sh[START]
-  local variInheritOptionList=""
   for variEachInheritFuncName in $(grep -oE 'function +funcPublic\w+' "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/internal/builtin/builtin.sh" | sed 's/^function *//'); do
     # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
-    variOptionName=$(echo "$variEachInheritFuncName" | sed 's/^funcPublic//')
-    variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
+    variEachOptionName=$(echo "$variEachInheritFuncName" | sed 's/^funcPublic//')
+    variEachOptionName=$(echo "$variEachOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
     # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
-    variInheritOptionList="$variInheritOptionList $variOptionName"
+    variInheritOptionList="$variInheritOptionList $variEachOptionName"
   done
   # remove leading and trailing whitespace/移除首末空格
-  variInheritOptionList=$(echo ${variInheritOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
+  # variInheritOptionList=$(echo ${variInheritOptionList} | sed 's/^[ \t]*//;s/[ \t]*$//')
+  variInheritOptionList=$(echo "${variInheritOptionList}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
   printf "%-5s %-15s -> %-70s\n" "[ COMMON ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["VERSION_URI"]}"
   printf "%-5s %-15s -> %-70s\n" "[ COMMON ]" "--" "$variInheritOptionList" >> "${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}"
   # inherit the public functions from builtin.sh[END]
@@ -680,7 +736,6 @@ function funcProtectedOptionInit(){
   # report1/3[END]
   # pull public function list/自動補全選項列表[START]
   # ----------
-  # for variAbleUnitFileUri in ${=variAbleUnitFileUriList}; do
   for variAbleUnitFileUri in $(echo "${variAbleUnitFileUriList}" | tr ' ' '\n'); do
     [ -z "$variAbleUnitFileUri" ] && continue
   # ----------
@@ -688,20 +743,21 @@ function funcProtectedOptionInit(){
     variEachUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
     variFuncNameCollection=$(grep -oE 'function +funcPublic\w+' "$variAbleUnitFileUri" 2>/dev/null | sed 's/^function *//' || true)
     [ -z "$variFuncNameCollection" ] && continue
-    local variEachOptionList=""
+    variEachOptionList=""
     # ----------
-    # for variEachFuncName in ${=variFuncNameCollection}; do
     for variEachFuncName in $(echo "${variFuncNameCollection}" | tr ' ' '\n'); do
       [ -z "$variEachFuncName" ] && continue
-    # ----------r
+    # ----------
       # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[START]
-      variOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
-      variOptionName=$(echo "$variOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
+      variEachOptionName=$(echo "$variEachFuncName" | sed 's/^funcPublic//')
+      variEachOptionName=$(echo "$variEachOptionName" | awk '{print tolower(substr($0, 1, 1)) substr($0, 2)}')
       # handle logic ：1remove「funcPublic」 ，2「first letter」upper >> lower[END]
-      variEachOptionList="$variEachOptionList $variOptionName"
+      variEachOptionList="$variEachOptionList $variEachOptionName"
     done
     # remove leading and trailing whitespace/移除首末空格
-    variEachOptionList=$(echo "$variEachOptionList" | sed 's/^[ \t]*//;s/[ \t]*$//')
+    # variEachOptionList=$(echo "$variEachOptionList" | sed 's/^[ \t]*//;s/[ \t]*$//')
+    variEachOptionList=$(echo "$variEachOptionList" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    variEachBashEnvi=""
     grep -q 'VARI_GLOBAL\["BUILTIN_BASH_ENVI"\]="SOURCE"' ${variAbleUnitFileUri} && variEachBashEnvi="SOURCE" || variEachBashEnvi="DETACH"
     if [ "${VARI_GLOBAL["BUILTIN_UNAME"]}" = "LINUX" ]; then
       funcProtectedCompletionInit_Linux "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
@@ -709,7 +765,7 @@ function funcProtectedOptionInit(){
       funcProtectedCompletionInit_Darwin "$variEachUnitCommand" "${variInheritOptionList} ${variEachOptionList}"
     fi
     # report2/3 && 分配權重（規則：越小越前）[START]
-    local variEachSortWeight="99"
+    variEachSortWeight="99"
     if [ "${variEachBashEnvi}" = "SOURCE" ]; then
       if [ "${variEachUnitFilename%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}" = 'system' ]; then
         variEachSortWeight="10"
@@ -730,9 +786,8 @@ function funcProtectedOptionInit(){
   # pull public function list/自動補全選項列表[END]
   # report3/3 && 執行排序（command sort：0-9a-zA-Z）[START]
   # array_keys()[START]
-  local variOptionReportMap=""
+  variOptionReportMap=""
   if [ -n "$ZSH_VERSION" ]; then
-    # eval 'variOptionReportMap="${(@k)variOptionReport}"'
     eval 'variOptionReportMap="${(@k)variOptionReport[@]}"'
   else
     eval 'variOptionReportMap="${!variOptionReport[@]}"'
@@ -749,6 +804,7 @@ function funcProtectedOptionInit(){
   # report3/3 && 執行排序（command sort：0-9a-zA-Z）[END]
   return 0
 }
+
 function funcProtectedCompletionInit_Linux(){
   local variCommand=$1
   local variOptionList=$2
@@ -795,12 +851,14 @@ EOF
 
 function funcProtectedCompletionRefresh(){
   if [ -n "$BASH_VERSION" ]; then
+    local variEachCompletionUri
     # unset[START]
     for variEachCompletionUri in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/*; do
       [ -f "$variEachCompletionUri" ] || continue
-      variEachCommand=$(basename "$variEachCompletionUri")
+      [[ "$variEachCommand" == _* ]] && continue
+      local variEachCommand=$(basename "$variEachCompletionUri")
       complete -r "$variEachCommand" 2>/dev/null || true
-      variEachFuncName="_${variEachCommand}_complete"
+      local variEachFuncName="_${variEachCommand}_complete"
       unset -f "$variEachFuncName" 2>/dev/null || true
     done
     # unset[END]
@@ -813,21 +871,21 @@ function funcProtectedCompletionRefresh(){
     # unset[START]
     # ----------
     # for variEachCompletionUri in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/_*; do
-    find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f -name '_*' 2>/dev/null | while IFS= read -r variEachCompletionUri; do
+    while IFS= read -r variEachCompletionUri; do
     # ----------
-      variEachCompletionFilename=$(basename "$variEachCompletionUri")
+      local variEachCompletionFilename=$(basename "$variEachCompletionUri")
       variEachCompletionFilename="${variEachCompletionFilename#_}"
-      variEachFuncName="_${variEachCompletionFilename//./_}_complete"
+      local variEachFuncName="_${variEachCompletionFilename//./_}_complete"
       unfunction "$variEachFuncName" 2>/dev/null || true
-    done
+    done < <(find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f -name '_*' 2>/dev/null)
     # unset[END]
     # reload[START]
     # ----------
     # for variEachCompletionUri in "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}"/_*; do
-    find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f -name '_*' 2>/dev/null | while IFS= read -r variEachCompletionUri; do
+    while IFS= read -r variEachCompletionUri; do
     # ----------
       [ -f "$variEachCompletionUri" ] && source "$variEachCompletionUri"
-    done
+    done < <(find "${VARI_GLOBAL["OMNI_COMPLETION_PATH"]}" -maxdepth 1 -type f -name '_*' 2>/dev/null)
     # reload[END]
   fi
   return 0
@@ -857,24 +915,29 @@ function funcPublicInit(){
   fi
   # pull *.sh list[START]
   local variFindCommand="find \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}\""
-  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]}; do
+  local variEachIgnoreDirectory
+  for variEachIgnoreDirectory in $(echo "${VARI_GLOBAL["IGNORE_FIRST_LEVEL_DIRECTORY_LIST"]}" | tr ' ' '\n'); do
+      [ -z "$variEachIgnoreDirectory" ] && continue
       variFindCommand="$variFindCommand -type d -path \"${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/$variEachIgnoreDirectory\" -prune -o"
   done
-  for variEachIgnoreDirectory in ${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}; do
+  for variEachIgnoreDirectory in $(echo "${VARI_GLOBAL["IGNORE_SECOND_LEVEL_DIRECTORY_LIST"]}" | tr ' ' '\n'); do
+      [ -z "$variEachIgnoreDirectory" ] && continue
       variFindCommand="$variFindCommand -type d -regex \".*/$variEachIgnoreDirectory\" -prune -o"
   done
   variFindCommand="$variFindCommand -type f -name \"*${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}\" -print"
-  variLikeUnitFileUriList=$(eval "$variFindCommand" | sort -u)
+  local variLikeUnitFileUriList=$(eval "$variFindCommand" | sort -u)
   # 僅保留「父目錄名 == 文件名稱（不含後綴）」的[START]
   local variMatchedUnitFileUriList=""
-  for variEachLikeUnitFileUri in ${variLikeUnitFileUriList}; do
+  local variEachLikeUnitFileUri
+  for variEachLikeUnitFileUri in $(echo "${variLikeUnitFileUriList}" | tr ' ' '\n'); do
+    [ -z "$variEachLikeUnitFileUri" ] && continue
     local variEachFilename=$(basename "${variEachLikeUnitFileUri}" ".${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}")
     local variEachParentDirectory=$(basename "$(dirname "${variEachLikeUnitFileUri}")")
     if [ "${variEachFilename}" = "${variEachParentDirectory}" ]; then
       variMatchedUnitFileUriList="${variMatchedUnitFileUriList} ${variEachLikeUnitFileUri}"
     fi
   done
-  variAbleUnitFileUriList=$(echo "${variMatchedUnitFileUriList}" | tr ' ' '\n' | sed '/^$/d')
+  local variAbleUnitFileUriList=$(echo "${variMatchedUnitFileUriList}" | tr ' ' '\n' | sed '/^$/d')
   # 僅保留「父目錄名 == 文件名稱（不含後綴）」的[END]
   # pull *.sh list[END]
   # ----------
@@ -903,6 +966,7 @@ function funcPublicInit(){
     echo "source ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" >> "${VARI_GLOBAL["BUILTIN_UNIT_TODO_URI"]}"
   fi
   # ----------
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   return 0
 }
 
@@ -915,9 +979,19 @@ function funcPublicVersion() {
     echo "--------------------------------------------------"
     echo "cat ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     cat "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
-    # echo "--------------------------------------------------"
-    # cat "${VARI_GLOBAL["VERSION_URI"]}"
-    # echo "--------------------------------------------------"
+    # ----------
+    if [ -d "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" ]; then
+      while IFS= read -r variEachEnviUri; do
+        if [ -f "${variEachEnviUri}" ]; then
+          echo "--------------------------------------------------"
+          echo "cat ${variEachEnviUri}"
+          cat "${variEachEnviUri}"
+          echo "--------------------------------------------------"
+        fi
+      done < <(find "${VARI_GLOBAL["OMNI_ENVI_PATH"]}" -maxdepth 1 -type f 2>/dev/null | sort)
+      unset variEachEnviUri
+    fi
+    # ----------
     return 0
 }
 
@@ -942,31 +1016,150 @@ function funcPublicZshReinit() {
   return 0
 }
 
-function funcPublicStarshipReinit() {
-  local variParameterDescList=(
-    "main status : 0/disable, 1/able（default）"
-    "extension(s) status : 0/disable, 1/able（default）"
-  )
-  funcProtectedCheckOptionParameter 2 'variParameterDescList[@]'
-  local variMainStatus=${1:-1}
-  local variExtensionStatus=${2:-1}
-  local variMainStartMark="# STARSHIP_MAIN[START]"
-  local variMainEndMark="# STARSHIP_MAIN[END]"
-  local variExtensionStartMark="# STARSHIP_EXTENSION[START]"
-  local variExtensionEndMark="# STARSHIP_EXTENSION[END]"
+
+function funcPublicZshExtensionReinit() {
+  # ----------
+  if [ "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" != "ZSH" ]; then
+    funcProtectedTrace "zsh extension(s) skipped : only compatible with zsh"
+    return 1
+  fi
+  # ----------
+  local variParameterDescList=("status: 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variStatus=${1:-1}
+  local variEnviUri="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/zsh.extension.sh"
+  local variExtensionPath="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/extension"
+  mkdir -p "${variExtensionPath}"
   # reset[START]
-  awk -v s_start="${variMainStartMark}" -v s_end="${variMainEndMark}" \
-      -v p_start="${variExtensionStartMark}" -v p_end="${variExtensionEndMark}" '
-    $0 == s_start || $0 == p_start {skip=1; next}
-    $0 == s_end || $0 == p_end {skip=0; next}
-    skip != 1 {print}
-  ' "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" > "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}.temp"
-  /bin/mv "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}.temp" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  rm -f "${variEnviUri}"
   # reset[END]
-  # install main[START]
-  if [ "${variMainStatus}" = "1" ]; then
-    local variStarshipBin="${VARI_GLOBAL["OMNI_BIN_PATH"]}/starship"
-    if ! command -v starship >/dev/null 2>&1 && [ ! -x "${variStarshipBin}" ]; then
+  if [ "${variStatus}" = "0" ]; then
+    rm -rf "${variExtensionPath}/zsh-autosuggestions"
+    rm -rf "${variExtensionPath}/zsh-syntax-highlighting"
+    rm -rf "${variExtensionPath}/zsh-history-substring-search"
+    exec $(echo "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" | tr '[:upper:]' '[:lower:]')
+    return 0
+  elif [ "${variStatus}" = "1" ]; then
+    local variExtensionRepoSlice=(
+      "zsh-users/zsh-autosuggestions" # 命令建議
+      "zsh-users/zsh-syntax-highlighting" # 語法高亮
+      "zsh-users/zsh-history-substring-search" # 歷史搜索
+    )
+    local variCommandMulti=""
+    for variEachExtensionRepo in "${variExtensionRepoSlice[@]}"; do
+      local variEachExtensionName=$(basename "${variEachExtensionRepo}")
+      local variEachExtensionUri="${variExtensionPath}/${variEachExtensionName}"
+      if [ ! -d "${variEachExtensionUri}" ]; then
+        echo "[ command ] git clone --depth 1 https://github.com/${variEachExtensionRepo}.git ${variEachExtensionUri}"
+        git clone --depth 1 "https://github.com/${variEachExtensionRepo}.git" "${variEachExtensionUri}" # >/dev/null 2>&1 || continue
+      fi
+      variCommandMulti+="source \"${variEachExtensionUri}/${variEachExtensionName}.zsh\""$'\n'
+    done
+    cat >> "${variEnviUri}" <<EOF
+#!/usr/bin/env bash
+${variCommandMulti}
+if [[ -f "${variExtensionPath}/zsh-history-substring-search/zsh-history-substring-search.zsh" ]]; then
+  zle -N history-substring-search-up
+  zle -N history-substring-search-down
+  bindkey '^[[A' history-substring-search-up
+  bindkey '^[[B' history-substring-search-down
+  bindkey "^[OA" history-substring-search-up
+  bindkey "^[OB" history-substring-search-down
+fi
+EOF
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  return 0
+  fi
+}
+
+function funcPublicBashExtensionReinit() {
+  # ----------
+  if [ "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" != "BASH" ]; then
+    funcProtectedTrace "bash extension(s) skipped : only compatible with bash"
+    return 1
+  fi
+  # ----------
+  local variParameterDescList=("status: 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variStatus=${1:-1}
+  local variEnviUri="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/zzzzbash.extension.sh" # 「zzzz」前綴確保最後加載，以保證語法高亮
+  local variExtensionPath="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/extension"
+  # reset[START]
+  rm -f "${variEnviUri}"
+  # reset[END]
+  if [ "${variStatus}" = "0" ];then
+    rm -rf "${variExtensionPath}/ble.sh"
+    rm -rf "${variExtensionPath}/ble.sh-install"
+    exec $(echo "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" | tr '[:upper:]' '[:lower:]')
+    return 0
+  elif [ "${variStatus}" = "1" ]; then
+    mkdir -p "${variExtensionPath}"
+    local variExtensionRepoSlice=(
+      # ----------
+      # 含：命令建議/語法高亮/歷史搜索
+      # 高度依賴I/O攔截，因此僅適用於交互式的終端
+      "akinomyoga/ble.sh"
+      # ----------
+    )
+    local variCommandMulti=""
+    for variEachExtensionRepo in "${variExtensionRepoSlice[@]}"; do
+      local variEachExtensionName=$(basename "${variEachExtensionRepo}")
+      local variEachExtensionUri="${variExtensionPath}/${variEachExtensionName}"
+      if [ ! -d "${variEachExtensionUri}" ]; then
+        echo "[ command ] git clone --recursive --depth 1 --shallow-submodules https://github.com/${variEachExtensionRepo}.git ${variEachExtensionUri}"
+        git clone --recursive --depth 1 --shallow-submodules "https://github.com/${variEachExtensionRepo}.git" "${variEachExtensionUri}"
+      fi
+      case "${variEachExtensionRepo}" in
+        "akinomyoga/ble.sh")
+          local variInstallPath="${variExtensionPath}/${variEachExtensionName}-install"
+          if [ ! -f "${variInstallPath}/share/blesh/ble.sh" ]; then
+            echo "[ command ] make -C ${variEachExtensionUri} install PREFIX=${variInstallPath}"
+            make -C "${variEachExtensionUri}" install PREFIX="${variInstallPath}"
+          fi
+          variCommandMulti+="if [[ \$- == *i* ]] && [[ -t 0 ]] && [[ -t 1 ]] && [[ -z \"\${BLE_VERSION-}\" ]] && [[ -f \"${variInstallPath}/share/blesh/ble.sh\" ]]; then"$'\n'
+          variCommandMulti+="  source \"${variInstallPath}/share/blesh/ble.sh\""$'\n'
+          variCommandMulti+="  bleopt complete_auto_complete=1"$'\n'
+          variCommandMulti+="  ble-bind -f up history-search-backward"$'\n'
+          variCommandMulti+="  ble-bind -f down history-search-forward"$'\n'
+          variCommandMulti+="  ble-bind -k 'UP' history-search-backward"$'\n'
+          variCommandMulti+="  ble-bind -k 'DOWN' history-search-forward"$'\n'
+          variCommandMulti+="fi"$'\n'
+          # funcProtectedTodo "同一終端重複加載「${variEachExtensionRepo}」時會造成崩潰，建議 ：新建終端"
+          ;;
+      esac
+    done
+    cat > "${variEnviUri}" <<EOF
+#!/usr/bin/env bash
+${variCommandMulti}
+EOF
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  funcProtectedTrace "--------------------------------------------------"
+  funcProtectedTrace "akinomyoga/ble.sh version :"
+  funcProtectedTrace "${BLE_VERSION}"
+  funcProtectedTrace "--------------------------------------------------"
+  return 0
+  fi
+}
+
+function funcPublicStarshipReinit(){
+  local variParameterDescList=("action : 0/disable, 1/able（default）")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variStarshipMainStatus=${1:-1}
+  local variEnviUri="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/starship.main.sh"
+  local variBinUri="${VARI_GLOBAL["OMNI_BIN_PATH"]}/starship"
+  local variBuiltinShellTypeLower=$(echo "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" | tr '[:upper:]' '[:lower:]')
+  # reset[START]
+  if [ "${variStarshipMainStatus}" = "0" ]; then
+    rm -f "${variEnviUri}"
+    rm -f "${variBinUri}"
+    rm -f ~/.config/starship.toml
+    exec ${variBuiltinShellTypeLower}
+    return 0
+  fi
+  # reset[END]
+  # install[START]
+  if [ "${variStarshipMainStatus}" = "1" ]; then
+    if ! command -v starship >/dev/null 2>&1 && [ ! -x "${variBinUri}" ]; then
       if command -v curl >/dev/null 2>&1; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${VARI_GLOBAL["OMNI_BIN_PATH"]}"
       elif command -v wget >/dev/null 2>&1; then
@@ -975,67 +1168,32 @@ function funcPublicStarshipReinit() {
         funcProtectedTrace "curl/wget not found, cannot install starship"
       fi
     fi
-    local variBuiltinShellTypeLower=$(echo "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" | tr '[:upper:]' '[:lower:]')
-    cat >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
-${variMainStartMark}
+    cat >> "${variEnviUri}" <<EOF
+#!/usr/bin/env bash
 if command -v starship >/dev/null 2>&1; then
   eval "\$(starship init ${variBuiltinShellTypeLower})"
-elif [ -x "${variStarshipBin}" ]; then
-  eval "\$("${variStarshipBin}" init ${variBuiltinShellTypeLower})"
+elif [ -x "${variBinUri}" ]; then
+  eval "\$("${variBinUri}" init ${variBuiltinShellTypeLower})"
 fi
-${variMainEndMark}
 EOF
-    funcProtectedTrace "starship enabled : ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
-  else
-    funcProtectedTrace "starship disabled : ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
-  # install main[END]
-  # install extension[START]
-  if [ "${variExtensionStatus}" = "1" ]; then
-    if [ "${VARI_GLOBAL["BUILTIN_SHELL_TYPE"]}" != "ZSH" ]; then
-      funcProtectedTrace "zsh extension(s) skipped : only compatible with zsh environment"
-    else
-      local variExtensionPath="${VARI_GLOBAL["OMNI_ENVI_PATH"]}/extension"
-      mkdir -p "${variExtensionPath}"
-      local variExtensionRepoSlice=(
-        "zsh-users/zsh-autosuggestions"
-        "zsh-users/zsh-syntax-highlighting"
-        "zsh-users/zsh-history-substring-search"
-      )
-      local variCommandMulti=""
-      for variEachExtensionRepo in "${variExtensionRepoSlice[@]}"; do
-        local variEachExtensionName=$(basename "${variEachExtensionRepo}")
-        local variEachExtensionUri="${variExtensionPath}/${variEachExtensionName}"
-        if [ ! -d "${variEachExtensionUri}" ]; then
-          funcProtectedTrace "installing ${variEachExtensionName} ..."
-          git clone --depth 1 "https://github.com/${variEachExtensionRepo}.git" "${variEachExtensionUri}" >/dev/null 2>&1 || continue
-        fi
-        variCommandMulti+="source \"${variEachExtensionUri}/${variEachExtensionName}.zsh\"\n"
-      done
-      cat >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" <<EOF
-
-${variExtensionStartMark}
-${variCommandMulti}
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-bindkey "^[OA" history-substring-search-up
-bindkey "^[OB" history-substring-search-down
-${variExtensionEndMark}
-EOF
-      funcProtectedTrace "zsh extension(s) enabled : ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
-    fi
-  else
-    funcProtectedTrace "zsh extension(s) disabled : ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  # install[END]
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  # theme[START]
+  mkdir -p ~/.config
+  if [ -f "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/starship.toml" ];then
+    /bin/cp -f "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/starship.toml" ~/.config/starship.toml
+  elif [ -f "${variBinUri}" ];then
+    starship preset catppuccin-powerline -o ~/.config/starship.toml
   fi
-  # install extension[END]
-  funcProtectedTodo "source ${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+  # theme[END]
   return 0
 }
 
 function funcPublicNewUnit(){
   local variParameterDescList=("unit name")
   funcProtectedCheckRequiredParameter 1 'variParameterDescList[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
+  local variUnitName=${1}
   if [[ -d "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}/module/${variUnitName}" ]]; then
     echo "error : ${variUnitName} already exists" >> ${VARI_GLOBAL["BUILTIN_UNIT_TRACE_URI"]}
     return 1
@@ -1048,18 +1206,19 @@ function funcPublicNewUnit(){
 function funcPublicSaveUnit(){
   local variParameterDescList=("unit name（limited to the ./omni/module/*）" "save to [ the path ]")
   funcProtectedCheckRequiredParameter 2 'variParameterDescList[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variUnitName=${1}
-  variSaveToThePath=${2}
-  variArchiveCommand=omni.${variUnitName}
+  local variUnitName=${1}
+  local variSaveToThePath=${2}
+  local variArchiveCommand=omni.${variUnitName}
   # [ ${variSaveToThePath} == "/" ] && variSaveToThePath=""
-  variArchivePath=${variSaveToThePath}/${variArchiveCommand}
+  local variArchivePath=${variSaveToThePath}/${variArchiveCommand}
   rm -rf ${variArchivePath} ${variSaveToThePath}/${variArchiveCommand}.tgz
   mkdir -p ${variArchivePath}/module
   /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/{common,internal,init} ${variArchivePath}
   /usr/bin/cp -rf "${VARI_GLOBAL["BUILTIN_OMNI_ROOT_PATH"]}"/module/${variUnitName} ${variArchivePath}/module
   # flush the useless data[START]
   find ${variArchivePath} -type f -name "encrypt.envi" -exec truncate -s 0 {} \;
-  variRuntimePathList=$(find ${variArchivePath} -type d -name "runtime")
+  local variRuntimePathList=$(find ${variArchivePath} -type d -name "runtime")
+  local variEachRuntimePath
   for variEachRuntimePath in ${variRuntimePathList}; do
     rm -rf "${variEachRuntimePath:?}"/*
   done
@@ -1123,8 +1282,10 @@ function funcPublicPort(){
     read -p "do you want to kill the ${variProcessCount} process(es) listening on port '${variPort}' ? ( type 'kill' to confirm ) : " variInput
   fi
   if [[ "$variInput" = "kill" ]]; then
-    for variEachProcessId in ${variProcessIdList}; do
-        variEachCommand=$(ps -p ${variEachProcessId} -f -o cmd --no-headers)
+    local variEachProcessId
+    for variEachProcessId in $(echo "${variProcessIdList}" | tr ' ' '\n'); do
+        [ -z "$variEachProcessId" ] && continue
+        local variEachCommand=$(ps -p ${variEachProcessId} -f -o cmd --no-headers)
         /usr/bin/kill -9 $variEachProcessId
         funcProtectedEchoGreen "kill -9 $variEachProcessId success ( command : ${variEachCommand} ) "
     done
@@ -1161,7 +1322,9 @@ function funcPublicProcess() {
         read -p "do you want to kill the ${variProcessCount} process(es) matching the keyword '${variKeyword}' ? ( type 'kill' to confirm ) : " variInput
     fi
     if [[ "$variInput" = "kill" ]]; then
-        for variEachProcessId in ${variProcessIdList}; do
+      local variEachProcessId
+        for variEachProcessId in $(echo "${variProcessIdList}" | tr ' ' '\n'); do
+            [ -z "$variEachProcessId" ] && continue
             # 獲取進程命令詳情
             local variEachCommand=$(ps -p ${variEachProcessId} -o cmd --no-headers 2>/dev/null)
             if [ -n "${variEachCommand}" ]; then

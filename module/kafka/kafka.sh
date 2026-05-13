@@ -32,13 +32,13 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
-function funcPublicRunNode()
+function funcPublicDocker()
 {
   variCurrentIP=$(hostname -I | awk '{print $1}')
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   zookeeper:
-    image: zookeeper:3.7
+    image: bitnamilegacy/zookeeper:3.7.0
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -47,7 +47,7 @@ services:
     networks:
       - common
   kafka:
-    image: apache/kafka:3.7.0
+    image: bitnamilegacy/kafka:3.7.0
     container_name: kafka
     ports:
       - "9092:9092"
@@ -73,11 +73,59 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker compose down -v
+  # docker compose down -v
+  docker compose -p kafka down -v 2> /dev/null
   docker compose -p kafka up --build -d
   docker update --restart=always zookeeper
   docker update --restart=always kafka
   docker ps -a | grep -E 'zookeeper|kafka'
+  return 0
+}
+
+function funcPublicImportBusinessData_Haohaiyou() {
+  local variContainerName="kafka"
+  local variTopicSlice=(
+    "dsp_budo_stat_topic"
+    "dsp_impin_stat_topic"
+    "dsp_impre_stat_topic"
+    "dsp_imp_stat_topic"
+    "dsp_imp_stat02_topic"
+    "dsp_imp_stream_topic"
+    "dsp_imp_streamstate02_topic"
+    "dsp_imp_streamstate03_topic"
+    "dsp_notice_stat_topic"
+  )
+  if [ ${#variTopicSlice[@]} -eq 0 ]; then
+    echo "[ warn ] topic list is empty(1)"
+    return 0
+  fi
+  local variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null)
+  if [ "$variContainerStatus" != "running" ]; then
+    echo "[ error ] '${variContainerName}' is ${variContainerStatus}"
+    return 1
+  fi
+  local variRetryNum=30 # 重試次數
+  local variRetryInterval=2 # 重試間隔(unit:second)
+  local variEachTopic variImportStatus variEachCommand
+  for variEachTopic in "${variTopicSlice[@]}"; do
+    echo "[ import ] create topic : ${variEachTopic}"
+    variImportStatus="failed" # default
+    for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+      # [忽略]WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. To avoid issues it is best to use either, but not both.
+      variEachCommand="docker exec -i ${variContainerName} kafka-topics.sh --create --bootstrap-server localhost:9092 --topic ${variEachTopic} --partitions 1 --replication-factor 1 --if-not-exists"
+      if eval "${variEachCommand}"; then
+        variImportStatus="succeeded"
+        funcProtectedTrace "${variEachTopic} create ${variImportStatus}"
+        break
+      else
+        echo "[ retry ] ${variRetryIndex}/${variRetryNum}  ..."
+        sleep ${variRetryInterval}
+      fi
+    done
+    if [ "$variImportStatus" = "failed" ]; then
+      funcProtectedTodo "${variEachTopic} create ${variImportStatus}"
+    fi
+  done
   return 0
 }
 # public function[END]
