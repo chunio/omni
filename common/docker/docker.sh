@@ -108,27 +108,40 @@ function funcPublicExec(){
 }
 
 function funcPublicDeveEnviReinit(){
-  local variParameterDescMulti=("status, value: 0/stop(default), 1/run")
-  funcProtectedCheckOptionParameter 1 'variParameterDescMulti[@]' $# || return "${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}"
+  local variParameterDescMulti=(
+    "status, value: 0/pull(default), 1/alive"
+    "business, value: 0/nil(default), 1/import"
+  )
+  funcProtectedCheckOptionParameter 2 'variParameterDescMulti[@]' $# || return "${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}"
   local variStatus=${1:-0}
+  local variBusiness=${1:-0}
+  # ----------
+  # reset[START]
   docker rm -f $(docker ps -aq) 2> /dev/null || true
   docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | xargs -r docker network rm
-  if [ ${variStatus} -eq 1 ]; then
-    omni.redis docker
-    omni.mongo docker
-    omni.kafka docker
-    omni.mysql docker
-    omni.clickhouse docker 
-    # omni.apollo docker 0602
-    # import business data[START]
-    if true;then
-      omni.kafka importBusinessData_Haohaiyou
-      omni.mysql importBusinessData_Haohaiyou
-      omni.clickhouse importBusinessData_Haohaiyou
-    fi
-    # import business data[END]
+  # reset[END]
+  # ----------
+  # docker pull image[START]
+  omni.redis docker
+  omni.mongo docker
+  omni.kafka docker
+  omni.mysql docker
+  omni.clickhouse docker
+  # omni.apollo docker 0602
+  # docker pull image[END]
+  # ----------
+  # import business data[START]
+  if [ "${variStatus}" -eq 1 ] && [ "${variBusiness}" -eq 1 ];then
+    omni.kafka importBusinessData_Haohaiyou
+    omni.mysql importBusinessData_Haohaiyou
+    omni.clickhouse importBusinessData_Haohaiyou
   fi
+  # import business data[END]
+  # ----------
+  [ "${variStatus}" -eq 0 ] && docker rm -f $(docker ps -aq) 2> /dev/null || true
+  # ----------
   docker ps -a
+  docker images
   return 0
 }
 

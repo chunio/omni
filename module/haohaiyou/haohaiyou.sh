@@ -5,8 +5,8 @@
 
 :<<'MARK'
 # --------------------------------------------------
-cd /windows/code/backend/chunio/omni && find . -type f -exec dos2unix {} \;
-/windows/code/backend/chunio/omni/init/system/system.sh init
+cd /Users/zengweitao/archived/workspace/repository/chunio/omni && find . -type f -exec dos2unix {} \;
+/Users/zengweitao/archived/workspace/repository/chunio/omni/init/system/system.sh init 1
 # --------------------------------------------------
 # [示例]將當前腳本的目標函數[聲明/定義]拷貝至遠端 && 執行函數
 # about : funcProtectedTemplate
@@ -21,7 +21,7 @@ EOF
 # [批量]模糊删除（替換：customKeywork）
 EVAL "local cursor='0'; local deleted=0; repeat local result=redis.call('SCAN',cursor,'MATCH','*customKeywork*'); cursor=result[1]; for _,key in ipairs(result[2]) do redis.call('DEL',key); deleted=deleted+1; end; until cursor=='0'; return deleted" 0
 # [導出]HAsh/field/value
-redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-12:SKADNETWORK:ALGORIX > /windows/runtime/temp.txt
+redis-cli -h ${IP} -p ${PORT} -a ${PASSWORD} HGETALL unicorn:HASH:Temp:2025-01-12:SKADNETWORK:ALGORIX > /Users/zengweitao/archived/workspace/runtime/temp.txt
 # [統計]文件大小
 du -ch /mnt/volume1/unicorn/runtime/bid-request-20250220* | grep total$
 # --------------------------------------------------
@@ -48,15 +48,20 @@ resize2fs /dev/vdb
 df -h /mnt/datadisk0
 # [騰訊雲]磁盤管理[END]
 # --------------------------------------------------
-scp root@170.106.165.51:/windows/runtime/profile001.svg .
+scp root@170.106.165.51:/Users/zengweitao/archived/workspace/runtime/profile001.svg .
 # --------------------------------------------------
 # TODO:[SingletonGoroutine.go]添加每日定時任務：find /var/spool/postfix/maildrop -type f -delete
 MARK
 
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
-VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SOURCE"
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
+VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
+if [ "${VARI_GLOBAL["BUILTIN_BASH_ENVI"]}" = "SOURCE" ];then
+  VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
+fi
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][END]
+VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
@@ -66,6 +71,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 VARI_GLOBAL["JUMPER_ACCOUNT"]=""
 VARI_GLOBAL["JUMPER_IP"]=""
 VARI_GLOBAL["JUMPER_PORT"]=""
+VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]="/Users/zengweitao/archived/workspace"
+VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]="/workspace"
 # 0 declare 顯式聲明，支持指定數據類型（否則：字符串（default））
 # 1 declare -a 索引數組
 # 2 declare -A 關聯數組
@@ -74,8 +81,6 @@ VARI_GLOBAL["JUMPER_PORT"]=""
 # 使用隨機名稱以避免「VARI_GLOBAL[BUILTIN_BASH_ENVI]=MASTER」時，變量衝突
 declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 # global variable[END]
-# local variable[START]
-# local variable[END]
 # ##################################################
 
 # ##################################################
@@ -99,13 +104,13 @@ function funcProtectedOmniReinit(){
   fi
   # git[END]
   # omni.system init[START]
-  mkdir -p /windows/runtime
-  if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-    cd /windows/code/backend/chunio/omni
+  mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime"
+  if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
   else
-    rm -rf /windows/code/backend/chunio/omni
-    mkdir -p /windows/code/backend/chunio
-    cd /windows/code/backend/chunio
+    rm -rf "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
+    mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
+    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
     git clone https://github.com/chunio/omni.git
     cd ./omni
   fi
@@ -116,14 +121,11 @@ function funcProtectedOmniReinit(){
   git reset --hard origin/main
   echo "[ omni ] git reset --hard origin/main finished"
   chmod 777 -R .
-  ./init/system/system.sh init
-  [ -f /etc/bashrc ] && source /etc/bashrc
-  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh init 1
   # omni.system init[END]
   return 0
 }
 
-function funcProtectedCloudSelector() {
   # --------------------------------------------------
   # call example :
   # funcProtectedCloudSelector
@@ -144,6 +146,7 @@ function funcProtectedCloudSelector() {
   # done
   # return 0
   # --------------------------------------------------
+function funcProtectedCloudSelector() {
   VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
   tar -czf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh 
   # 未使用「local」關鍵字的變量皆全局變量
@@ -334,8 +337,8 @@ function funcPublicRebuildImage(){
   docker stop $(docker ps -aq)
   # 鏡像不存在時自動執行：docker pull $variImageName
   # DEBUG_LABEL[START]
-  # [unsystemd] docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows -p 80:80 ubuntu:24.04 sleep infinity
-  # [centos] docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /windows:/windows --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9 /sbin/init
+  # [unsystemd] docker run -d --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /Users:/Users -p 80:80 ubuntu:24.04 sleep infinity
+  # [centos] docker run -d --privileged --name ${variContainerName} -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /Users:/Users --tmpfs /run --tmpfs /run/lock -p 80:80 centos:7.9 /sbin/init
   omni.docker buildSystemdUbuntuImage
   docker run -d \
     --privileged \
@@ -344,7 +347,7 @@ function funcPublicRebuildImage(){
     --tmpfs /run \
     --tmpfs /run/lock \
     --cgroupns=host \
-    -v /windows:/windows \
+    -v /Users:/Users \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     systemd.ubuntu /sbin/init
   # DEBUG_LABEL[END]
@@ -400,71 +403,113 @@ EOF
   # claude code install[END]
   # wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -O ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz
   tar -xvf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/go1.25.0.linux-amd64.tar.gz -C /usr/local
-  variWorkPath="/windows/code/backend"
-  mkdir -p ${variWorkPath}
-  mkdir -p ${variWorkPath}/golang/{gopath,gocache.linux,gocache.windows}
-  mkdir -p ${variWorkPath}/golang/gopath{/bin,/pkg,/src}
-  cat <<GOENVLINUX > ${variWorkPath}/golang/go.env.linux
+  variDockerMachineWorkspacePath="/workspace"
+  mkdir -p ${variDockerMachineWorkspacePath}
+  mkdir -p ${variDockerMachineWorkspacePath}/golang/{gopath,gocache}
+  mkdir -p ${variDockerMachineWorkspacePath}/golang/gopath{/bin,/pkg,/src}
+  cat <<GOENVLINUX > ${variDockerMachineWorkspacePath}/golang/go.env.linux
 CGO_ENABLED=0
 GO111MODULE=on
-GOBIN=${variWorkPath}/golang/gopath/bin
-GOCACHE=${variWorkPath}/golang/gocache.linux
-GOMODCACHE=${variWorkPath}/golang/gopath/pkg/mod
-GOPATH=${variWorkPath}/golang/gopath
-GOPROXY=https://goproxy.cn,direct
+GOTOOLCHAIN=auto
+GOPATH=${variDockerMachineWorkspacePath}/golang/gopath
+GOBIN=${variDockerMachineWorkspacePath}/golang/gopath/bin
+GOCACHE=${variDockerMachineWorkspacePath}/golang/gocache
+GOMODCACHE=${variDockerMachineWorkspacePath}/golang/gopath/pkg/mod
 GOROOT=/usr/local/go
 GOSUMDB=sum.golang.google.cn
+GOPROXY=https://goproxy.cn,direct
 GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
 GOENVLINUX
   cat <<ETCBASHRC >> /etc/bashrc
-export PATH=$PATH:/usr/local/go/bin:${variWorkPath}/golang/gopath/bin
-export GOENV=${variWorkPath}/golang/go.env.linux
+export PATH=$PATH:/usr/local/go/bin:${variDockerMachineWorkspacePath}/golang/gopath/bin
+export GOENV=${variDockerMachineWorkspacePath}/golang/go.env.linux
 ETCBASHRC
-  #  mkdir -p ${variWorkPath}/chunio
+  #  mkdir -p ${variDockerMachineWorkspacePath}/chunio
   #  git clone https://github.com/chunio/omni.git
-  #  cd ${variWorkPath}/chunio/omni
+  #  cd ${variDockerMachineWorkspacePath}/chunio/omni
   #  chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-  cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bin/* ${variWorkPath}/golang/gopath/bin/
+  cp -rf ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/bin/* ${variDockerMachineWorkspacePath}/golang/gopath/bin/
   ulimit -n 102400
   return 0
 }
 
-# [已驗證/官方容器]成功啟動
-# function funcPublicUnicorn_History()
-# {
-#   variMasterPath="/windows/code/backend/haohaiyou"
-#   variDockerWorkspace="/windows/code/backend/haohaiyou"
-#   variModuleName="unicorn"
-#   mkdir -p ${variMasterPath}/{gopath,gocache.linux,gocache.windows}
-#   mkdir -p ${variMasterPath}/gopath{/bin,/pkg,/src}
-#   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-# services:
-#   ${variModuleName}:
-#     image: golang:1.22.4
-#     container_name: ${variModuleName}
-#     environment:
-#       - GOENV=/windows/code/backend/golang/go.env.linux
-#       - PATH=$PATH:/usr/local/go/bin:${variDockerWorkspace}/gopath/bin
-#     volumes:
-#       - /windows/code/backend/haohaiyou/go.env.linux:/windows/code/backend/golang/go.env.linux
-#       - /windows/code/backend/haohaiyou:/windows/code/backend/golang
-#     working_dir: /windows/code/backend/golang/gopath/src/${variModuleName}
-#     networks:
-#       - common
-#     command: ["tail", "-f", "/dev/null"]
-# networks:
-#   common:
-#     driver: bridge
-# DOCKERCOMPOSEYML
-#   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-#   docker compose down -v
-#   docker compose -p ${variModuleName} up --build -d
-#   docker update --restart=always ${variModuleName}
-#   docker ps -a | grep ${variModuleName}
-#   cd ${variMasterPath}/gopath/src/${variModuleName}
-#   docker exec -it ${variModuleName} /bin/bash
-#   return 0
-# }
+:<<'MARK'
+「chunio/php:haohaiyou」封裝日誌：
+docker rm -f skeleton
+docker rm -f chunio-php-haohaiyou
+docker rmi -f chunio/php:haohaiyou
+docker run -d \
+  --privileged \
+  --name chunio-php-haohaiyou \
+  --tmpfs /tmp \
+  --tmpfs /run \
+  --tmpfs /run/lock \
+  --cgroupns=host \
+  -v /Users:/Users \
+  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+  chunio/php:8.3.24 /sbin/init
+docker exec -it chunio-php-haohaiyou /bin/bash
+# ----------
+root@${variContainerId}:/# apt-get update
+root@${variContainerId}:/# apt-get install -y python3 python3-pip python3-venv
+root@${variContainerId}:/# pip3 install Pillow --break-system-packages
+root@${variContainerId}:/# pip3 install playwright --break-system-packages
+root@${variContainerId}:/# playwright install
+root@${variContainerId}:/# playwright install-deps
+root@${variContainerId}:/# apt clean && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+root@${variContainerId}:/# history -c
+root@${variContainerId}:/# exit
+# ----------
+docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
+MARK
+function funcPublicSkeleton(){
+  variImagePattern=${1:-"chunio/php:haohaiyou"}
+  variContainerName="skeleton"
+  variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
+  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
+#!/usr/bin/env bash
+# 會被「docker run」中指定命令覆蓋
+return 0
+ENTRYPOINTSH
+  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
+services:
+  ${variContainerName}:
+    image: ${variImagePattern}
+    container_name: ${variContainerName}
+    # 開啟VPN/代理[START]
+    environment:
+      - HTTP_PROXY=http://host.docker.internal:7897
+      - HTTPS_PROXY=http://host.docker.internal:7897
+      - NO_PROXY=localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # 開啟VPN/代理[END]
+    volumes:
+      - /mnt/mac/Users:/Users
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    working_dir: ${variHostMachineProjectPath}
+    networks:
+      - common
+    ports:
+      - "9501:9501"
+    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    # 啟動進程關閉時，則容器退出
+    command: ["tail", "-f", "/dev/null"]
+networks:
+  common:
+    driver: bridge
+DOCKERCOMPOSEYML
+  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
+  docker rm -f skeleton 2> /dev/null
+  docker compose -p ${variContainerName} down -v 2> /dev/null
+  docker compose -p ${variContainerName} up --build -d
+  docker update --restart=always ${variContainerName}
+  docker ps -a | grep ${variContainerName}
+  cd ${variHostMachineProjectPath}
+  docker exec -it ${variContainerName} /bin/bash
+  return 0
+}
 
 #「chunio/go:1.22.4」基於「golang:1.22.4」進行調整：
 # cat /etc/os-release
@@ -485,9 +530,8 @@ ETCBASHRC
 function funcPublicUnicorn()
 {
   local variContainerName="unicorn"
-  docker rm -f ${variContainerName} 2> /dev/null
-  local variHostMachineEnviPath="/Users/zengweitao/archived/workspace/application/golang/source"
-  local variHostMachineProjectPath="/Users/zengweitao/archived/workspace/repository/haohaiyou/unicorn"
+  local variHostMachineEnviPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/application/golang/source"
+  local variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn"
   mkdir -p ${variHostMachineEnviPath}/{gopath,gocache}
   mkdir -p ${variHostMachineEnviPath}/gopath/{bin,pkg,src}
   mkdir -p ${variHostMachineEnviPath}/gopath/bin/{darwin,linux,windows}
@@ -510,24 +554,11 @@ GOPATH=${variHostMachineEnviPath}/gopath
 GOBIN=${variHostMachineEnviPath}/gopath/bin/linux
 GOMODCACHE=${variHostMachineEnviPath}/gopath/pkg/mod
 GOCACHE=${variHostMachineEnviPath}/gocache/linux
-GOPROXY=https://goproxy.cn,direct
 GOROOT=/usr/local/go
 GOSUMDB=sum.golang.google.cn
+GOPROXY=https://goproxy.cn,direct
 GOTOOLDIR=/usr/local/go/pkg/tool/linux_amd64
 GOENVLINUX
-# TODO:chunio/go:1.25.0/error[START]
-# root@6ecb6df251c4:/windows/code/backend/haohaiyou/gopath/src/unicorn# make generate
-# # go mod tidy
-# # go get github.com/google/wire/cmd/wire@latest
-# go generate ./...
-# # golang.org/x/tools/internal/tokeninternal
-# ../../../../../pkg/mod/golang.org/x/tools@v0.22.0/internal/tokeninternal/tokeninternal.go:64:9: invalid array length -delta * delta (constant -256 of type int64)
-# module/adx/main/wire_gen.go:3: running "go": exit status 1
-# # golang.org/x/tools/internal/tokeninternal
-# ../../../../../pkg/mod/golang.org/x/tools@v0.22.0/internal/tokeninternal/tokeninternal.go:64:9: invalid array length -delta * delta (constant -256 of type int64)
-# module/dsp/main/wire_gen.go:3: running "go": exit status 1
-# make: *** [Makefile:82: generate] Error 1
-# TODO:chunio/go:1.25.0/error[END]
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   ${variContainerName}:
@@ -543,7 +574,7 @@ services:
       - PATH=$PATH:/usr/local/go/bin:${variHostMachineEnviPath}/gopath/bin/linux
     volumes:
       - /mnt/mac/Users:/Users
-      - /mnt:/mnt
+      # - /mnt:/mnt
       # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variHostMachineEnviPath}/gopath/bin
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
@@ -572,87 +603,8 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker compose down -v
-  docker compose -p ${variContainerName} up --build -d
-  docker update --restart=always ${variContainerName}
-  docker ps -a | grep ${variContainerName}
-  cd ${variHostMachineProjectPath}
-  docker exec -it ${variContainerName} /bin/bash
-  return 0
-}
-
-:<<'MARK'
-「chunio/php:haohaiyou」封裝日誌：
-docker rm -f skeleton
-docker rm -f chunio-php-haohaiyou
-docker rmi -f chunio/php:haohaiyou
-docker run -d \
-  --privileged \
-  --name chunio-php-haohaiyou \
-  --tmpfs /tmp \
-  --tmpfs /run \
-  --tmpfs /run/lock \
-  --cgroupns=host \
-  -v /windows:/windows \
-  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-  chunio/php:8.3.24 /sbin/init
-docker exec -it chunio-php-haohaiyou /bin/bash
-# ----------
-root@${variContainerId}:/# apt-get update
-root@${variContainerId}:/# apt-get install -y python3 python3-pip python3-venv
-root@${variContainerId}:/# pip3 install Pillow --break-system-packages
-root@${variContainerId}:/# pip3 install playwright --break-system-packages
-root@${variContainerId}:/# playwright install
-root@${variContainerId}:/# playwright install-deps
-root@${variContainerId}:/# apt clean && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
-root@${variContainerId}:/# history -c
-root@${variContainerId}:/# exit
-# ----------
-docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
-MARK
-function funcPublicSkeleton(){
-  variHostMachineProjectPath="/Users/zengweitao/archived/workspace/repository/haohaiyou/skeleton"
-  variContainerName="skeleton"
-  # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
-  variImagePattern=${1:-"chunio/php:haohaiyou"}
-  cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
-#!/usr/bin/env bash
-# 會被「docker run」中指定命令覆蓋
-return 0
-ENTRYPOINTSH
-  cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
-services:
-  ${variContainerName}:
-    image: ${variImagePattern}
-    container_name: ${variContainerName}
-    # 開啟VPN/代理[START]
-    # environment:
-    #   HTTP_PROXY: http://192.168.255.1:10809
-    #   HTTPS_PROXY: http://192.168.255.1:10809
-    #   NO_PROXY: localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
-    # 開啟VPN/代理[END]
-    volumes:
-      # - /windows:/windows
-      - /mnt/mac/Users:/Users
-      - /mnt:/mnt
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variHostMachineProjectPath}
-    networks:
-      - common
-    ports:
-      - "9501:9501"
-    # entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
-    # 啟動進程關閉時，則容器退出
-    command: ["tail", "-f", "/dev/null"]
-networks:
-  common:
-    driver: bridge
-DOCKERCOMPOSEYML
-  cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker rm -f skeleton 2> /dev/null
-  docker compose down -v
+  docker rm -f ${variContainerName} 2> /dev/null
+  docker compose -p ${variContainerName} down -v 2> /dev/null
   docker compose -p ${variContainerName} up --build -d
   docker update --restart=always ${variContainerName}
   docker ps -a | grep ${variContainerName}
@@ -690,11 +642,6 @@ function funcPublicCloudIndex(){
   return 0
 }
 
-# manual[START]
-# tar -czvf /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz -C /windows/code/backend/chunio/omni/module/haohaiyou/cloud ssh
-# scp -P 22 -o StrictHostKeyChecking=no /windows/code/backend/chunio/omni/module/haohaiyou/runtime/omni.haohaiyou.cloud.ssh.tgz root@101.32.14.43:/
-# ssh root@101.32.14.43
-# manual[END]
 function funcPublicCloudJumperReinit() {
   local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
   local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
@@ -748,13 +695,13 @@ function funcPublicCloudJumperReinit() {
     # git[END]
     # --------------------------------------------------
     # omni.system init[START]
-    mkdir -p /windows/runtime
-    if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-      cd /windows/code/backend/chunio/omni
+    mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+    if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+      cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
     else
-      rm -rf /windows/code/backend/chunio/omni
-      mkdir -p /windows/code/backend/chunio
-      cd /windows/code/backend/chunio
+      rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+      mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+      cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
       git clone https://github.com/chunio/omni.git
       cd ./omni
     fi
@@ -770,9 +717,9 @@ function funcPublicCloudJumperReinit() {
     [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
     # omni.system init[END]
     # --------------------------------------------------
-    /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+    /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
 JUMPEREOF
   return 0
 }
@@ -812,9 +759,9 @@ function funcPublicCloudIptableReinit(){
         if ! command -v git &> /dev/null; then
             yum install -y git
         fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni" ]; then
-          cd /windows/code/backend/chunio/omni
+        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni" ]; then
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
           echo "[ omni ] git fetch origin ..."
           git fetch origin
           echo "[ omni ] git fetch origin finished"
@@ -823,7 +770,7 @@ function funcPublicCloudIptableReinit(){
           echo "[ omni ] git reset --hard origin/main finished"
           chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         else
-          mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio && cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
           git clone https://github.com/chunio/omni.git
           cd ./omni && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
         fi
@@ -936,12 +883,12 @@ function funcPublicCloudSkeletonReinit() {
           if ! command -v git &> /dev/null; then
               yum install -y git
           fi
-          mkdir -p /windows/runtime
-          if [ -d "/windows/code/backend/chunio/omni" ]; then
-            cd /windows/code/backend/chunio/omni
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+          if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni" ]; then
+            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
           else
-            mkdir -p /windows/code/backend/chunio
-            cd /windows/code/backend/chunio
+            mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
             git clone https://github.com/chunio/omni.git
             cd ./omni
           fi
@@ -956,8 +903,8 @@ function funcPublicCloudSkeletonReinit() {
           # --------------------------------------------------
           #（3）slave main[START]
           docker rm -f skeleton 2> /dev/null
-          if [ -d "/windows/code/backend/haohaiyou/gopath/src/skeleton" ]; then
-            cd /windows/code/backend/haohaiyou/gopath/src/skeleton
+          if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src/skeleton" ]; then
+            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src/skeleton
             echo "[ skeleton ] git fetch origin ..."
             git fetch origin
             echo "[ skeleton ] git fetch origin finished"
@@ -967,7 +914,7 @@ function funcPublicCloudSkeletonReinit() {
             echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
             # ----------
           else
-            mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
+            mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src && cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src
             git clone git@github.com:chunio/skeleton.git && cd skeleton
             git checkout ${variBranchName}
           fi
@@ -978,13 +925,13 @@ function funcPublicCloudSkeletonReinit() {
           rm -rf runtime/container
           expect -c '
           set timeout -1
-          spawn /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
+          spawn ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
           expect "skeleton"
           send "composer install\r"
           expect "skeleton"
           send "composer dump-autoload -o --no-dev\r"
           expect "skeleton"
-          send "nohup php bin/hyperf.php start > /windows/runtime/skeleton.log 2>&1 &\r"
+          send "nohup php bin/hyperf.php start > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/skeleton.log 2>&1 &\r"
           expect "skeleton"
           send "exit\r"
           expect eof
@@ -993,7 +940,7 @@ function funcPublicCloudSkeletonReinit() {
           if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
             sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
           fi
-          echo "0 * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
+          echo "0 * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
           cat "${variCrontabEnviUri}"
           systemctl reload crond
           # crontab[END]
@@ -1007,12 +954,12 @@ JUMPEREOF
 
 
 function funcPublicCloudSkeletonHourlyCrontab(){
-  rm -rf /windows/code/backend/haohaiyou/gopath/src/skeleton/core.*
+  rm -rf /workspace/repository/haohaiyou/gopath/src/skeleton/core.*
   return 0
 }
 
 # 將「80」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -1043,7 +990,7 @@ services:
     image: nginx:1.27.0
     container_name: ${variModuleName}-nginx
     volumes:
-      - /windows:/windows
+      - ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}:${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
@@ -1062,7 +1009,7 @@ DOCKERCOMPOSEYML
 }
 
 # 將「80/443」端口轉發至「9501」端口
-# cd /windows/code/backend/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
+# cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
@@ -1101,8 +1048,8 @@ server {
     ssl_prefer_server_ciphers off;
     # 證書配置[END]
     # 採集日誌[START]
-    access_log /windows/runtime/${variDomain}_access.log main;
-    error_log  /windows/runtime/${variDomain}_error.log warn;
+    access_log ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variDomain}_access.log main;
+    error_log  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variDomain}_error.log warn;
     # 採集日誌[END]
     location / {
         # [CORS/同源策略]預檢響應[START]
@@ -1147,7 +1094,7 @@ services:
     image: nginx:1.27.0
     container_name: ${variModuleName}-nginx
     volumes:
-      - /windows:/windows
+      - ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}:${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
       - /usr/local/nginx/certbot/webroot:/etc/nginx/webroot:rw
       - /usr/local/nginx/certbot/config/live/skeleton.y-one.co.jp/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
@@ -1166,229 +1113,6 @@ DOCKERCOMPOSEYML
   docker compose down -v
   docker compose -p ${variModuleName} up --build -d
   docker ps -a | grep ${variModuleName}
-  return 0
-}
-
-# 兼容：centos && ubuntu
-function funcPublicCloudUnicornReinit_Official() {
-  local variParameterDescMulti=("module : dsp，adx" "branch : main，feature/zengweitao/...")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variModuleName=$1
-  local variBranchName=$2
-  local variEnvi="PRODUCTION"
-  local variBinName="unicorn_${variModuleName}"
-  # ----------
-  local variScpStatus=1
-  local variScpOnce=0
-  local variScpPath="/tmp/"
-  local variLaunchTimeout=30
-  # ----------
-  local variHttpPort=0
-  local variGrpcPort=0
-  case ${variModuleName} in
-    "adx")
-        variHttpPort=8001
-        variGrpcPort=9001
-        ;;
-    "dsp")
-        variHttpPort=8000
-        variGrpcPort=9000
-        ;;
-    *)
-        return 1
-        ;;
-  esac
-  funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  # 統計「執行狀態」/1[START]
-  local varSelectedCounter=0
-  local variSucceededCounter=0
-  local variFailedAbstract=""
-  # 統計「執行狀態」/1[END]
-  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
-    # 檢測目標節點環節是否支持當前模塊[START]
-    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
-    if [[ $variEachValueLower != *$variModuleName* && $variEachValueLower != *singleton* ]]; then
-      echo "invalid selection : [ ${variEachValue} ]"
-      continue
-    fi
-    # 檢測目標節點環節是否支持當前模塊[END]
-    # 統計「執行狀態」/2[START]
-    varSelectedCounter=$((varSelectedCounter + 1))
-    # 統計「執行狀態」/2[END]
-    # 係統兼容[START]
-    local variEachSlaveAccount="root"
-    local variEachSudoCommand=""
-    local variEachCrontabEnviUri="/var/spool/cron/root"
-    local variEachCrontabReloadCommand="systemctl reload crond"
-    local variEachGitInstallCommand="yum install -y git"
-    if [[ "${variEachOs}" == "UBUNTU" ]]; then
-      variEachSlaveAccount="ubuntu"
-      variEachSudoCommand="sudo bash -s"
-      variEachCrontabEnviUri="/var/spool/cron/crontabs/root"
-      variEachCrontabReloadCommand="systemctl restart cron"
-      variEachGitInstallCommand="apt-get update && apt-get install -y git"
-    fi
-    # 係統兼容[END]
-    rm -rf ~/.ssh/known_hosts
-    if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
-      md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}
-      variScpOnce=1
-    fi
-    variEachLabelUpper=$(echo "${variEachDomain}/${variModuleName}/${variEachService}/${variEachRegion}/${variEachLabel}" | tr 'a-z' 'A-Z')
-    # variEachCrontabTask="* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1"
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-      rm -rf ~/.ssh/known_hosts
-      if [[ ${variScpStatus} -eq 1 ]]; then
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpPath}
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}
-      fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
-        # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
-        export DEBIAN_FRONTEND=noninteractive
-        # --------------------------------------------------
-        # （1）ssh init[START]
-        tar -xzvf ${variScpPath}omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-        touch ~/.ssh/config
-        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
-        chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # （1）ssh init[END]
-        # --------------------------------------------------
-        # （2）omni.system init[START]
-        if ! command -v git &> /dev/null; then
-          ${variEachGitInstallCommand}
-        fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-          cd /windows/code/backend/chunio/omni
-        else
-          rm -rf /windows/code/backend/chunio/omni
-          mkdir -p /windows/code/backend/chunio
-          cd /windows/code/backend/chunio
-          git clone https://github.com/chunio/omni.git && cd ./omni
-        fi
-        echo "[ omni ] git fetch origin ..."
-        git fetch origin
-        echo "[ omni ] git fetch origin finished"
-        echo "[ omni ] git reset --hard origin/main ..."
-        git reset --hard origin/main
-        echo "[ omni ] git reset --hard origin/main finished"
-        chmod 777 -R . && ./init/system/system.sh init
-        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
-        [ -f /etc/bashrc ] && source /etc/bashrc
-        #（2）omni.system init[END]
-        # --------------------------------------------------
-        #（3）slave main[START]
-        ulimit -n 655360
-        docker rm -f unicorn 2> /dev/null
-        if [ -d "/windows/code/backend/haohaiyou/gopath/src/unicorn/.git" ]; then
-          cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-          # ----------
-          echo "[ unicorn ] git fetch origin ..."
-          git fetch origin
-          echo "[ unicorn ] git fetch origin finished"
-          # ----------
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} ..."
-          git reset --hard origin/${variBranchName}
-          echo "[ unicorn ] git reset --hard origin/${variBranchName} finished"
-          # ----------
-        else
-          rm -rf /windows/code/backend/haohaiyou/gopath/src/unicorn
-          mkdir -p /windows/code/backend/haohaiyou/gopath/src && cd /windows/code/backend/haohaiyou/gopath/src
-          git clone git@github.com:chunio/unicorn.git && cd unicorn
-          git checkout ${variBranchName}
-        fi
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-        /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-        # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
-        mkdir -p ./bin && chmod 777 -R .
-        /usr/bin/cp -rf ${variScpPath}${variBinName} ./bin/${variBinName}
-        echo "" > /windows/runtime/${variBinName}.command
-        nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &
-        # ----------
-        variEachLaunchDuration=0
-        while true; do
-          if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-            cat /windows/runtime/${variBinName}.log
-            echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-            echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variEachService} -LABEL ${variEachLabel} -DOMAIN ${variEachDomain} -REGION ${variEachRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
-            # TODO:進去此分支才統計「執行狀態」
-            break
-          elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-            cat /windows/runtime/${variBinName}.log
-            exit 1
-          elif [[ \\\${variEachLaunchDuration} -ge ${variLaunchTimeout} ]]; then
-            # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
-            echo "[ failed ] ${variBinName} launch exceeded ${variLaunchTimeout} second"
-            cat /windows/runtime/${variBinName}.log
-            exit 1
-          fi
-          variEachLaunchDuration=\\\$((variEachLaunchDuration + 1))
-          sleep 1
-        done
-        # ----------
-        # unicorn[END]
-        # crontab[START]
-        touch ${variEachCrontabEnviUri}
-        # （1）supervisor
-        if grep -Fq "cloudUnicornSupervisor ${variEachLabelUpper}" "${variEachCrontabEnviUri}"; then
-          # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
-          sed -i '\#cloudUnicornSupervisor ${variEachLabelUpper}#d' "${variEachCrontabEnviUri}"
-        fi
-        echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variEachLabelUpper} > /dev/null 2>&1" >> "${variEachCrontabEnviUri}"
-        # （2）僅使用於「variEachService=MASTER」
-        if [[ ${variEachService} == "MASTER" ]]; then
-          # TODO:[臨時]廢棄清理[START]
-          if grep -Fq "cloudSclickArchived" "${variEachCrontabEnviUri}"; then
-            sed -i '/cloudSclickArchived/d' "${variEachCrontabEnviUri}"
-          fi
-          # TODO:[臨時]廢棄清理[END]
-          if grep -Fq "cloudUnicornMinutelyCrontab" "${variEachCrontabEnviUri}"; then
-            sed -i '/cloudUnicornMinutelyCrontab/d' "${variEachCrontabEnviUri}"
-          fi
-          echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variEachCrontabEnviUri}"
-        fi
-        # ----------
-        cat "${variEachCrontabEnviUri}"
-        ${variEachCrontabReloadCommand}
-        # crontab[END]
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
-        md5sum /windows/code/backend/haohaiyou/gopath/src/unicorn/bin/${variBinName}
-        #（3）slave main[END]
-        # --------------------------------------------------
-SLAVEEOF
-JUMPEREOF
-    # 統計「執行狀態」/3[START]
-    if [[ $? -eq 0 ]]; then
-      variSucceededCounter=$((variSucceededCounter + 1))
-    else
-      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
-    fi
-    # 統計「執行狀態」/3[END]
-  done
-  # 統計「執行狀態」/4[START]
-  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
-  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
-  # 統計「執行狀態」/4[END]
   return 0
 }
 
@@ -1433,13 +1157,13 @@ function funcPublicCloudPodReinit(){
         if ! command -v git &> /dev/null; then
           apt-get update && apt-get install -y git
         fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-          cd /windows/code/backend/chunio/omni
+        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else
-          rm -rf /windows/code/backend/chunio/omni
-          mkdir -p /windows/code/backend/chunio
-          cd /windows/code/backend/chunio
+          rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
           git clone https://github.com/chunio/omni.git
           cd ./omni
         fi
@@ -1458,9 +1182,9 @@ function funcPublicCloudPodReinit(){
         [ -f /etc/bashrc ] && source /etc/bashrc
         # omni.system init[END]
         # --------------------------------------------------
-        /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
+        ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
         # --------------------------------------------------
         history -c
 SLAVEEOF
@@ -1489,9 +1213,9 @@ function funcPublicCloudUnicornReinit() {
   local variScpStatus=1
   local variScpOnce=0
   local variScpPath="/var/tmp"
-  local variGoPath="/windows/code/backend/haohaiyou/gopath"
+  local variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn"
   local variBinName="unicorn_${variModule}"
-  local variBinMd5=$(md5sum ${variGoPath}/src/unicorn/bin/${variBinName} | awk '{print $1}')
+  local variBinMd5=$(md5sum ${variHostMachineProjectPath}/bin/${variBinName} | awk '{print $1}')
   # 統計「執行狀態」/1[START]
   local varSelectedCounter=0
   local variSucceededCounter=0
@@ -1501,7 +1225,7 @@ function funcPublicCloudUnicornReinit() {
   if [ ${variAutoScalingStatus} -eq 1 ]; then
     rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos
     mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos
-    /usr/bin/cp -rf ${variGoPath}/src/unicorn/bin/${variBinName} ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variBinName}
+    /usr/bin/cp -rf ${variHostMachineProjectPath}/bin/${variBinName} ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variBinName}
   fi
   # 彈性伸縮/1[END]
   funcProtectedCloudSelector
@@ -1543,8 +1267,8 @@ function funcPublicCloudUnicornReinit() {
     # 自動兼容係統類型[END]
     rm -rf ~/.ssh/known_hosts
     if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
-      md5sum ${variGoPath}/src/unicorn/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${variGoPath}/src/unicorn/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}/
+      md5sum ${variHostMachineProjectPath}/bin/${variBinName}
+      scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${variHostMachineProjectPath}/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}/
       variScpOnce=1
     fi
     ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
@@ -1585,13 +1309,13 @@ function funcPublicCloudUnicornReinit() {
         if ! command -v git &> /dev/null; then
           ${variEachGitInstallCommand}
         fi
-        mkdir -p /windows/runtime
-        if [ -d "/windows/code/backend/chunio/omni/.git" ]; then
-          cd /windows/code/backend/chunio/omni
+        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+          cd {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else
-          rm -rf /windows/code/backend/chunio/omni
-          mkdir -p /windows/code/backend/chunio
-          cd /windows/code/backend/chunio
+          rm -rf {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+          mkdir -p {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          cd {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
           git clone https://github.com/chunio/omni.git
           cd ./omni
         fi
@@ -1608,14 +1332,12 @@ function funcPublicCloudUnicornReinit() {
         ./init/system/system.sh init
         [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
         [ -f /etc/bashrc ] && source /etc/bashrc
-        /usr/bin/cp -rf ${variScpPath}/encrypt.envi /windows/code/backend/chunio/omni/module/haohaiyou/
-        # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-        # /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
         # （四）omni.system init[END]
         # --------------------------------------------------
         # （五）common[START]
         echo " ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}"
-        /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModuleUpper} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
+        {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModuleUpper} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
         # （五）common[END]
         # --------------------------------------------------
         exit \\\$?
@@ -1633,7 +1355,7 @@ JUMPEREOF
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
     # TODO:關閉所有動態機器
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Ascli
+    omni.haohaiyou.sh cloudUnicornReinit_Ascli
   fi
   # 彈性伸縮/3[START]
   # 統計「執行狀態」/4[START]
@@ -1663,7 +1385,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # ----------
   local variEnvi="PRODUCTION"
   local variScpPath="/var/tmp"
-  local variGoPath="/windows/code/backend/haohaiyou/gopath"
+  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou/uncorn"
   local variLaunchTimeout=30
   local variLaunchDuration=0
   # ----------
@@ -1704,8 +1426,8 @@ function funcPublicCloudUnicornReinit_Common() {
   # （二）unicorn[START]
   ulimit -n 655360
   docker rm -f unicorn 2> /dev/null
-  if [ -d "${variGoPath}/src/unicorn/.git" ]; then
-    cd ${variGoPath}/src/unicorn
+  if [ -d "${variCloudMachineProjectPath}/src/unicorn/.git" ]; then
+    cd ${variCloudMachineProjectPath}/src/unicorn
     # ----------
     echo "[ unicorn ] git fetch origin ..."
     git fetch origin
@@ -1716,33 +1438,33 @@ function funcPublicCloudUnicornReinit_Common() {
     echo "[ unicorn ] git reset --hard origin/${variBranch} finished"
     # ----------
   else
-    rm -rf ${variGoPath}/src/unicorn
-    mkdir -p ${variGoPath}/src
-    cd ${variGoPath}/src
+    rm -rf ${variCloudMachineProjectPath}/src/unicorn
+    mkdir -p ${variCloudMachineProjectPath}/src
+    cd ${variCloudMachineProjectPath}/src
     git clone git@github.com:chunio/unicorn.git
     cd unicorn
     git checkout ${variBranch}
   fi
-  /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-  /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
   mkdir -p ./bin
   chmod 777 -R .
   /usr/bin/cp -rf ${variScpPath}/${variBinName} ./bin/${variBinName}
-  echo "" > /windows/runtime/${variBinName}.command
-  nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 &
+  echo "" > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.command
+  nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log 2>&1 &
   # ----------
   while true; do
-    if grep -q ":${variHttpPort}" /windows/runtime/${variBinName}.log; then
-      cat /windows/runtime/${variBinName}.log
-      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 & [success]"
-      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > /windows/runtime/${variBinName}.log 2>&1 &" > /windows/runtime/${variBinName}.command
+    if grep -q ":${variHttpPort}" ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log; then
+      cat ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log
+      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log 2>&1 & [success]"
+      echo "nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log 2>&1 &" > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.command
       break
-    elif grep -qE "failed|error|panic" /windows/runtime/${variBinName}.log; then
-      cat /windows/runtime/${variBinName}.log
+    elif grep -qE "failed|error|panic" ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log; then
+      cat ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log
       exit 1
     elif [[ ${variLaunchDuration} -ge ${variLaunchTimeout} ]]; then
       echo "[ failed ] ${variBinName} launch exceeded ${variLaunchTimeout} second"
-      cat /windows/runtime/${variBinName}.log
+      cat ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log
       exit 1
     fi
     variLaunchDuration=$((variLaunchDuration + 1))
@@ -1759,14 +1481,14 @@ function funcPublicCloudUnicornReinit_Common() {
     # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
     sed -i "\#cloudUnicornSupervisor ${variParameter}#d" "${variCrontabEnviUri}"
   fi
-  echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+  echo "* * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   # （1）supervisor/異常重啟[END]
   # （2）僅限「variService=MASTER」[START]
   if [[ ${variService} == "MASTER" ]]; then
     if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
       sed -i "/cloudUnicornMinutelyCrontab/d" "${variCrontabEnviUri}"
     fi
-    echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+    echo "* * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   fi
   # （2）僅限「variService=MASTER」[END]
   cat "${variCrontabEnviUri}"
@@ -1774,7 +1496,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # （三）crontab[END]
   # --------------------------------------------------
   # （四）host[START]
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
   # （四）host[END]
   # --------------------------------------------------
   return 0
@@ -1782,8 +1504,8 @@ function funcPublicCloudUnicornReinit_Common() {
 
 # auto scaling command-line interface
 function funcPublicCloudUnicornReinit_Ascli(){
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
+  omni.haohaiyou.sh cloudCoscliReinit
+  omni.haohaiyou.sh cloudTccliReinit
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
@@ -1885,21 +1607,21 @@ function funcPublicCloudUnicornReinit_Ascli(){
 ssh（[backend]include：admin_cicd）
 omni.haohaiyou cloudPodReinit
 # ----------
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST（√）
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE（√）
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST（√）
+omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
+omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST（√）
+omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE（√）
+omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST（√）
 # ----------
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID USEAST
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE（√）
-/windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID USEAST
+omni.haohaiyou cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
+omni.haohaiyou cloudUnicornReinit_Dynamic YONE DSP BID USEAST
+omni.haohaiyou cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE（√）
+omni.haohaiyou cloudUnicornReinit_Dynamic YONE ADX BID USEAST
 MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
   # omni.system init[START]
-  mkdir -p /windows/runtime
-  cd /windows/code/backend/chunio/omni
+  mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}runtime
+  cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
   # ----------
   echo "[ omni ] git fetch origin ..."
   git fetch origin
@@ -1954,19 +1676,19 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   # ----------
   local variFeishuTitle="${variDomain}/${variModule}/${variService}/${variRegion}/${variLabel}"
   if [[ "${variLocalBinMd5}" != "${variRemoteBinMd5}" ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/BIN_MD5_UNMATCHED"
+    omni.haohaiyou feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/BIN_MD5_UNMATCHED"
     return 1
   fi
  # ----------
   # envi[END]
   # common[START]
-  /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModule} ${variService} ${variLabel} ${variDomain} ${variRegion} ${variBranch}
+  omni.haohaiyou cloudUnicornReinit_Common ${variModule} ${variService} ${variLabel} ${variDomain} ${variRegion} ${variBranch}
   local variReturn=$?
   # common[END]
   if [[ ${variReturn} -eq 0 ]]; then
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_SUCCEEDED"
+    omni.haohaiyou feishu ${variFeishuTitle} "AUTO_SCALING_SUCCEEDED"
   else
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/COMMON_RETURN_NOT0"
+    omni.haohaiyou feishu ${variFeishuTitle} "AUTO_SCALING_FAILED/COMMON_RETURN_NOT0"
   fi
   return ${variReturn}
 }
@@ -1993,9 +1715,9 @@ function funcPublicCloudUnicornCheck() {
       echo "===================================================================================================="
       rm -rf /root/.ssh/known_hosts
       ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
-        tail -n 50 /windows/runtime/unicorn_${variEachModule,,}.log
+        tail -n 50 ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variEachModule,,}.log
         # 按「文件大小」倒敘排序，取前10個
-        ls -lhS /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime | grep -v '^d' | head -n 11
+        ls -lhS ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn/runtime | grep -v '^d' | head -n 11
         df -h
 SLAVEEOF
 JUMPEREOF
@@ -2003,30 +1725,7 @@ JUMPEREOF
   return 0
 }
 
-# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonSupervisor") | crontab -
-# 更新腳本時無需重啟「crontab」
-# function funcPublicCloudSkeletonSupervisor(){
-#   variHost="localhost"
-#   variPort=9501
-#   timeout=${timeout:-1}
-#   variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
-#   # check heartbeat[START]
-#   if timeout ${timeout} bash -c "</dev/tcp/${variHost}/${variPort}" >/dev/null 2>&1; then
-#     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check succeeded，${variHost}:${variPort} is active" >> /windows/runtime/supervisor.log
-#   else
-#     echo "[ ${variCurrentUtc0Datetime} / ${variPort} ] health check failed，${variHost}:${variPort} is inactive" >> /windows/runtime/supervisor.log
-#     # supervisor[START]
-#     /windows/code/backend/chunio/omni/common/docker/docker.sh process unicorn kill
-#     cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-#     eval "$(cat /windows/runtime/command.variable)"
-#     echo "[ ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variPort} is restart" >> /windows/runtime/supervisor.log
-#     # supervisor[END]
-#   fi
-#   # check heartbeat[END]
-#   return 0
-# }
-
-# (crontab -l 2>/dev/null; echo "* * * * * /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
+# (crontab -l 2>/dev/null; echo "* * * * * /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
   local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
@@ -2052,18 +1751,18 @@ function funcPublicCloudUnicornSupervisor(){
   variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /windows/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /workspace/runtime/supervisor.log
   else
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /windows/runtime/supervisor.log
-    /windows/code/backend/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEALTH_CHECK_FAILED"
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /workspace/runtime/supervisor.log
+    /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEALTH_CHECK_FAILED"
     # supervisor[START]
-    /windows/code/backend/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-    /windows/code/backend/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-    /usr/bin/cp -rf /windows/runtime/unicorn_${variModuleName}.log /windows/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
-    # /windows/code/backend/chunio/omni/init/system/system.sh process unicorn kill
-    cd /windows/code/backend/haohaiyou/gopath/src/unicorn
-    eval "$(cat /windows/runtime/unicorn_${variModuleName}.command)"
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /windows/runtime/supervisor.log
+    /workspace/repository/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+    /workspace/repository/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+    /usr/bin/cp -rf /workspace/runtime/unicorn_${variModuleName}.log /workspace/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
+    # /workspace/repository/chunio/omni/init/system/system.sh process unicorn kill
+    cd /workspace/repository/haohaiyou/unicorn
+    eval "$(cat /workspace/runtime/unicorn_${variModuleName}.command)"
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /workspace/runtime/supervisor.log
     # supervisor[END]
   fi
   # check heartbeat[END]
@@ -2122,9 +1821,9 @@ function funcPublicCloudUnicornMinutelyCrontab(){
       return 1
       ;;
   esac
-  local variArchivedLockUri="/windows/runtime/archived.lock"
-  local variArchivedExitUri="/windows/runtime/archived.exit"
-  local variArchivedLogUri="/windows/runtime/archived.log"
+  local variArchivedLockUri="/workspace/runtime/archived.lock"
+  local variArchivedExitUri="/workspace/runtime/archived.exit"
+  local variArchivedLogUri="/workspace/runtime/archived.log"
   if [ -f "${variArchivedLockUri}" ]; then
     # 鎖定文件大於2個小時則重置[START]
     local variCurrentTimestamp=$(date -u +%s)
@@ -2229,7 +1928,7 @@ function funcPublicFeishu(){
 }
 
 function funcPublicCdUnicornRuntime(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  cd /workspace/repository/haohaiyou/unicorn/runtime
   pwd
   df -h
   ls -lh
@@ -2237,57 +1936,11 @@ function funcPublicCdUnicornRuntime(){
 }
 
 function funcPublicTailUnicornTrack(){
-  cd /windows/code/backend/haohaiyou/gopath/src/unicorn/runtime
+  cd /workspace/repository/haohaiyou/unicorn/runtime
   pwd
   df -h
   echo "tail -f *-track-$(date -u +%Y%m%d).log"
   tail -f *-track-$(date -u +%Y%m%d).log
-  return 0
-}
-
-
-# gcloud auth activate-service-account --key-file=/windows/runtime/protectedmedia-468207-afb588ea4c73.json
-# gsutil ls -lh gs://1001069.reports.protected.media/2025/08/17
-# gsutil cp gs://1001069.reports.protected.media/2025/08/17/hourly-report-by-levels-1001069-20250817-00.csv /windows/runtime
-function funcPublicPullProtectedMediaHourlyReport(){
-# 注意：每行頂格
-#   cat <<EOF > /etc/yum.repos.d/google-cloud-sdk.repo
-# [google-cloud-sdk]
-# name=Google Cloud SDK
-# baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
-# enabled=1
-# gpgcheck=1
-# repo_gpgcheck=1
-# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-# EOF
-  # chmod -R 644 /etc/yum.repos.d
-  # yum install -y google-cloud-sdk
-  variParameterDescList=("utc0 date（example ：2025-01-01）")
-  funcProtectedCheckOptionParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variUtc0Date="${1:-$(date -u +%Y-%m-%d)}"
-  local variBucketId="1001069"
-  local variBucketName="${variBucketId}.reports.protected.media"
-  local variPrivateKeyUri=${VARI_GLOBAL['BUILTIN_UNIT_CLOUD_PATH']}/protectedmedia-468207-afb588ea4c73.json
-  local variDownloadPath="/windows/runtime"
-  gcloud auth activate-service-account --key-file="${variPrivateKeyUri}" 
-  local variYear="${variUtc0Date:0:4}"
-  local variMonth="${variUtc0Date:5:2}"
-  local variDay="${variUtc0Date:8:2}"
-  local variUtc0DateShortName="${variYear}${variMonth}${variDay}"
-  mkdir -p "$variDownloadPath"
-  for variEachIndex in $(seq 0 23); do
-    variEachHour=$(printf "%02d" "$variEachIndex")
-    variEachFilename="hourly-report-by-levels-${variBucketId}-${variUtc0DateShortName}-${variEachHour}.csv"
-    variEachFileUri="gs://${variBucketName}/${variYear}/${variMonth}/${variDay}/${variEachFilename}"
-    if ! gsutil -q stat "$variEachFileUri"; then
-      echo "[ MISS ] ${variYear}/${variMonth}/${variDay}/${variEachFilename}"
-      continue
-    fi
-    echo "gsutil cp ${variEachFileUri} ${variDownloadPath}/"
-    gsutil cp "$variEachFileUri" "$variDownloadPath"/
-  done
-  ls -lh $variDownloadPath/hourly-report-by-levels-*
   return 0
 }
 
