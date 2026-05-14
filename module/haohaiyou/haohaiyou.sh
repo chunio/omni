@@ -68,9 +68,9 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["JUMPER_ACCOUNT"]=""
-VARI_GLOBAL["JUMPER_IP"]=""
-VARI_GLOBAL["JUMPER_PORT"]=""
+VARI_GLOBAL["BASTION_ACCOUNT"]=""
+VARI_GLOBAL["BASTION_IP"]=""
+VARI_GLOBAL["BASTION_PORT"]=""
 VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]="/Users/zengweitao/archived/workspace"
 VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]="/workspace"
 # 0 declare 顯式聲明，支持指定數據類型（否則：字符串（default））
@@ -129,9 +129,9 @@ function funcProtectedOmniReinit(){
   # --------------------------------------------------
   # call example :
   # funcProtectedCloudSelector
-  # local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  # local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  # local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  # local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  # local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  # local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   # for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
   #   variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
   #   variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -615,9 +615,9 @@ DOCKERCOMPOSEYML
 
 function funcPublicCloudIndex(){
   funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -632,30 +632,31 @@ function funcPublicCloudIndex(){
     echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
     echo "===================================================================================================="
     rm -rf /root/.ssh/known_hosts
-    echo "ssh -o StrictHostKeyChecking=no -J ${variJumperAccount}@${variJumperIp}:${variJumperPort} root@${variEachIp} -p ${variEachPort}"
+    echo "ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}"
     # 配置一層[SSH]秘鑰
-    # ssh -o StrictHostKeyChecking=no -J ${variJumperAccount}@${variJumperIp}:${variJumperPort} root@${variEachIp} -p ${variEachPort}
+    # ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}
     # 配置二層[SSH]秘鑰
-    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variJumperPort} ${variJumperAccount}@${variJumperIp}" root@${variEachIp} -p ${variEachPort}
+    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}" root@${variEachIp} -p ${variEachPort}
     return 0
   done
   return 0
 }
 
-function funcPublicCloudJumperReinit() {
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
-  # 重啟保留（區別：/tmp重啟清空）
+# 依賴：雲服務器後台配置「SSH」
+function funcPublicCloudBastionReinit() {
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
+  # 重啟保留（區別：「/tmp」重啟清空）
   local variScpPath="/var/tmp"
   tar -czvf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
   # 兼容：係統重裝[START]
-  ssh-keygen -R ${variJumperIp} 2>/dev/null
-  ssh-keygen -R "[${variJumperIp}]:${variJumperPort}" 2>/dev/null
+  ssh-keygen -R ${variBastionIp} 2>/dev/null
+  ssh-keygen -R "[${variBastionIp}]:${variBastionPort}" 2>/dev/null
   # 兼容：係統重裝[END]
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variJumperAccount}@${variJumperIp}:${variScpPath}/
-  scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variJumperAccount}@${variJumperIp}:${variScpPath}/
-  ssh -o StrictHostKeyChecking=no -p ${variJumperPort} ${variJumperAccount}@${variJumperIp} "sudo bash -s" <<JUMPEREOF
+  scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variBastionAccount}@${variBastionIp}:${variScpPath}/
+  scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variBastionAccount}@${variBastionIp}:${variScpPath}/
+  ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
     # --------------------------------------------------
@@ -666,11 +667,11 @@ function funcPublicCloudJumperReinit() {
     touch ~/.ssh/config
     sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config 2>/dev/null
     echo "StrictHostKeyChecking no" >> ~/.ssh/config
-    # 追加密鑰（admin_cicd/對應權限：雲服務器/代碼倉庫）[START]
+    # 追加密鑰（haohaiyou_cicd/對應權限：雲服務器/代碼倉庫）[START]
     touch ~/.ssh/authorized_keys
     sed -i "\|\$(cat ~/.ssh/id_rsa.pub)|d" ~/.ssh/authorized_keys 2>/dev/null
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-    # 追加密鑰（admin_cicd/對應權限：雲服務器/代碼倉庫）[END]
+    # 追加密鑰（haohaiyou_cicd/對應權限：雲服務器/代碼倉庫）[END]
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/*
     chown \$(whoami):\$(whoami) ~/.ssh/*
@@ -713,22 +714,21 @@ function funcPublicCloudJumperReinit() {
     echo "[ omni ] git reset --hard origin/main finished"
     chmod 777 -R .
     ./init/system/system.sh init
-    [ -f /etc/bashrc ] && source /etc/bashrc
-    [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+    [ -f ~/.bashrc ] && source ~/.bashrc
     # omni.system init[END]
     # --------------------------------------------------
     /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
-    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudCoscliReinit
-    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudTccliReinit
-JUMPEREOF
+    omni.haohaiyou cloudCoscliReinit
+    omni.haohaiyou cloudTccliReinit
+BASTIONEOF
   return 0
 }
 
 function funcPublicCloudIptableReinit(){
   funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -740,7 +740,7 @@ function funcPublicCloudIptableReinit(){
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -836,7 +836,7 @@ function funcPublicCloudIptableReinit(){
         # （3）slave main[END]
         # --------------------------------------------------
 SLAVEEOF
-JUMPEREOF
+BASTIONEOF
   done
   return 0
 }
@@ -850,9 +850,9 @@ function funcPublicCloudSkeletonReinit() {
   variCrontabEnviUri="/var/spool/cron/root"
   # slave variable[END]
   funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -864,7 +864,7 @@ function funcPublicCloudSkeletonReinit() {
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -947,7 +947,7 @@ function funcPublicCloudSkeletonReinit() {
           #（3）slave main[END]
           # --------------------------------------------------
 SLAVEEOF
-JUMPEREOF
+BASTIONEOF
   done
   return 0
 }
@@ -1118,18 +1118,18 @@ DOCKERCOMPOSEYML
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（[backend]include：admin_cicd / zengweitao_yx044r26）
+ssh（[backend]include：haohaiyou_cicd / zengweitao_yx044r26）
 omni.haohaiyou cloudPodReinit
 MARK
 function funcPublicCloudPodReinit(){
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   local variSlaveAccount="ubuntu"
   local variSlaveIp="101.32.126.179"
   local variSlavePort="22"
   local variScpPath="/var/tmp"
-  ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+  ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variSlaveIp} ..."
       echo "===================================================================================================="
@@ -1188,7 +1188,7 @@ function funcPublicCloudPodReinit(){
         # --------------------------------------------------
         history -c
 SLAVEEOF
-JUMPEREOF
+BASTIONEOF
   return 0
 }
 
@@ -1207,9 +1207,9 @@ function funcPublicCloudUnicornReinit() {
   local variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
   local variBranch=$2
   local variAutoScalingStatus=${3:-0}
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   local variScpStatus=1
   local variScpOnce=0
   local variScpPath="/var/tmp"
@@ -1268,10 +1268,10 @@ function funcPublicCloudUnicornReinit() {
     rm -rf ~/.ssh/known_hosts
     if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
       md5sum ${variHostMachineProjectPath}/bin/${variBinName}
-      scp -P ${variJumperPort} -o StrictHostKeyChecking=no ${variHostMachineProjectPath}/bin/${variBinName} ${variJumperAccount}@${variJumperIp}:${variScpPath}/
+      scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${variHostMachineProjectPath}/bin/${variBinName} ${variBastionAccount}@${variBastionIp}:${variScpPath}/
       variScpOnce=1
     fi
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -T ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -1342,7 +1342,7 @@ function funcPublicCloudUnicornReinit() {
         # --------------------------------------------------
         exit \\\$?
 SLAVEEOF
-JUMPEREOF
+BASTIONEOF
     # 統計「執行狀態」/3[START]
     if [[ $? -eq 0 ]]; then
       variSucceededCounter=$((variSucceededCounter + 1))
@@ -1604,7 +1604,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
 
 :<<'MARK'
 [依賴]係統預裝：
-ssh（[backend]include：admin_cicd）
+ssh（[backend]include：haohaiyou_cicd）
 omni.haohaiyou cloudPodReinit
 # ----------
 omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
@@ -1695,9 +1695,9 @@ function funcPublicCloudUnicornReinit_Dynamic() {
 
 function funcPublicCloudUnicornCheck() {
   funcProtectedCloudSelector
-  local variJumperAccount=$(funcProtectedPullEncryptEnvi "JUMPER_ACCOUNT")
-  local variJumperIp=$(funcProtectedPullEncryptEnvi "JUMPER_IP")
-  local variJumperPort=$(funcProtectedPullEncryptEnvi "JUMPER_PORT")
+  local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
+  local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
+  local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -1709,7 +1709,7 @@ function funcPublicCloudUnicornCheck() {
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variJumperPort} -t ${variJumperAccount}@${variJumperIp} <<JUMPEREOF
+    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
@@ -1720,7 +1720,7 @@ function funcPublicCloudUnicornCheck() {
         ls -lhS ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn/runtime | grep -v '^d' | head -n 11
         df -h
 SLAVEEOF
-JUMPEREOF
+BASTIONEOF
   done
   return 0
 }
