@@ -86,35 +86,35 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 
 # ##################################################
 # protected function[START]
-function funcProtectedOmniReinit(){
-  # git[START]
-  if ! command -v git &> /dev/null; then
-    [ -f /etc/redhat-release ] && yum install -y git
-    [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
-  fi
-  # git[END]
-  # omni.system init[START]
-  mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime"
-  if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
-    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
-  else
-    rm -rf "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
-    mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
-    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
-    git clone https://github.com/chunio/omni.git
-    cd ./omni
-  fi
-  echo "[ omni ] git fetch origin ..."
-  git fetch origin
-  echo "[ omni ] git fetch origin finished"
-  echo "[ omni ] git reset --hard origin/main ..."
-  git reset --hard origin/main
-  echo "[ omni ] git reset --hard origin/main finished"
-  chmod 777 -R .
-  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh init 1
-  # omni.system init[END]
-  return 0
-}
+#function funcProtectedOmniReinit(){
+#  # git[START]
+#  if ! command -v git &> /dev/null; then
+#    [ -f /etc/redhat-release ] && yum install -y git
+#    [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+#  fi
+#  # git[END]
+#  # omni.system init[START]
+#  mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime"
+#  if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+#    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
+#  else
+#    rm -rf "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni"
+#    mkdir -p "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
+#    cd "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio"
+#    git clone https://github.com/chunio/omni.git
+#    cd ./omni
+#  fi
+#  echo "[ omni ] git fetch origin ..."
+#  git fetch origin
+#  echo "[ omni ] git fetch origin finished"
+#  echo "[ omni ] git reset --hard origin/main ..."
+#  git reset --hard origin/main
+#  echo "[ omni ] git reset --hard origin/main finished"
+#  chmod 777 -R .
+#  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh init 1
+#  # omni.system init[END]
+#  return 0
+#}
 
   # --------------------------------------------------
   # call example :
@@ -536,23 +536,20 @@ function funcPublicCloudIndex(){
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+    echo "[ command ] ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}"
     echo "===================================================================================================="
     echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
     echo "===================================================================================================="
-    rm -rf /root/.ssh/known_hosts
-    echo "ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}"
-    # 配置一層[SSH]秘鑰
-    # ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}
-    # 配置二層[SSH]秘鑰
     ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}" root@${variEachIp} -p ${variEachPort}
     return 0
   done
@@ -577,7 +574,7 @@ function funcPublicCloudBastionReinit() {
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
     # --------------------------------------------------
-    # ssh[START]
+    # ssh（include:node && repository）[START]
     tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
     /usr/bin/mv ~/.ssh/ssh/* ~/.ssh
     rm -rf ~/.ssh/ssh
@@ -592,7 +589,7 @@ function funcPublicCloudBastionReinit() {
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/*
     chown \$(whoami):\$(whoami) ~/.ssh/*
-    # ssh[END]
+    # ssh（include:node && repository）[END]
     # --------------------------------------------------
     # git[START]
     if ! command -v git &> /dev/null; then
@@ -602,6 +599,7 @@ function funcPublicCloudBastionReinit() {
     # git[END]
     # --------------------------------------------------
     # omni.system init[START]
+    # 安裝至「root」
     mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
     if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
       cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
@@ -612,19 +610,21 @@ function funcPublicCloudBastionReinit() {
       git clone https://github.com/chunio/omni.git
       cd ./omni
     fi
+    # ----------
     echo "[ omni ] git fetch origin ..."
     git fetch origin
     echo "[ omni ] git fetch origin finished"
+    # ----------
     echo "[ omni ] git reset --hard origin/main ..."
     git reset --hard origin/main
     echo "[ omni ] git reset --hard origin/main finished"
+    # ----------
+    /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
     chmod 777 -R .
     ./init/system/system.sh init 1
-    [ -f ~/.bashrc ] && source ~/.bashrc
+    source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     # omni.system init[END]
     # --------------------------------------------------
-    /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
-    source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     omni.haohaiyou cloudCoscliReinit
     omni.haohaiyou cloudTccliReinit
 BASTIONEOF
@@ -637,16 +637,16 @@ function funcPublicCloudIptableReinit(){
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    rm -rf /root/.ssh/known_hosts
+    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    ssh-keygen -R ${variEachIp} >/dev/null 2>&1
     ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
@@ -1109,7 +1109,7 @@ function funcPublicCloudUnicornReinit() {
     "branch : main，feature/.../..."
     "coscli : 1/able, 0/disable（default）"
   )
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 2 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variModule=$1
   local variModuleUpper=$(echo "${variModule}" | tr 'a-z' 'A-Z')
   local variBranch=$2
@@ -1125,8 +1125,6 @@ function funcPublicCloudUnicornReinit() {
   local variBinMd5=$(md5sum ${variHostMachineProjectPath}/bin/${variBinName} | awk '{print $1}')
   # 統計「執行狀態」/1[START]
   local varSelectedCounter=0
-  local variSucceededCounter=0
-  local variFailedAbstract=""
   # 統計「執行狀態」/1[END]
   # 彈性伸縮/1[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
@@ -1137,18 +1135,18 @@ function funcPublicCloudUnicornReinit() {
   # 彈性伸縮/1[END]
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
     # 檢測目標節點環節是否支持當前模塊[START]
-    variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
+    local variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
     if [[ $variEachValueLower != *${variModule}* && $variEachValueLower != *master* ]]; then
       echo "invalid selection : [ ${variEachValue} ]"
       continue
@@ -1165,30 +1163,28 @@ function funcPublicCloudUnicornReinit() {
     # 自動兼容係統類型[START]
     local variEachSlaveAccount="root"
     local variEachSudoCommand=""
-    local variEachGitInstallCommand="yum install -y git"
     if [[ "${variEachOs}" == "UBUNTU" ]]; then
       variEachSlaveAccount="ubuntu"
       variEachSudoCommand="sudo bash -s"
-      variEachGitInstallCommand="apt-get update && apt-get install -y git"
     fi
     # 自動兼容係統類型[END]
-    rm -rf ~/.ssh/known_hosts
+    ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
     if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
       md5sum ${variHostMachineProjectPath}/bin/${variBinName}
       scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${variHostMachineProjectPath}/bin/${variBinName} ${variBastionAccount}@${variBastionIp}:${variScpPath}/
       variScpOnce=1
     fi
-    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-      rm -rf ~/.ssh/known_hosts
+    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
+      ssh-keygen -R ${variEachIp} >/dev/null 2>&1
       if [[ ${variScpStatus} -eq 1 ]]; then
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
       fi
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
+        echo "===================================================================================================="
+        echo ">> [ SLAVE ] ${variEachValue} ..."
+        echo "===================================================================================================="
         # --------------------------------------------------
         # （一）envi[START]
         # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
@@ -1202,7 +1198,7 @@ function funcPublicCloudUnicornReinit() {
         fi
         # （二）資源校驗[END]
         # --------------------------------------------------
-        # （三）ssh init[START]
+        # （三）ssh（include:node && repository）[START]
         tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         touch ~/.ssh/config
@@ -1210,19 +1206,20 @@ function funcPublicCloudUnicornReinit() {
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
         chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # （三）ssh init[END]
+        # （三）ssh（include:node && repository）[END]
         # --------------------------------------------------
         # （四）omni.system init[START]
         if ! command -v git &> /dev/null; then
-          ${variEachGitInstallCommand}
+          [ -f /etc/redhat-release ] && yum install -y git
+          [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
         fi
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
         if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
-          cd {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else
-          rm -rf {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
-          mkdir -p {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
-          cd {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
           git clone https://github.com/chunio/omni.git
           cd ./omni
         fi
@@ -1236,39 +1233,26 @@ function funcPublicCloudUnicornReinit() {
         echo "[ omni ] git reset --hard origin/main finished"
         # ----------
         chmod 777 -R .
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
         ./init/system/system.sh init
-        [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
-        [ -f /etc/bashrc ] && source /etc/bashrc
-        /usr/bin/cp -rf ${variScpPath}/encrypt.envi {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
         # （四）omni.system init[END]
         # --------------------------------------------------
         # （五）common[START]
-        echo " ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}"
-        {VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Common ${variModuleUpper} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
+        echo "[ command ] omni.haohaiyou cloudUnicornReinit_Common ${variEachModule} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}"
+        omni.haohaiyou cloudUnicornReinit_Common ${variModuleUpper} ${variEachService} ${variEachLabel} ${variEachDomain} ${variEachRegion} ${variBranch}
         # （五）common[END]
         # --------------------------------------------------
         exit \\\$?
 SLAVEEOF
 BASTIONEOF
-    # 統計「執行狀態」/3[START]
-    if [[ $? -eq 0 ]]; then
-      variSucceededCounter=$((variSucceededCounter + 1))
-      # 統計「執行狀態」/4[END]
-    else
-      variFailedAbstract="${variFailedAbstract} ${variEachIndex}(${variEachIp})"
-    fi
-    # 統計「執行狀態」/3[END]
   done
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
-    # TODO:關閉所有動態機器
+    # TODO:遷移至堡壘機器
     omni.haohaiyou.sh cloudUnicornReinit_Ascli
   fi
   # 彈性伸縮/3[START]
-  # 統計「執行狀態」/4[START]
-  echo -e "\nsucceeded : ${variSucceededCounter}/${varSelectedCounter}\n"
-  [[ -n "${variFailedAbstract}" ]] && echo -e "\nfailed : ${variFailedAbstract}\n"
-  # 統計「執行狀態」/4[END]
   return 0
 }
 
@@ -1281,7 +1265,7 @@ function funcPublicCloudUnicornReinit_Common() {
     "region : SINGAPORE，USEAST"
     "branch : main，feature/.../..."
   )
-  funcProtectedCheckRequiredParameter 6 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 6 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   # ----------
   local variModule=$1
   local variService=$2
@@ -1352,8 +1336,8 @@ function funcPublicCloudUnicornReinit_Common() {
     cd unicorn
     git checkout ${variBranch}
   fi
-  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+  omni.system port ${variHttpPort} kill
+  omni.system port ${variGrpcPort} kill
   mkdir -p ./bin
   chmod 777 -R .
   /usr/bin/cp -rf ${variScpPath}/${variBinName} ./bin/${variBinName}
@@ -1388,14 +1372,14 @@ function funcPublicCloudUnicornReinit_Common() {
     # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
     sed -i "\#cloudUnicornSupervisor ${variParameter}#d" "${variCrontabEnviUri}"
   fi
-  echo "* * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+  echo "* * * * * omni.haohaiyou cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   # （1）supervisor/異常重啟[END]
   # （2）僅限「variService=MASTER」[START]
   if [[ ${variService} == "MASTER" ]]; then
     if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
       sed -i "/cloudUnicornMinutelyCrontab/d" "${variCrontabEnviUri}"
     fi
-    echo "* * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+    echo "* * * * * omni.haohaiyou cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   fi
   # （2）僅限「variService=MASTER」[END]
   cat "${variCrontabEnviUri}"
@@ -1403,7 +1387,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # （三）crontab[END]
   # --------------------------------------------------
   # （四）host[START]
-  ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudHostReinit
+  omni.haohaiyou cloudHostReinit
   # （四）host[END]
   # --------------------------------------------------
   return 0
@@ -1469,7 +1453,7 @@ function funcPublicCloudUnicornReinit_Ascli(){
           return 1
           ;;
     esac
-    variEachAutoScalingGroupName=$(echo "deployment-${variEachDomain}-${variEachModule}-${variEachService}-${variEachRegion}" | tr 'A-Z' 'a-z')
+    local variEachAutoScalingGroupName=$(echo "deployment-${variEachDomain}-${variEachModule}-${variEachService}-${variEachRegion}" | tr 'A-Z' 'a-z')
     # 獲取「關聯實例」列表
     local variDescribeAutoScalingInstancesJson=$(tccli as DescribeAutoScalingInstances --region "${variEachRegionOption}" --Limit 100 2>/dev/null)
     local variInstanceIdSlice=$(echo "${variDescribeAutoScalingInstancesJson}" | python3 -c "import sys, json; data=json.load(sys.stdin); print(' '.join([i.get('InstanceId') for i in data.get('AutoScalingInstanceSet', []) if i.get('AutoScalingGroupName') == '${variEachAutoScalingGroupName}']))" 2>/dev/null)
@@ -1527,9 +1511,6 @@ MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
   # omni.system init[START]
-  mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}runtime
-  cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
-  # ----------
   echo "[ omni ] git fetch origin ..."
   git fetch origin
   echo "[ omni ] git fetch origin finished"
@@ -1538,10 +1519,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   git reset --hard origin/main
   echo "[ omni ] git reset --hard origin/main finished"
   # ----------
-  chmod 777 -R .
-  ./init/system/system.sh init
-  [ -f /etc/bashrc ] && source /etc/bashrc
-  [ -f /etc/bash.bashrc ] && source /etc/bash.bashrc
+  omni.system init
   # omni.system init[END]
   # --------------------------------------------------
   local variParameterDescMulti=(
@@ -1550,7 +1528,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
     "service : BID，TRACK，MASTER"
     "region : SINGAPORE，USEAST"
   )
-  funcProtectedCheckRequiredParameter 4 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 4 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variDomain=$1
   local variModule=$2
   local variService=$3
@@ -1636,7 +1614,7 @@ BASTIONEOF
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
   local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
-  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 1 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   variLabel=$1
   # 使用「/」分割 >> 提取第二的元素 >> 轉至小寫
   variModuleName=$(echo "${variLabel}" | cut -d'/' -f2 | tr 'A-Z' 'a-z')
