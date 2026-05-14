@@ -89,19 +89,8 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
 function funcProtectedOmniReinit(){
   # git[START]
   if ! command -v git &> /dev/null; then
-    local variOperatingSystem=""
-    [ -f /etc/os-release ] && variOperatingSystem=$(. /etc/os-release && echo "${ID}")
-    case "${variOperatingSystem}" in
-      "centos"|"rhel"|"rocky"|"almalinux")
-        yum install -y git
-        ;;
-      "ubuntu"|"debian")
-        apt-get update && apt-get install -y git
-        ;;
-      *)
-        yum install -y git 2>/dev/null || apt-get update && apt-get install -y git 2>/dev/null
-        ;;
-    esac
+    [ -f /etc/redhat-release ] && yum install -y git
+    [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
   fi
   # git[END]
   # omni.system init[START]
@@ -570,7 +559,7 @@ function funcPublicCloudIndex(){
   return 0
 }
 
-# 依賴：雲服務器後台配置「SSH」
+# 重置「堡壘機器」（依賴：雲服務器後台配置「SSH」）
 function funcPublicCloudBastionReinit() {
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
@@ -583,7 +572,7 @@ function funcPublicCloudBastionReinit() {
   ssh-keygen -R "[${variBastionIp}]:${variBastionPort}" 2>/dev/null
   # 兼容：係統重裝[END]
   scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz ${variBastionAccount}@${variBastionIp}:${variScpPath}/
-  scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/encrypt.envi ${variBastionAccount}@${variBastionIp}:${variScpPath}/
+  scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi ${variBastionAccount}@${variBastionIp}:${variScpPath}/
   ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
@@ -607,19 +596,8 @@ function funcPublicCloudBastionReinit() {
     # --------------------------------------------------
     # git[START]
     if ! command -v git &> /dev/null; then
-      variOperatingSystem=""
-      [ -f /etc/os-release ] && variOperatingSystem=\$(. /etc/os-release && echo "\${ID}")
-      case "\${variOperatingSystem}" in
-        "centos"|"rhel"|"rocky"|"almalinux")
-          yum install -y git
-          ;;
-        "ubuntu"|"debian")
-          apt-get update && apt-get install -y git
-          ;;
-        *)
-          yum install -y git 2>/dev/null || apt-get update && apt-get install -y git 2>/dev/null
-          ;;
-      esac
+      [ -f /etc/redhat-release ] && yum install -y git
+      [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
     fi
     # git[END]
     # --------------------------------------------------
@@ -641,11 +619,12 @@ function funcPublicCloudBastionReinit() {
     git reset --hard origin/main
     echo "[ omni ] git reset --hard origin/main finished"
     chmod 777 -R .
-    ./init/system/system.sh init
+    ./init/system/system.sh init 1
     [ -f ~/.bashrc ] && source ~/.bashrc
     # omni.system init[END]
     # --------------------------------------------------
     /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+    source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     omni.haohaiyou cloudCoscliReinit
     omni.haohaiyou cloudTccliReinit
 BASTIONEOF
