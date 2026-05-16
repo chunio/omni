@@ -44,13 +44,15 @@ function funcPublicServiceReinit(){
   return 0
 }
 
-function funcPublicReadmeUpset(){
+function funcPublicTemplateReadmeMdUpsert(){
   cat > /README.md <<EOF
-sudo -i
+#　sudo -i
 cd /Users/zengweitao/archived/workspace/repository/chunio
+chmod -R 777 ./omni 2> /dev/null
 ./omni/init/system/system.sh init 1
 source /root/.omni.ubuntu/omni.ubuntu.sh
-omni.docker deveEnviReinit 1
+omni.system proxy 1 7897
+omni.docker deveEnviReinit 0 0
 EOF
   echo "--------------------------------------------------"
   cat /README.md

@@ -122,6 +122,8 @@ function funcPublicDeveEnviReinit(){
   # reset[END]
   # ----------
   # docker pull image[START]
+  docker pull chunio/go:1.25.0
+  docker pull chunio/php:haohaiyou
   omni.redis docker
   omni.mongo docker
   omni.kafka docker
@@ -140,8 +142,8 @@ function funcPublicDeveEnviReinit(){
   # ----------
   [ "${variStatus}" -eq 0 ] && docker rm -f $(docker ps -aq) 2> /dev/null || true
   # ----------
-  docker ps -a
   docker images
+  docker ps -a
   return 0
 }
 

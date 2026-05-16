@@ -15,6 +15,12 @@ fi
 # compatible && validator[END]
 # ##################################################
 
+# [已驗證]交替執行兩個不同的「SOURCE」級別腳本，同名{變量 && 函數}（如：${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}）不會覆蓋（即：互相獨立），測試用例：
+# function funcPublicEchoBuiltinUnitRootPath() {
+#    omni.system echoBuiltinUnitRootPath # /Users/zengweitao/archived/workspace/repository/chunio/omni/init/system
+#    echo ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} # /Users/zengweitao/archived/workspace/repository/chunio/omni/module/haohaiyou
+#    return 0
+# }
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]

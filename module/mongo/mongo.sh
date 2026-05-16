@@ -53,7 +53,7 @@ EOF
     cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   mongodb7:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: mongo
     ports:
       - "27017:27017"

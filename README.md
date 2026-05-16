@@ -32,7 +32,7 @@ brew install bash
 rehash # 重置命令路徑緩存
 git clone https://github.com/chunio/omni.git
 find ./omni -type f -name "*.sh" ! -path "*/.git/*" -exec chmod +x {} \;
-chmod -R 777 ./omni
+chmod -R 777 ./omni 2> /dev/null
 ./omni/init/system/system.sh init 1
 # darwin[END]
 ```

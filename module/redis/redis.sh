@@ -37,7 +37,7 @@ REDISCONF
   cat <<DOCKERCOMPOSEYML >  ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   redis:
-    image: redis:7.2.5
+    image: redis:8.0
     container_name: redis
     ports:
       - "6379:6379"

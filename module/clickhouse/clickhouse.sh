@@ -75,6 +75,14 @@ function funcPublicDocker(){
     <builtin_dictionaries_reload_interval>3600</builtin_dictionaries_reload_interval>
     <max_session_timeout>3600</max_session_timeout>
     <default_session_timeout>60</default_session_timeout>
+    <user_directories>
+        <users_xml>
+            <path>/etc/clickhouse-server/users.xml</path>
+        </users_xml>
+        <local_directory>
+            <path>/var/lib/clickhouse/access/</path>
+        </local_directory>
+    </user_directories>
 </yandex>
 CONFIGXML
   # [固定]文件名稱「users.xml」
@@ -115,7 +123,8 @@ USERSXML
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8.2.3
+    # image: clickhouse/clickhouse-server:24.8.2.3
+    image: clickhouse/clickhouse-server:25.3.3.42
     container_name: clickhouse
     # user: "101:101"
     environment:
