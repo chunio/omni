@@ -389,9 +389,9 @@ function funcPublicSkeleton(){
   variImagePattern=${1:-"chunio/php:haohaiyou"}
   variContainerName="skeleton"
   # project path[START]
-  variHostMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  variProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
   if [ -d "/Users/zengweitao/archived/" ];then
-    variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+    variProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
   fi
   # project path[END]
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
@@ -414,9 +414,10 @@ services:
     #   - "host.docker.internal:host-gateway"
     # 開啟VPN/代理[END]
     volumes:
-      - /mnt/mac/Users:/Users
+      # - /mnt/mac/Users:/Users
+      - ${variProjectPath}:${variProjectPath}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    working_dir: ${variHostMachineProjectPath}
+    working_dir: ${variProjectPath}
     networks:
       - common
     ports:
@@ -434,7 +435,7 @@ DOCKERCOMPOSEYML
   docker compose -p ${variContainerName} up --build -d
   docker update --restart=always ${variContainerName}
   docker ps -a | grep ${variContainerName}
-  cd ${variHostMachineProjectPath}
+  cd ${variProjectPath}
   docker exec -it ${variContainerName} /bin/bash
   return 0
 }
