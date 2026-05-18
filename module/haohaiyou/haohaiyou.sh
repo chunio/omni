@@ -60,7 +60,7 @@ MARK
 #    return 0
 # }
 declare -A VARI_GLOBAL
-VARI_GLOBAL["BUILTIN_BASH_ENVI"]="SOURCE"
+VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
 VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
 if [ "${VARI_GLOBAL["BUILTIN_BASH_ENVI"]}" = "SOURCE" ];then
@@ -557,11 +557,11 @@ function funcPublicCloudIndex(){
     local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     local variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
-    echo "[ command ] ssh -o StrictHostKeyChecking=no -J ${variBastionAccount}@${variBastionIp}:${variBastionPort} root@${variEachIp} -p ${variEachPort}"
+    echo "[ command ] ssh -o StrictHostKeyChecking=no -o ProxyCommand=\"ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}\" ubuntu@${variEachIp} -p ${variEachPort}"
     echo "===================================================================================================="
-    echo ">> [ SLAVE ] ${variEachSlaveValue} ..."
+    echo ">> [ SLAVE ] ${variEachValue} ..."
     echo "===================================================================================================="
-    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}" root@${variEachIp} -p ${variEachPort}
+    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}" ubuntu@${variEachIp} -p ${variEachPort}
     return 0
   done
   return 0
