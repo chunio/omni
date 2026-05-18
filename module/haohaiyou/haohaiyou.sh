@@ -386,14 +386,15 @@ root@${variContainerId}:/# exit
 docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
 MARK
 function funcPublicSkeleton(){
-  variImagePattern=${1:-"chunio/php:haohaiyou"}
-  variContainerName="skeleton"
-  # project path[START]
-  variProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  local variImagePattern=${1:-"chunio/php:haohaiyou"}
+  local variContainerName="skeleton"
+  # workspace path[START]
+  local variWorkspacePath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}"
   if [ -d "/Users/zengweitao/archived/" ];then
-    variProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+    variWorkspacePath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}"
   fi
-  # project path[END]
+  # workspace path[END]
+  local variProjectPath="${variWorkspacePath}/repository/haohaiyou/skeleton"
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/usr/bin/env bash
@@ -415,7 +416,7 @@ services:
     # 開啟VPN/代理[END]
     volumes:
       # - /mnt/mac/Users:/Users
-      - ${variProjectPath}:${variProjectPath}
+      - ${variWorkspacePath}:${variWorkspacePath}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
     working_dir: ${variProjectPath}
     networks:
