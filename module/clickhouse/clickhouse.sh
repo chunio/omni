@@ -42,10 +42,28 @@ function funcPublicDocker(){
   mkdir -p ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
   chmod -R 777 ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
   # ----------
+  rm -rf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.d
+  mkdir -p ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.d
+  # ----------
   local variSchemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema"
   local variClickhouseUsername=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_USERNAME")
   local variClickhousePassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_PASSWORD")
   local variClickhousePasswordSha256=$(echo -n "${variClickhousePassword}" | sha256sum | cut -d' ' -f1)
+  cat <<DEFAULTUSERXML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.d/default-user.xml
+<clickhouse>
+    <users>
+        <${variClickhouseUsername}>
+            <password_sha256_hex>${variClickhousePasswordSha256}</password_sha256_hex>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+            <profile>${variClickhouseUsername}</profile>
+            <quota>${variClickhouseUsername}</quota>
+            <access_management>1</access_management>
+        </${variClickhouseUsername}>
+    </users>
+</clickhouse>
+DEFAULTUSERXML
   cat <<CONFIGXML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/config.xml
 <yandex>
     <logger>
@@ -135,6 +153,7 @@ services:
     volumes:
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/config.xml:/etc/clickhouse-server/config.xml
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.xml:/etc/clickhouse-server/users.xml
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.d:/etc/clickhouse-server/users.d
       - clickhouse-data:/var/lib/clickhouse
       # - /windows:/windows
       # - ${variSchemaPath}:/docker-entrypoint-initdb.d
@@ -198,18 +217,18 @@ DOCKERCOMPOSEYML
 
 function funcPublicImportBusinessData_Haohaiyou() {
   local variContainerName="clickhouse"
-  local variShemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema/haohaiyou"
+  local varSchemaMasterPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema/haohaiyou"
   local variClickhouseUsername=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_USERNAME")
   local variClickhousePassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_PASSWORD")
-  if [ ! -d "${variShemaPath}" ]; then
-    echo "[ warn ] ${variShemaPath} is empty(0)"
+  if [ ! -d "${varSchemaMasterPath}" ]; then
+    echo "[ warn ] ${varSchemaMasterPath} is empty(0)"
     return 1
   fi
   shopt -s nullglob
-  local variSqlUriSlice=("${variShemaPath}"/*.sql)
+  local variSchemeSlavePathSlice=("${varSchemaMasterPath}"/*/)
   shopt -u nullglob
-  if [ ${#variSqlUriSlice[@]} -eq 0 ]; then
-    echo "[ warn ] ${variShemaPath} is empty(1)"
+  if [ ${#variSchemeSlavePathSlice[@]} -eq 0 ]; then
+    echo "[ warn ] ${varSchemaMasterPath} is empty(1)"
     return 0
   fi
   local variConteinerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null)
@@ -219,27 +238,37 @@ function funcPublicImportBusinessData_Haohaiyou() {
   fi
   local variRetryNum=30 # 重試次數
   local variRetryInterval=2 # 重試間隔(unit:second)
-  local variEachSqlUri variImportStatus variEachCommand
-  for variEachSqlUri in "${variSqlUriSlice[@]}"; do
-    echo "[ import ] ${variEachSqlUri}"
-    variImportStatus="failed" # default
-    for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
-      variEachCommand="docker exec -i ${variContainerName} clickhouse-client -n --user=${variClickhouseUsername}"
-      if [ -n "${variClickhousePassword}" ]; then
-        variEachCommand="${variEachCommand} --password=${variClickhousePassword}"
-      fi
-      if cat "${variEachSqlUri}" | eval "${variEachCommand}"; then
-        variImportStatus="succeeded"
-        funcProtectedTrace "${variEachSqlUri} import ${variImportStatus}"
-        break
-      else
-        echo "[ retry ] ${variRetryIndex}/${variRetryNum}  ..."
-        sleep ${variRetryInterval}
+  local variEachSchemaSlavePath variEachSqlUri variImportStatus variEachCommand
+  local variSqlUriSlice
+  for variEachSchemaSlavePath in "${variSchemeSlavePathSlice[@]}"; do
+    shopt -s nullglob
+    variSqlUriSlice=("${variEachSchemaSlavePath}"*.sql)
+    shopt -u nullglob
+    if [ ${#variSqlUriSlice[@]} -eq 0 ]; then
+      echo "[ warn ] ${variEachSchemaSlavePath} is empty(2)"
+      continue
+    fi
+    for variEachSqlUri in "${variSqlUriSlice[@]}"; do
+      echo "[ import ] ${variEachSqlUri}"
+      variImportStatus="failed" # default
+      for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+        variEachCommand="docker exec -i ${variContainerName} clickhouse-client -n --user=${variClickhouseUsername}"
+        if [ -n "${variClickhousePassword}" ]; then
+          variEachCommand="${variEachCommand} --password=${variClickhousePassword}"
+        fi
+        if cat "${variEachSqlUri}" | eval "${variEachCommand}"; then
+          variImportStatus="succeeded"
+          funcProtectedTrace "${variEachSqlUri} import ${variImportStatus}"
+          break
+        else
+          echo "[ retry ] ${variRetryIndex}/${variRetryNum}  ..."
+          sleep ${variRetryInterval}
+        fi
+      done
+      if [ "$variImportStatus" = "failed" ]; then
+        funcProtectedTodo "${variEachSqlUri} import ${variImportStatus}"
       fi
     done
-    if [ "$variImportStatus" = "failed" ]; then
-      funcProtectedTodo "${variEachSqlUri} import ${variImportStatus}"
-    fi
   done
   return 0
 }

@@ -130,7 +130,7 @@ DOCKERCOMPOSEYML
 
 function funcPublicImportBusinessData_Haohaiyou() {
   local variContainerName="mysql"
-  local variShemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/shema/haohaiyou"
+  local variShemaPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema/haohaiyou"
   local variMysqlUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
   local variMysqlPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
   if [ ! -d "${variShemaPath}" ]; then
@@ -172,6 +172,66 @@ function funcPublicImportBusinessData_Haohaiyou() {
     if [ "$variImportStatus" = "failed" ]; then
       funcProtectedTodo "${variEachSqlUri} import ${variImportStatus}"
     fi
+  done
+  return 0
+}
+
+function funcPublicImportBusinessData_Haohaiyou() {
+  local variContainerName="mysql"
+  local varSchemaMasterPath="${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/schema/haohaiyou"
+  local variMysqlUsername=$(funcProtectedPullEncryptEnvi "MYSQL_USERNAME")
+  local variMysqlPassword=$(funcProtectedPullEncryptEnvi "MYSQL_PASSWORD")
+  if [ ! -d "${varSchemaMasterPath}" ]; then
+    echo "[ warn ] ${varSchemaMasterPath} is empty(0)"
+    return 1
+  fi
+  shopt -s nullglob
+  local variSchemeSlavePathSlice=("${varSchemaMasterPath}"/*/)
+  shopt -u nullglob
+  if [ ${#variSchemeSlavePathSlice[@]} -eq 0 ]; then
+    echo "[ warn ] ${varSchemaMasterPath} is empty(1)"
+    return 0
+  fi
+  local variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null)
+  if [ "$variContainerStatus" != "running" ]; then
+    echo "[ error ] '${variContainerName}' is ${variContainerStatus}"
+    return 1
+  fi
+  local variRetryNum=30 # 重試次數
+  local variRetryInterval=2 # 重試間隔(unit:second)
+  local variEachSchemaSlavePath variEachSqlUri variImportStatus variEachCommand
+  local variSqlUriSlice
+  for variEachSchemaSlavePath in "${variSchemeSlavePathSlice[@]}"; do
+    shopt -s nullglob
+    variSqlUriSlice=("${variEachSchemaSlavePath}"*.sql)
+    shopt -u nullglob
+    if [ ${#variSqlUriSlice[@]} -eq 0 ]; then
+      echo "[ warn ] ${variEachSchemaSlavePath} is empty(2)"
+      continue
+    fi
+    for variEachSqlUri in "${variSqlUriSlice[@]}"; do
+      echo "[ import ] ${variEachSqlUri}"
+      variImportStatus="failed" # default
+      for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
+        variEachCommand="docker exec -i ${variContainerName} mysql -u${variMysqlUsername}"
+        if [ -n "${variMysqlPassword}" ]; then
+          variEachCommand="${variEachCommand} -p${variMysqlPassword}"
+        fi
+        cat "${variEachSqlUri}" | eval "${variEachCommand}" 2>&1
+        local variEachCommandExitCode=$?
+        if [ ${variEachCommandExitCode} -eq 0 ]; then
+          variImportStatus="succeeded"
+          funcProtectedTrace "${variEachSqlUri} import ${variImportStatus}"
+          break
+        else
+          echo "[ retry ] ${variRetryIndex}/${variRetryNum}  ..."
+          sleep ${variRetryInterval}
+        fi
+      done
+      if [ "$variImportStatus" = "failed" ]; then
+        funcProtectedTodo "${variEachSqlUri} import ${variImportStatus}"
+      fi
+    done
   done
   return 0
 }

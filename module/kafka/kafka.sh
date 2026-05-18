@@ -85,15 +85,30 @@ DOCKERCOMPOSEYML
 function funcPublicImportBusinessData_Haohaiyou() {
   local variContainerName="kafka"
   local variTopicSlice=(
-    "dsp_budo_stat_topic"
-    "dsp_impin_stat_topic"
-    "dsp_impre_stat_topic"
-    "dsp_imp_stat_topic"
-    "dsp_imp_stat02_topic"
-    "dsp_imp_stream_topic"
-    "dsp_imp_streamstate02_topic"
-    "dsp_imp_streamstate03_topic"
-    "dsp_notice_stat_topic"
+    # ----------
+    paddlewaver_adx_dsp_stat_topic
+    paddlewaver_adx_imp_stat_topic
+    paddlewaver_adx_imp_stream_topic
+    paddlewaver_adx_landing_page_topic
+    # ----------
+    paddlewaver_dsp_budo_stat_topic
+    paddlewaver_dsp_impin_stat_topic
+    paddlewaver_dsp_impre_stat_topic
+    paddlewaver_dsp_imp_stat03_topic
+    paddlewaver_dsp_imp_stream_topic
+    paddlewaver_dsp_imp_streamstate03_topic
+    paddlewaver_dsp_notice_stat_topic
+    # ----------
+    paddlewaver_adx_sclick_bid_request_sg_topic
+    paddlewaver_adx_sclick_notice_impression_sg_topic
+    paddlewaver_adx_sclick_bid_request_us_topic
+    paddlewaver_adx_sclick_notice_impression_us_topic
+    # ----------
+    paddlewaver_dsp_sclick_bid_request_sg_topic
+    paddlewaver_dsp_sclick_notice_impression_sg_topic
+    paddlewaver_dsp_sclick_bid_request_us_topic
+    paddlewaver_dsp_sclick_notice_impression_us_topic
+    # ----------
   )
   if [ ${#variTopicSlice[@]} -eq 0 ]; then
     echo "[ warn ] topic list is empty(1)"

@@ -607,6 +607,10 @@ function funcPublicCloudBastionReinit() {
     # omni.system init[START]
     # 安裝至「root」
     mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+    if ! command -v git &> /dev/null; then
+      [ -f /etc/redhat-release ] && yum install -y git
+      [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+    fi
     if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
       cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
     else
@@ -625,9 +629,9 @@ function funcPublicCloudBastionReinit() {
     git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
     echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
     # ----------
-    /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
     chmod 777 -R .
-    ./init/system/system.sh init 1
+    /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+    ./init/system/system.sh init
     source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
     # omni.system init[END]
     # --------------------------------------------------
@@ -672,6 +676,10 @@ function funcPublicCloudIptableReinit(){
         # omni.system init[START]
         # 安裝至「root」
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if ! command -v git &> /dev/null; then
+          [ -f /etc/redhat-release ] && yum install -y git
+          [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+        fi
         if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
           cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else
@@ -690,9 +698,9 @@ function funcPublicCloudIptableReinit(){
         git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
         echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
         # ----------
-        /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
         chmod 777 -R .
-        ./init/system/system.sh init 1
+        # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        ./init/system/system.sh init
         source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
         # omni.system init[END]
         # --------------------------------------------------
@@ -762,16 +770,26 @@ BASTIONEOF
 
 function funcPublicCloudSkeletonReinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
-  funcProtectedCheckRequiredParameter 1 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variBranchName=${1}
-  # slave variable[START]
-  # systemctl reload crond
-  variCrontabEnviUri="/var/spool/cron/root"
-  # slave variable[END]
-  funcProtectedCloudSelector
+  funcProtectedCheckRequiredParameter 1 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variBranchName=${1}
+  local variScpPath="/var/tmp"
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
+  # 自動兼容係統類型/1[START]
+  local variOperatingSystem="centos"
+  local variCrontabEnviUri="/var/spool/cron/root"
+  local variCrontabReloadCommand="systemctl reload crond"
+  [ -f /etc/os-release ] && variOperatingSystem=$(. /etc/os-release && echo "${ID}")
+  case "${variOperatingSystem}" in
+    "ubuntu")
+      variCrontabEnviUri="/var/spool/cron/crontabs/root"
+      variCrontabReloadCommand="systemctl restart cron"
+      ;;
+  esac
+  # 自動兼容係統類型/1[END]
+  ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
+  funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     variEachModule=$(echo ${variEachValue} | awk '{print $2}')
@@ -782,89 +800,110 @@ function funcPublicCloudSkeletonReinit() {
     variEachIp=$(echo ${variEachValue} | awk '{print $7}')
     variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variEachValue} ..."
-      echo "===================================================================================================="
-        rm -rf /root/.ssh/known_hosts
-        scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
-        ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
-          # --------------------------------------------------
-          # （1）ssh init[START]
-          tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
-          mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
-          echo "StrictHostKeyChecking no" > ~/.ssh/config
-          chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-          # （1）ssh init[END]
-          # --------------------------------------------------
-          # （2）omni.system init[START]
-          if ! command -v git &> /dev/null; then
-              yum install -y git
-          fi
-          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
-          if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni" ]; then
-            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
-          else
-            mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
-            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
-            git clone https://github.com/chunio/omni.git
-            cd ./omni
-          fi
-          echo "[ omni ] git fetch origin ..."
+    # 自動兼容係統類型/2[START]
+    local variEachSlaveAccount="root"
+    local variEachSudoCommand=""
+    if [[ "${variEachOs}" == "UBUNTU" ]]; then
+      variEachSlaveAccount="ubuntu"
+      variEachSudoCommand="sudo bash -s"
+    fi
+    # 自動兼容係統類型/2[END]
+    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
+      ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+      scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} "${variEachSudoCommand}" <<SLAVEEOF
+        echo "===================================================================================================="
+        echo ">> [ SLAVE ] ${variEachValue} ..."
+        echo "===================================================================================================="
+        # --------------------------------------------------
+        # ssh（include:node && repository）[START]
+        tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
+        mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
+        touch ~/.ssh/config
+        sed -i '/^StrictHostKeyChecking/d' ~/.ssh/config
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
+        chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
+        # ssh（include:node && repository）[END]
+        # --------------------------------------------------
+        # omni.system init[START]
+        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if ! command -v git &> /dev/null; then
+          [ -f /etc/redhat-release ] && yum install -y git
+          [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+        fi
+        if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+        else
+          rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+          git clone https://github.com/chunio/omni.git
+          cd ./omni
+        fi
+        # ----------
+        echo "[ omni ] git fetch origin ..."
+        git fetch origin
+        echo "[ omni ] git fetch origin finished"
+        # ----------
+        echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} ..."
+        git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
+        echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
+        # ----------
+        chmod 777 -R .
+        # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        ./init/system/system.sh init
+        source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+        # omni.system init[END]
+        # --------------------------------------------------
+        # slave main[START]
+        docker rm -f skeleton 2> /dev/null
+        if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton" ]; then
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton
+          # ----------
+          echo "[ skeleton ] git fetch origin ..."
           git fetch origin
-          echo "[ omni ] git fetch origin finished"
-          echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} ..."
-          git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
-          echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
-          chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-          #（2）omni.system init[END]
-          # --------------------------------------------------
-          #（3）slave main[START]
-          docker rm -f skeleton 2> /dev/null
-          if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src/skeleton" ]; then
-            cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src/skeleton
-            echo "[ skeleton ] git fetch origin ..."
-            git fetch origin
-            echo "[ skeleton ] git fetch origin finished"
-            # ----------
-            echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
-            git reset --hard origin/${variBranchName}
-            echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
-            # ----------
-          else
-            mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src && cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/gopath/src
-            git clone git@github.com:chunio/skeleton.git && cd skeleton
-            git checkout ${variBranchName}
-          fi
-          chmod 777 -R .
-          echo "/usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env"
-          /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env
-          sed -i "s/^APP_SERVICE=.*/APP_SERVICE=${variEachService}/" .env
-          rm -rf runtime/container
-          expect -c '
-          set timeout -1
-          spawn ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh skeleton
-          expect "skeleton"
-          send "composer install\r"
-          expect "skeleton"
-          send "composer dump-autoload -o --no-dev\r"
-          expect "skeleton"
-          send "nohup php bin/hyperf.php start > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/skeleton.log 2>&1 &\r"
-          expect "skeleton"
-          send "exit\r"
-          expect eof
-          '
-          # crontab[START]
-          if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
-            sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
-          fi
-          echo "0 * * * * ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
-          cat "${variCrontabEnviUri}"
-          systemctl reload crond
-          # crontab[END]
-          #（3）slave main[END]
-          # --------------------------------------------------
+          echo "[ skeleton ] git fetch origin finished"
+          # ----------
+          echo "[ skeleton ] git reset --hard origin/${variBranchName} ..."
+          git reset --hard origin/${variBranchName}
+          echo "[ skeleton ] git reset --hard origin/${variBranchName} finished"
+          # ----------
+        else
+          mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou
+          cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou
+          git clone git@github.com:chunio/skeleton.git
+          cd skeleton
+          git checkout ${variBranchName}
+        fi
+        chmod -R 777 .
+        echo "[ command ] /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env"
+        /usr/bin/cp -rf .env.production.${variEachDomain}.${variEachRegion} .env
+        sed -i "s/^APP_SERVICE=.*/APP_SERVICE=${variEachService}/" .env
+        rm -rf runtime/container
+        expect -c '
+        set timeout -1
+        spawn omni.haohaiyou skeleton
+        expect "skeleton"
+        send "composer install\r"
+        expect "skeleton"
+        send "composer dump-autoload -o --no-dev\r"
+        expect "skeleton"
+        send "nohup php bin/hyperf.php start > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/skeleton.log 2>&1 &\r"
+        expect "skeleton"
+        send "exit\r"
+        expect eof
+        '
+        # crontab[START]
+        if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
+          sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
+        fi
+        echo "0 * * * * omni.haohaiyou cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
+        cat "${variCrontabEnviUri}"
+        ${variCrontabReloadCommand}
+        # crontab[END]
+        # slave main[END]
+        # --------------------------------------------------
 SLAVEEOF
 BASTIONEOF
   done
@@ -873,7 +912,7 @@ BASTIONEOF
 
 
 function funcPublicCloudSkeletonHourlyCrontab(){
-  rm -rf /workspace/repository/haohaiyou/gopath/src/skeleton/core.*
+  rm -rf /workspace/repository/haohaiyou/skeleton/core.*
   return 0
 }
 
@@ -881,9 +920,9 @@ function funcPublicCloudSkeletonHourlyCrontab(){
 # cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
-  funcProtectedCheckOptionParameter 1 variParameterDescList[@]
-  local variDomain=${1:-"paddlewaver"}
-  local variModuleName="skeleton"
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variContainerName="skeleton-nginx"
+  local variDomain=${1:-"paddlewaver.com"}
   local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
 server {
@@ -905,9 +944,9 @@ server {
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${variModuleName}-nginx:
+  ${variContainerName}:
     image: nginx:1.27.0
-    container_name: ${variModuleName}-nginx
+    container_name: ${variContainerName}
     volumes:
       - ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}:${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
@@ -920,10 +959,10 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker rm -f skeleton-nginx
-  docker compose down -v
-  docker compose -p ${variModuleName} up --build -d
-  docker ps -a | grep ${variModuleName}
+  docker rm -f ${variContainerName}
+  docker compose -p ${variContainerName} down -v
+  docker compose -p ${variContainerName} up --build -d
+  docker ps -a | grep ${variContainerName}
   return 0
 }
 
@@ -932,8 +971,8 @@ DOCKERCOMPOSEYML
 function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
+  local variContainerName="skeleton-nginx"
   local variDomain=${1:-"skeleton.y-one.co.jp"}
-  local variModuleName="skeleton"
   local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
 # 80[START]
@@ -1009,9 +1048,9 @@ server {
 LOCALSKELETONCONF
   cat <<DOCKERCOMPOSEYML > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml
 services:
-  ${variModuleName}-nginx:
+  ${variContainerName}:
     image: nginx:1.27.0
-    container_name: ${variModuleName}-nginx
+    container_name: ${variContainerName}
     volumes:
       - ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}:${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf:/etc/nginx/conf.d/default.conf
@@ -1028,10 +1067,10 @@ networks:
     driver: bridge
 DOCKERCOMPOSEYML
   cd ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}
-  docker rm -f skeleton-nginx
-  docker compose down -v
-  docker compose -p ${variModuleName} up --build -d
-  docker ps -a | grep ${variModuleName}
+  docker rm -f ${variContainerName}
+  docker compose -p ${variContainerName} down -v
+  docker compose -p ${variContainerName} up --build -d
+  docker ps -a | grep ${variContainerName}
   return 0
 }
 
@@ -1048,14 +1087,14 @@ function funcPublicCloudPodReinit(){
   local variSlaveIp="124.156.192.226"
   local variSlavePort="22"
   local variScpPath="/var/tmp"
-  ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
-      echo "===================================================================================================="
-      echo ">> [ SLAVE ] ${variSlaveIp} ..."
-      echo "===================================================================================================="
+  ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
       ssh-keygen -R ${variSlaveIp} >/dev/null 2>&1
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       ssh -o StrictHostKeyChecking=no -A -p ${variSlavePort} -T ${variSlaveAccount}@${variSlaveIp} "sudo bash -s" <<SLAVEEOF
+        echo "===================================================================================================="
+        echo ">> [ SLAVE ] ${variSlaveIp} ..."
+        echo "===================================================================================================="
         # --------------------------------------------------
         # envi[START]
         # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
@@ -1073,10 +1112,11 @@ function funcPublicCloudPodReinit(){
         # ssh（include:node && repository）[END]
         # --------------------------------------------------
         # omni.system init[START]
-        if ! command -v git &> /dev/null; then
-          apt-get update && apt-get install -y git
-        fi
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+        if ! command -v git &> /dev/null; then
+          [ -f /etc/redhat-release ] && yum install -y git
+          [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+        fi
         if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
           cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else
@@ -1095,8 +1135,9 @@ function funcPublicCloudPodReinit(){
         git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
         echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
         # ----------
-        chmod -R 777 .
-        ./init/system/system.sh init 1
+        chmod 777 -R .
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        ./init/system/system.sh init
         source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
         # omni.system init[END]
         # --------------------------------------------------
@@ -1144,6 +1185,7 @@ function funcPublicCloudUnicornReinit() {
     /usr/bin/cp -rf ${variHostMachineProjectPath}/bin/${variBinName} ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos/${variBinName}
   fi
   # 彈性伸縮/1[END]
+  ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
@@ -1179,20 +1221,19 @@ function funcPublicCloudUnicornReinit() {
       variEachSudoCommand="sudo bash -s"
     fi
     # 自動兼容係統類型[END]
-    ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
     if [[ ${variScpStatus} -eq 1 && ${variScpOnce} -eq 0 ]]; then
       md5sum ${variHostMachineProjectPath}/bin/${variBinName}
       scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${variHostMachineProjectPath}/bin/${variBinName} ${variBastionAccount}@${variBastionIp}:${variScpPath}/
       variScpOnce=1
     fi
-    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
+    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
       ssh-keygen -R ${variEachIp} >/dev/null 2>&1
       if [[ ${variScpStatus} -eq 1 ]]; then
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/${variBinName} ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
         scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
       fi
-      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} ${variEachSudoCommand} <<SLAVEEOF
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} "${variEachSudoCommand}" <<SLAVEEOF
         echo "===================================================================================================="
         echo ">> [ SLAVE ] ${variEachValue} ..."
         echo "===================================================================================================="
@@ -1220,11 +1261,11 @@ function funcPublicCloudUnicornReinit() {
         # （三）ssh（include:node && repository）[END]
         # --------------------------------------------------
         # （四）omni.system init[START]
+        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
         if ! command -v git &> /dev/null; then
           [ -f /etc/redhat-release ] && yum install -y git
           [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
         fi
-        mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
         if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
           cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
         else

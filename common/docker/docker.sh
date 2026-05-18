@@ -114,7 +114,7 @@ function funcPublicDeveEnviReinit(){
   )
   funcProtectedCheckOptionParameter 2 'variParameterDescMulti[@]' $# || return "${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}"
   local variStatus=${1:-0}
-  local variBusiness=${1:-0}
+  local variBusiness=${2:-0}
   # ----------
   # reset[START]
   docker rm -f $(docker ps -aq) 2> /dev/null || true
