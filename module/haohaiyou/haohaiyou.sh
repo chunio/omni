@@ -388,7 +388,12 @@ MARK
 function funcPublicSkeleton(){
   variImagePattern=${1:-"chunio/php:haohaiyou"}
   variContainerName="skeleton"
-  variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  # project path[START]
+  variHostMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  if [ -d "/Users/zengweitao/archived/" ];then
+    variHostMachineProjectPath="${VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/skeleton"
+  fi
+  # project path[END]
   # variImagePattern=${1:-"hyperf/hyperf:8.3-alpine-v3.19-swoole-5.1.3"}
   cat <<ENTRYPOINTSH > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh
 #!/usr/bin/env bash
