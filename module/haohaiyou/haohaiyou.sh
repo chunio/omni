@@ -416,6 +416,7 @@ services:
     # 開啟VPN/代理[END]
     volumes:
       # - /mnt/mac/Users:/Users
+      - /mnt:/mnt
       - ${variWorkspacePath}:${variWorkspacePath}
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
     working_dir: ${variProjectPath}
