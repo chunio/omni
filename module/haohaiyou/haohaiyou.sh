@@ -406,10 +406,10 @@ services:
     image: ${variImagePattern}
     container_name: ${variContainerName}
     # 開啟VPN/代理[START]
-    environment:
-      - HTTP_PROXY=http://host.docker.internal:7897
-      - HTTPS_PROXY=http://host.docker.internal:7897
-      - NO_PROXY=localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    # environment:
+    #  - HTTP_PROXY=http://host.docker.internal:7897
+    #  - HTTPS_PROXY=http://host.docker.internal:7897
+    #  - NO_PROXY=localhost,127.0.0.1,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
     # extra_hosts:
     #   - "host.docker.internal:host-gateway"
     # 開啟VPN/代理[END]
