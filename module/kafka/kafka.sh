@@ -100,14 +100,14 @@ function funcPublicImportBusinessData_Haohaiyou() {
     paddlewaver_dsp_notice_stat_topic
     # ----------
     paddlewaver_adx_sclick_bid_request_sg_topic
-    paddlewaver_adx_sclick_notice_impression_sg_topic
+    paddlewaver_adx_sclick_track_impression_sg_topic
     paddlewaver_adx_sclick_bid_request_us_topic
-    paddlewaver_adx_sclick_notice_impression_us_topic
+    paddlewaver_adx_sclick_track_impression_us_topic
     # ----------
     paddlewaver_dsp_sclick_bid_request_sg_topic
-    paddlewaver_dsp_sclick_notice_impression_sg_topic
+    paddlewaver_dsp_sclick_track_impression_sg_topic
     paddlewaver_dsp_sclick_bid_request_us_topic
-    paddlewaver_dsp_sclick_notice_impression_us_topic
+    paddlewaver_dsp_sclick_track_impression_us_topic
     # ----------
   )
   if [ ${#variTopicSlice[@]} -eq 0 ]; then

@@ -61,13 +61,8 @@ MARK
 # }
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
-# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
-VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
-if [ "${VARI_GLOBAL["BUILTIN_BASH_ENVI"]}" = "SOURCE" ];then
-  VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
-fi
-# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][END]
-VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
+VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
@@ -438,7 +433,8 @@ DOCKERCOMPOSEYML
   docker update --restart=always ${variContainerName}
   docker ps -a | grep ${variContainerName}
   cd ${variProjectPath}
-  docker exec -it ${variContainerName} /bin/bash
+  # 容器內部「exit」時，會返回「130/退出編碼」
+  docker exec -it ${variContainerName} /bin/bash || true
   return 0
 }
 
@@ -540,7 +536,8 @@ DOCKERCOMPOSEYML
   docker update --restart=always ${variContainerName}
   docker ps -a | grep ${variContainerName}
   cd ${variHostMachineProjectPath}
-  docker exec -it ${variContainerName} /bin/bash
+  # 容器內部「exit」時，會返回「130/退出編碼」
+  docker exec -it ${variContainerName} /bin/bash || true
   return 0
 }
 
@@ -779,7 +776,7 @@ BASTIONEOF
 function funcPublicCloudSkeletonReinit() {
   local variParameterDescMulti=("branch : main（default），feature/zengweitao/...")
   funcProtectedCheckRequiredParameter 1 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variBranchName=${1}
+  local variBranchName=${1:-"main"}
   local variScpPath="/var/tmp"
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
@@ -796,18 +793,19 @@ function funcPublicCloudSkeletonReinit() {
       ;;
   esac
   # 自動兼容係統類型/1[END]
-  ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
+  ssh-keygen -R ${variBastionIp} >/dev/null 2>&1 || true
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
     # 自動兼容係統類型/2[START]
     local variEachSlaveAccount="root"
     local variEachSudoCommand=""
@@ -817,7 +815,7 @@ function funcPublicCloudSkeletonReinit() {
     fi
     # 自動兼容係統類型/2[END]
     ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
-      ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+      ssh-keygen -R ${variEachIp} >/dev/null 2>&1 || true
       scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} "${variEachSudoCommand}" <<SLAVEEOF
         echo "===================================================================================================="
