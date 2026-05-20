@@ -1573,9 +1573,20 @@ omni.haohaiyou cloudUnicornReinit_Dynamic YONE ADX BID USEAST
 MARK
 # TODO:調整至專用分支（omni）
 function funcPublicCloudUnicornReinit_Dynamic() {
+  local variParameterDescMulti=(
+    "domain : PADDLEWAVER，YONE"
+    "module : DSP，ADX"
+    "service : BID，TRACK，MASTER"
+    "region : SINGAPORE，USEAST"
+  )
+  funcProtectedCheckRequiredParameter 4 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variDomain=$1
+  local variModule=$2
+  local variService=$3
+  local variRegion=$4
   # --------------------------------------------------
   # omni.system init[START]
-  if false;then
+  if true;then
     mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
     if ! command -v git &> /dev/null; then
       [ -f /etc/redhat-release ] && yum install -y git
@@ -1606,17 +1617,6 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   fi
   # omni.system init[END]
   # -------------------------------------------------
-  local variParameterDescMulti=(
-    "domain : PADDLEWAVER，YONE"
-    "module : DSP，ADX"
-    "service : BID，TRACK，MASTER"
-    "region : SINGAPORE，USEAST"
-  )
-  funcProtectedCheckRequiredParameter 4 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  local variDomain=$1
-  local variModule=$2
-  local variService=$3
-  local variRegion=$4
   local variEnvi="PRODUCTION"
   local variScpPath="/var/tmp"
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
