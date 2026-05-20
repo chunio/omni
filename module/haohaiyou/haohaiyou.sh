@@ -585,7 +585,7 @@ function funcPublicCloudBastionReinit() {
     # --------------------------------------------------
     export DEBIAN_FRONTEND=noninteractive
     # --------------------------------------------------
-    # ssh（include:node && repository）[START]
+    # ssh（include : repository）[START]
     tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
     /usr/bin/mv ~/.ssh/ssh/* ~/.ssh
     rm -rf ~/.ssh/ssh
@@ -600,7 +600,7 @@ function funcPublicCloudBastionReinit() {
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/*
     chown \$(whoami):\$(whoami) ~/.ssh/*
-    # ssh（include:node && repository）[END]
+    # ssh（include : repository）[END]
     # --------------------------------------------------
     # git[START]
     if ! command -v git &> /dev/null; then
@@ -671,12 +671,12 @@ function funcPublicCloudIptableReinit(){
       # scp -P ${variEachPort} -o StrictHostKeyChecking=no /omni.haohaiyou.cloud.ssh.tgz root@${variEachIp}:/
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -t ubuntu@${variEachIp} "sudo bash -s" <<'SLAVEEOF'
         # --------------------------------------------------
-        # ssh（include:node && repository）[START]
+        # ssh（include : repository）[START]
         # tar -xzvf /omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         # mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         # echo "StrictHostKeyChecking no" > ~/.ssh/config
         # chmod 600 ~/.ssh/* && chown root:root ~/.ssh/*
-        # ssh（include:node && repository）[END]
+        # ssh（include : repository）[END]
         # --------------------------------------------------
         # omni.system init[START]
         # 安裝至「root」
@@ -822,7 +822,7 @@ function funcPublicCloudSkeletonReinit() {
         echo ">> [ SLAVE ] ${variEachValue} ..."
         echo "===================================================================================================="
         # --------------------------------------------------
-        # ssh（include:node && repository）[START]
+        # ssh（include : repository）[START]
         tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         touch ~/.ssh/config
@@ -830,7 +830,7 @@ function funcPublicCloudSkeletonReinit() {
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
         chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # ssh（include:node && repository）[END]
+        # ssh（include : repository）[END]
         # --------------------------------------------------
         # omni.system init[START]
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
@@ -1090,11 +1090,11 @@ function funcPublicCloudPodReinit(){
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   local variSlaveAccount="ubuntu"
-  local variSlaveIp="124.156.192.226"
+  local variSlaveIp="43.156.218.191"
   local variSlavePort="22"
   local variScpPath="/var/tmp"
   ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
-      ssh-keygen -R ${variSlaveIp} >/dev/null 2>&1
+      ssh-keygen -R ${variSlaveIp} >/dev/null 2>&1 || true
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       ssh -o StrictHostKeyChecking=no -A -p ${variSlavePort} -T ${variSlaveAccount}@${variSlaveIp} "sudo bash -s" <<SLAVEEOF
@@ -1107,7 +1107,7 @@ function funcPublicCloudPodReinit(){
         export DEBIAN_FRONTEND=noninteractive
         # envi[END]
         # --------------------------------------------------
-        # ssh（include:node && repository）[START]
+        # ssh（include : repository）[START]
         tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         touch ~/.ssh/config
@@ -1115,7 +1115,7 @@ function funcPublicCloudPodReinit(){
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
         chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # ssh（include:node && repository）[END]
+        # ssh（include : repository）[END]
         # --------------------------------------------------
         # omni.system init[START]
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
@@ -1256,7 +1256,7 @@ function funcPublicCloudUnicornReinit() {
         fi
         # （二）資源校驗[END]
         # --------------------------------------------------
-        # （三）ssh（include:node && repository）[START]
+        # （三）ssh（include : repository）[START]
         tar -xzvf ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz -C ~/.ssh/
         mv ~/.ssh/ssh/* ~/.ssh && rm -rf ~/.ssh/ssh
         touch ~/.ssh/config
@@ -1264,7 +1264,7 @@ function funcPublicCloudUnicornReinit() {
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         # 需三重轉義，原因：雙層未加引號的「heredoc」會導致變量被解釋兩次
         chmod 600 ~/.ssh/* && chown \\\$(whoami):\\\$(whoami) ~/.ssh/*
-        # （三）ssh（include:node && repository）[END]
+        # （三）ssh（include : repository）[END]
         # --------------------------------------------------
         # （四）omni.system init[START]
         mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
