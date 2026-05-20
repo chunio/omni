@@ -914,7 +914,7 @@ function funcPublicCloudSkeletonReinit() {
         if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
           sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
         fi
-        echo "0 * * * * omni.haohaiyou cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
+        echo "0 * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
         cat "${variCrontabEnviUri}"
         ${variCrontabReloadCommand}
         # crontab[END]
@@ -1440,14 +1440,14 @@ function funcPublicCloudUnicornReinit_Common() {
     # 注意：針對刪除命令（即：d），使用非標準界定符號時，需加「\」作爲指定，示例：\#（標準界定符號：/）
     sed -i "\#cloudUnicornSupervisor ${variParameter}#d" "${variCrontabEnviUri}"
   fi
-  echo "* * * * * omni.haohaiyou cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+  echo "* * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor ${variParameter} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   # （1）supervisor/異常重啟[END]
   # （2）僅限「variService=MASTER」[START]
   if [[ ${variService} == "MASTER" ]]; then
     if grep -Fq "cloudUnicornMinutelyCrontab" "${variCrontabEnviUri}"; then
       sed -i "/cloudUnicornMinutelyCrontab/d" "${variCrontabEnviUri}"
     fi
-    echo "* * * * * omni.haohaiyou cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+    echo "* * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornMinutelyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
   fi
   # （2）僅限「variService=MASTER」[END]
   cat "${variCrontabEnviUri}"
@@ -1701,7 +1701,7 @@ BASTIONEOF
   return 0
 }
 
-# (crontab -l 2>/dev/null; echo "* * * * * /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
+# (crontab -l 2>/dev/null; echo "* * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornSupervisor") | crontab -
 # 更新腳本時無需重啟「crontab」
 function funcPublicCloudUnicornSupervisor(){
   local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
