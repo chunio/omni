@@ -1458,8 +1458,8 @@ function funcPublicCloudUnicornReinit_Common() {
 
 # auto scaling command-line interface
 function funcPublicCloudUnicornReinit_Ascli(){
-  omni.haohaiyou.sh cloudCoscliReinit
-  omni.haohaiyou.sh cloudTccliReinit
+  omni.haohaiyou cloudCoscliReinit
+  omni.haohaiyou cloudTccliReinit
   local variCosBucketName=$(funcProtectedPullEncryptEnvi "TENCENT_COS_BUCKET_NAME")
   local variCosBucket="cos://${variCosBucketName}"
   local variLocalPath="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cos"
