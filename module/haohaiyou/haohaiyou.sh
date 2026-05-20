@@ -1612,7 +1612,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
     # ----------
     chmod -R 777 . 2> /dev/null
     # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
-    ./init/system/system.sh init
+    omni.system init
     source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
   # omni.system init[END]
