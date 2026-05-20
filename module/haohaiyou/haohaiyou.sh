@@ -1561,15 +1561,15 @@ function funcPublicCloudUnicornReinit_Ascli(){
 ssh（[backend]include：haohaiyou_cicd）
 omni.haohaiyou cloudPodReinit
 # ----------
-omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
-omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST（√）
-omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE（√）
-omni.haohaiyou cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST（√）
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID SINGAPORE（√）
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER DSP BID USEAST（√）
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID SINGAPORE（√）
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic PADDLEWAVER ADX BID USEAST（√）
 # ----------
-omni.haohaiyou cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
-omni.haohaiyou cloudUnicornReinit_Dynamic YONE DSP BID USEAST
-omni.haohaiyou cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE（√）
-omni.haohaiyou cloudUnicornReinit_Dynamic YONE ADX BID USEAST
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID SINGAPORE
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE DSP BID USEAST
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID SINGAPORE（√）
+sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudUnicornReinit_Dynamic YONE ADX BID USEAST（√）
 MARK
 # TODO:調整至專用分支（omni）
 function funcPublicCloudUnicornReinit_Dynamic() {
