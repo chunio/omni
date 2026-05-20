@@ -1586,7 +1586,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variRegion=$4
   # --------------------------------------------------
   # omni.system init[START]
-  if true;then
+  if false;then
     mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
     if ! command -v git &> /dev/null; then
       [ -f /etc/redhat-release ] && yum install -y git
