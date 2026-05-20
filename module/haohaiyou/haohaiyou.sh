@@ -1610,7 +1610,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
     git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
     echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
     # ----------
-    chmod 777 -R .
+    chmod -R 777 . 2> /dev/null
     # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
     ./init/system/system.sh init
     source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
