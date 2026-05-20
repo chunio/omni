@@ -1575,17 +1575,35 @@ MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
   # omni.system init[START]
+  mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+  if ! command -v git &> /dev/null; then
+    [ -f /etc/redhat-release ] && yum install -y git
+    [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+  fi
+  if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+    cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+  else
+    rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+    mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+    cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+    git clone https://github.com/chunio/omni.git
+    cd ./omni
+  fi
+  # ----------
   echo "[ omni ] git fetch origin ..."
   git fetch origin
   echo "[ omni ] git fetch origin finished"
   # ----------
-  echo "[ omni ] git reset --hard origin/main ..."
-  git reset --hard origin/main
-  echo "[ omni ] git reset --hard origin/main finished"
+  echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} ..."
+  git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
+  echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
   # ----------
-  omni.system init
+  chmod 777 -R .
+  # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+  ./init/system/system.sh init
+  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   # omni.system init[END]
-  # --------------------------------------------------
+  # -------------------------------------------------
   local variParameterDescMulti=(
     "domain : PADDLEWAVER，YONE"
     "module : DSP，ADX"
