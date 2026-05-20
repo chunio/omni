@@ -698,6 +698,7 @@ function funcProtectedCommandInit() {
     # 基於當前環境的命令[END]
     # 基於派生環境的命令（即：ln -sf ./omni/.../example.sh /usr/local/bin/omni.example）[START]
     # 檢索順序：alias > ln
+    chmod +x "${variAbleUnitFileUri}"
     ln -sf "${variAbleUnitFileUri}" "${VARI_GLOBAL["OMNI_BIN_PATH"]}/${variEachUnitCommand}"
     # 基於派生環境的命令[END]
   done
