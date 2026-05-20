@@ -1313,7 +1313,7 @@ BASTIONEOF
   # 彈性伸縮/3[START]
   if [ ${variAutoScalingStatus} -eq 1 ]; then
     # TODO:遷移至堡壘機器
-    omni.haohaiyou.sh cloudUnicornReinit_Ascli
+    omni.haohaiyou cloudUnicornReinit_Ascli
   fi
   # 彈性伸縮/3[START]
   return 0
