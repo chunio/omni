@@ -1716,12 +1716,12 @@ function funcPublicCloudUnicornSupervisor(){
 function funcPublicCloudHostReinit(){
   local variEtcHostsUri="/etc/hosts"
   local variIp2DomainSlice=(
-    "172.22.0.51 sg.adx.paddlewaver.localhost.com"
-    "10.0.0.24 us.adx.paddlewaver.localhost.com"
-    "172.22.0.91 sg.dsp.paddlewaver.localhost.com"
-    "10.0.0.29 us.dsp.paddlewaver.localhost.com"
-    "172.22.0.67 sg.dsp.yone.localhost.com"
-    "10.0.0.18 us.dsp.yone.localhost.com"
+    "10.1.0.5 sg.bid.adx.paddlewaver.localhost.com" # intranet-pw-adx-bid-singapore
+    "10.2.0.14 us.bid.adx.paddlewaver.localhost.com" # intranet-pw-adx-bid-virginia
+    "10.1.0.9 sg.bid.dsp.paddlewaver.localhost.com" # intranet-pw-dsp-bid-singapore
+    "10.2.0.6 us.bid.dsp.paddlewaver.localhost.com" # intranet-pw-dsp-bid-virginia
+    "10.1.0.14 sg.bid.dsp.yone.localhost.com" # intranet-yone-dsp-bid-singapore
+    "10.2.0.5 us.bid.dsp.yone.localhost.com" # intranet-yone-dsp-bid-virginia
   )
   # /usr/bin/cp -rf "$variEtcHostsUri" "${variEtcHostsUri}.backup.$(date '+%Y%m%d%H%M%S')"
   local variEachRecord variDomain variIp
