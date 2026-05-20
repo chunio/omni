@@ -1575,33 +1575,35 @@ MARK
 function funcPublicCloudUnicornReinit_Dynamic() {
   # --------------------------------------------------
   # omni.system init[START]
-  mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
-  if ! command -v git &> /dev/null; then
-    [ -f /etc/redhat-release ] && yum install -y git
-    [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+  if false;then
+    mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime
+    if ! command -v git &> /dev/null; then
+      [ -f /etc/redhat-release ] && yum install -y git
+      [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
+    fi
+    if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
+      cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+    else
+      rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
+      mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+      cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
+      git clone https://github.com/chunio/omni.git
+      cd ./omni
+    fi
+    # ----------
+    echo "[ omni ] git fetch origin ..."
+    git fetch origin
+    echo "[ omni ] git fetch origin finished"
+    # ----------
+    echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} ..."
+    git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
+    echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
+    # ----------
+    chmod 777 -R .
+    # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+    ./init/system/system.sh init
+    source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
-  if [ -d "${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/.git" ]; then
-    cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
-  else
-    rm -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni
-    mkdir -p ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
-    cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio
-    git clone https://github.com/chunio/omni.git
-    cd ./omni
-  fi
-  # ----------
-  echo "[ omni ] git fetch origin ..."
-  git fetch origin
-  echo "[ omni ] git fetch origin finished"
-  # ----------
-  echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} ..."
-  git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]}
-  echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
-  # ----------
-  chmod 777 -R .
-  # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
-  ./init/system/system.sh init
-  source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   # omni.system init[END]
   # -------------------------------------------------
   local variParameterDescMulti=(
@@ -1630,6 +1632,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variLabel=$(hostname -I 2>/dev/null | awk '{print $1}' | tr '.' 'P')
   [[ -z "${variLabel}" ]] && variLabel=$(echo "$(date +%s%N)${RANDOM}$$" | md5sum | awk '{print $1}' | tr 'a-z' 'A-Z')
   # ----------
+  echo "[ command ] coscli cp ${variCosBucket}/${variCosRemotePath}/${variEnviFilename} ${variScpPath}/${variEnviFilename}"
   coscli cp ${variCosBucket}/${variCosRemotePath}/${variEnviFilename} ${variScpPath}/${variEnviFilename}
   # 「tr -d '[:space:]」表示移除空白符號（含：空格/換行/回車/製表）
   # 示例：9e141db7f404dae193a6d52fbc0e3210#main（md5#branch）
@@ -1637,6 +1640,7 @@ function funcPublicCloudUnicornReinit_Dynamic() {
   local variRemoteBinMd5=$(echo "${variEnviContent}" | awk -F'#' '{print $1}')
   local variBranch=$(echo "${variEnviContent}" | awk -F'#' '{print $2}')
   # ----------
+  echo "[ command ] coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName}.${variRemoteBinMd5} ${variScpPath}/${variBinName}"
   coscli cp ${variCosBucket}/${variCosRemotePath}/${variBinName}.${variRemoteBinMd5} ${variScpPath}/${variBinName}
   local variLocalBinMd5=$(md5sum ${variScpPath}/${variBinName} | awk '{print $1}')
   chmod +x ${variScpPath}/${variBinName}
