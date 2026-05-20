@@ -61,8 +61,13 @@ MARK
 # }
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
-VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE[0]}")")
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
+VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")") # 解釋軟鏈
+if [ "${VARI_GLOBAL["BUILTIN_BASH_ENVI"]}" = "SOURCE" ];then
+  VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]="$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd)" # 不解軟鏈
+fi
+# VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][END]
+VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]=$(basename "$(readlink -f "${BASH_SOURCE:-$0}")")
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/builtin/builtin.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/../../internal/utility/utility.sh"
 source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || true
@@ -1093,7 +1098,7 @@ function funcPublicCloudPodReinit(){
   local variSlaveIp="43.156.218.191"
   local variSlavePort="22"
   local variScpPath="/var/tmp"
-  ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
+  ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
       ssh-keygen -R ${variSlaveIp} >/dev/null 2>&1 || true
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
       scp -P ${variSlavePort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variSlaveAccount}@${variSlaveIp}:${variScpPath}/
