@@ -560,13 +560,18 @@ function funcPublicCloudIndex(){
     local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
     local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
     local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    local variEachSlaveAccount="root"
+    if [[ "${variEachOs}" == "UBUNTU" ]]; then
+      variEachSlaveAccount="ubuntu"
+    fi
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
-    echo "[ command ] ssh -o StrictHostKeyChecking=no -o ProxyCommand=\"ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}\" ubuntu@${variEachIp} -p ${variEachPort}"
+    echo "[ command ] ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} \"sudo ssh -o StrictHostKeyChecking=no ${variEachSlaveAccount}@${variEachIp} -p ${variEachPort}\""
     echo "===================================================================================================="
     echo ">> [ SLAVE ] ${variEachValue} ..."
     echo "===================================================================================================="
-    ssh -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -p ${variBastionPort} ${variBastionAccount}@${variBastionIp}" ubuntu@${variEachIp} -p ${variEachPort}
+    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} "sudo ssh -o StrictHostKeyChecking=no ${variEachSlaveAccount}@${variEachIp} -p ${variEachPort}"
     return 0
   done
   return 0
