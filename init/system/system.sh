@@ -965,7 +965,8 @@ function funcPublicInit(){
   if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
     # 升級用戶執行權限
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
-    grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+    grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_SHELLRC_URI"]}"
+    # grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
   # 係統兼容[END]
   # ----------

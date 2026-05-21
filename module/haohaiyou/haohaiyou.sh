@@ -914,7 +914,7 @@ function funcPublicCloudSkeletonReinit() {
         if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
           sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
         fi
-        echo "0 * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab" >> "${variCrontabEnviUri}"
+        echo "0 * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
         cat "${variCrontabEnviUri}"
         ${variCrontabReloadCommand}
         # crontab[END]
