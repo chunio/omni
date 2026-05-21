@@ -933,7 +933,7 @@ function funcPublicCloudSkeletonHourlyCrontab(){
 }
 
 # 將「80」端口轉發至「9501」端口
-# cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/main && chmod -R 777 . && ./init/system/system.sh init && source /etc/bashrc
+# cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/migration && chmod -R 777 . && ./init/system/system.sh init && source /etc/bashrc
 function funcPublicCloudSkeletonPaddlewaverProxy(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
@@ -988,7 +988,7 @@ function funcPublicCloudSkeletonYoneProxy(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variContainerName="skeleton-nginx"
-  local variDomain=${1:-"skeleton.y-one.co.jp"}
+  local variDomain=${1:-"sg.skeleton.y-one.co.jp"}
   local variCurrentIp=$(hostname -I | awk '{print $1}')
   cat <<LOCALSKELETONCONF > ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/local.skeleton.conf
 # 80[START]
@@ -1397,7 +1397,7 @@ function funcPublicCloudUnicornReinit_Common() {
     echo "[ unicorn ] git reset --hard origin/${variBranch} finished"
     # ----------
   else
-    rm -rf ${variCloudMachineProjectPath}
+    rm -rf "${variCloudMachineProjectPath}/unicorn"
     mkdir -p ${variCloudMachineProjectPath}
     cd ${variCloudMachineProjectPath}
     git clone git@github.com:chunio/unicorn.git
