@@ -1344,7 +1344,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # ----------
   local variEnvi="PRODUCTION"
   local variScpPath="/var/tmp"
-  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou/unicorn"
+  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou"
   local variLaunchTimeout=30
   local variLaunchDuration=0
   # ----------
@@ -1385,8 +1385,8 @@ function funcPublicCloudUnicornReinit_Common() {
   # （二）unicorn[START]
   ulimit -n 655360
   docker rm -f unicorn 2> /dev/null
-  if [ -d "${variCloudMachineProjectPath}/.git" ]; then
-    cd ${variCloudMachineProjectPath}
+  if [ -d "${variCloudMachineProjectPath}/unicorn/.git" ]; then
+    cd ${variCloudMachineProjectPath}/unicorn
     # ----------
     echo "[ unicorn ] git fetch origin ..."
     git fetch origin
