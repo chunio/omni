@@ -1344,7 +1344,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # ----------
   local variEnvi="PRODUCTION"
   local variScpPath="/var/tmp"
-  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou/uncorn"
+  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou/unicorn"
   local variLaunchTimeout=30
   local variLaunchDuration=0
   # ----------
@@ -1385,8 +1385,8 @@ function funcPublicCloudUnicornReinit_Common() {
   # （二）unicorn[START]
   ulimit -n 655360
   docker rm -f unicorn 2> /dev/null
-  if [ -d "${variCloudMachineProjectPath}/src/unicorn/.git" ]; then
-    cd ${variCloudMachineProjectPath}/src/unicorn
+  if [ -d "${variCloudMachineProjectPath}/.git" ]; then
+    cd ${variCloudMachineProjectPath}
     # ----------
     echo "[ unicorn ] git fetch origin ..."
     git fetch origin
@@ -1397,9 +1397,9 @@ function funcPublicCloudUnicornReinit_Common() {
     echo "[ unicorn ] git reset --hard origin/${variBranch} finished"
     # ----------
   else
-    rm -rf ${variCloudMachineProjectPath}/src/unicorn
-    mkdir -p ${variCloudMachineProjectPath}/src
-    cd ${variCloudMachineProjectPath}/src
+    rm -rf ${variCloudMachineProjectPath}
+    mkdir -p ${variCloudMachineProjectPath}
+    cd ${variCloudMachineProjectPath}
     git clone git@github.com:chunio/unicorn.git
     cd unicorn
     git checkout ${variBranch}
@@ -1407,7 +1407,7 @@ function funcPublicCloudUnicornReinit_Common() {
   omni.system port ${variHttpPort} kill
   omni.system port ${variGrpcPort} kill
   mkdir -p ./bin
-  chmod 777 -R .
+  chmod -R 777 .
   /usr/bin/cp -rf ${variScpPath}/${variBinName} ./bin/${variBinName}
   echo "" > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.command
   nohup ./bin/${variBinName} -ENVI ${variEnvi} -SERVICE ${variService} -LABEL ${variLabel} -DOMAIN ${variDomain} -REGION ${variRegion} > ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/${variBinName}.log 2>&1 &
