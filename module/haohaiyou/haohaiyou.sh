@@ -1817,19 +1817,23 @@ function funcPublicCloudUnicornSupervisor(){
   variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> /workspace/runtime/supervisor.log
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/supervisor.log
   else
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> /workspace/runtime/supervisor.log
-    /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEALTH_CHECK_FAILED"
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check failed，${variHost}:${variHttpPort} is inactive" >> ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/supervisor.log
     # supervisor[START]
-    /workspace/repository/chunio/omni/init/system/system.sh port ${variHttpPort} kill
-    /workspace/repository/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
-    /usr/bin/cp -rf /workspace/runtime/unicorn_${variModuleName}.log /workspace/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
-    # /workspace/repository/chunio/omni/init/system/system.sh process unicorn kill
-    cd /workspace/repository/haohaiyou/unicorn
-    eval "$(cat /workspace/runtime/unicorn_${variModuleName}.command)"
-    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> /workspace/runtime/supervisor.log
+    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variHttpPort} kill
+    ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh port ${variGrpcPort} kill
+    /usr/bin/cp -rf ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variModuleName}.log ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variModuleName}_$(date +%Y%m%d%H%M%S).log
+    # ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/init/system/system.sh process unicorn kill
+    cd ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn
+    eval "$(cat ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variModuleName}.command)"
+    echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/supervisor.log
     # supervisor[END]
+    if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
+      ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEARTBEAT_CHECK_FAILED_AND_RESTART_SUCCEEDED"
+    else
+      ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEARTBEAT_CHECK_FAILED_AND_RESTART_FAILED"
+    fi
   fi
   # check heartbeat[END]
   return 0
