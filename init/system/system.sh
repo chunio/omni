@@ -967,7 +967,7 @@ function funcPublicInit(){
     local variUbuntuBashrc="/home/ubuntu/.bashrc"
     # 過渡：清理舊數據[START]
     # TODO：待移除
-    local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
+    local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -s -E'
     if grep -qF -- "$variCommand" "${variUbuntuBashrc}"; then
       grep -vF -- "$variCommand" "${variUbuntuBashrc}" > "${variUbuntuBashrc}.new"
       cat "${variUbuntuBashrc}.new" > "${variUbuntuBashrc}"
