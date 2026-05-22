@@ -964,7 +964,14 @@ function funcPublicInit(){
   funcProtectedCompletionRefresh
   if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
     # 升級用戶執行權限
+    # 過渡：清理舊數據[START]
+    # TODO：待移除
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
+    grep -qF -- "$variCommand" /home/ubuntu/.bashrc || echo "$variCommand" >> /home/ubuntu/.bashrc
+    # 過渡：清理舊數據[END]
+    # 「sudo -i」表示完全乾淨的「root/環境」
+    # 「sudo -s -E」表示繼承當前環境變量的「root/環境」
+    local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -s -E'
     grep -qF -- "$variCommand" /home/ubuntu/.bashrc || echo "$variCommand" >> /home/ubuntu/.bashrc
     # grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
