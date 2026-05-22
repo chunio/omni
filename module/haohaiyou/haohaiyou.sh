@@ -678,11 +678,10 @@ function funcPublicCloudIndex_Bastion(){
   funcProtectedCloudSelector 0
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
-    ssh-keygen -R ${variEachIp} >/dev/null 2>&1
-    echo "[ command ] ssh ubuntu@${variEachIp}"
-    # ssh "ubuntu@${variEachIp}"
+    ssh-keygen -R "${variEachIp}" >/dev/null 2>&1
+    # echo "[ command ] ssh ubuntu@${variEachIp}"
     variEachHostname="${variEachModule}-${variEachService}-${variEachLabel}-${variEachDomain}-${variEachRegion}-${variEachIp}"
-    ssh -t "ubuntu@${variEachIp}" "export PS1='\[\e[32m\]\u@${variEachHostname}\[\e[m\]:\[\e[34m\]\w\[\e[m\]\$ '; exec bash"
+    ssh -t "ubuntu@${variEachIp}" "export PROMPT_COMMAND=\"PS1='\[\e[32m\]\u@${variEachHostname}\[\e[m\]:\[\e[34m\]\w\[\e[m\]\\$ '\"; exec bash"
     return 0
   done
 }
