@@ -1796,10 +1796,10 @@ BASTIONEOF
 function funcPublicCloudUnicornSupervisor(){
   local variParameterDescMulti=("label ：PADDLEWAVER/ADX/BID/SINGAPORE/01")
   funcProtectedCheckRequiredParameter 1 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variLabel=$1
+  local variLabel=$1
   # 使用「/」分割 >> 提取第二的元素 >> 轉至小寫
-  variModuleName=$(echo "${variLabel}" | cut -d'/' -f2 | tr 'A-Z' 'a-z')
-  variHost="localhost"
+  local variModuleName=$(echo "${variLabel}" | cut -d'/' -f2 | tr 'A-Z' 'a-z')
+  local variHost="localhost"
   case ${variModuleName} in
     "adx")
         variHttpPort=8001
@@ -1813,8 +1813,8 @@ function funcPublicCloudUnicornSupervisor(){
         return 1
         ;;
   esac
-  variTimeout=${variTimeout:-1}
-  variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
+  local variTimeout=${variTimeout:-1}
+  local variCurrentUtc0Datetime=$(date -u +"%Y-%m-%d %H:%M:%S")
   # check heartbeat[START]
   if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check succeeded，${variHost}:${variHttpPort} is active" >> ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/supervisor.log
@@ -1983,7 +1983,7 @@ function funcPublicCloudUnicornMinutelyCrontab(){
 
 function funcPublicFeishu(){
   local variParameterDescMulti=("label" "message")
-  funcProtectedCheckRequiredParameter 2 variParameterDescMulti[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  funcProtectedCheckRequiredParameter 2 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variLabel=$1
   local variMessage=$2
   local variFeishuWebhook=$(funcProtectedPullEncryptEnvi "FEISHU_WEBHOOK")
