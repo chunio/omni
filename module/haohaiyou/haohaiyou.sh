@@ -652,10 +652,10 @@ DOCKERCOMPOSEYML
 
 # 於「本地機器」使用
 function funcPublicCloudIndex_Ided25519(){
-  funcProtectedCloudSelector
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
+  funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     local variEachSlaveAccount="root"
@@ -663,24 +663,31 @@ function funcPublicCloudIndex_Ided25519(){
       variEachSlaveAccount="ubuntu"
     fi
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+    # hostname[START]
+    local variEachHostname="${variEachModule}-${variEachService}-${variEachLabel}-${variEachDomain}-${variEachRegion}"
+    variEachHostname=$(echo "$variEachHostname" | tr '[:upper:]' '[:lower:]')
+    # hostname[END]
     echo "[ command ] ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} \"sudo ssh -o StrictHostKeyChecking=no ${variEachSlaveAccount}@${variEachIp} -p ${variEachPort}\""
     echo "===================================================================================================="
     echo ">> [ SLAVE ] ${variEachValue} ..."
     echo "===================================================================================================="
-    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} "sudo ssh -o StrictHostKeyChecking=no ${variEachSlaveAccount}@${variEachIp} -p ${variEachPort}"
+    local variSlaveCommand="sudo ssh -o StrictHostKeyChecking=no -t ${variEachSlaveAccount}@${variEachIp} -p ${variEachPort} \"export PROMPT_COMMAND=\\\"PS1='\\\\[\\\\e[32m\\\\]\\\\u@${variEachHostname}\\\\[\\\\e[m\\\\]:\\\\[\\\\e[34m\\\\]\\\\w\\\\[\\\\e[m\\\\]\\\\\\\$ '\\\"; exec bash\""
+    ssh -o StrictHostKeyChecking=no -p "${variBastionPort}" -t "${variBastionAccount}@${variBastionIp}" "${variSlaveCommand}"
     return 0
   done
   return 0
 }
 
 # 於「堡壘機器」使用
-function funcPublicCloudIndex_Bastion(){
+function funcPublicCloudIndex(){
   funcProtectedCloudSelector 0
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     ssh-keygen -R "${variEachIp}" >/dev/null 2>&1
-    # echo "[ command ] ssh ubuntu@${variEachIp}"
-    variEachHostname="${variEachModule}-${variEachService}-${variEachLabel}-${variEachDomain}-${variEachRegion}-${variEachIp}"
+    # hostname[START]
+    local variEachHostname="${variEachModule}-${variEachService}-${variEachLabel}-${variEachDomain}-${variEachRegion}"
+    variEachHostname=$(echo "$variEachHostname" | tr '[:upper:]' '[:lower:]')
+    # hostname[END]
     ssh -t "ubuntu@${variEachIp}" "export PROMPT_COMMAND=\"PS1='\[\e[32m\]\u@${variEachHostname}\[\e[m\]:\[\e[34m\]\w\[\e[m\]\\$ '\"; exec bash"
     return 0
   done
