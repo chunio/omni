@@ -964,15 +964,25 @@ function funcPublicInit(){
   funcProtectedCompletionRefresh
   if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
     # 升級用戶執行權限
+    local variUbuntuBashrc="/home/ubuntu/.bashrc"
     # 過渡：清理舊數據[START]
     # TODO：待移除
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -i'
-    grep -qF -- "$variCommand" /home/ubuntu/.bashrc || echo "$variCommand" >> /home/ubuntu/.bashrc
+    if grep -qF -- "$variCommand" "${variUbuntuBashrc}"; then
+      grep -vF -- "$variCommand" "${variUbuntuBashrc}" > "${variUbuntuBashrc}.new"
+      cat "${variUbuntuBashrc}.new" > "${variUbuntuBashrc}"
+      rm -f "${variUbuntuBashrc}.new"
+    fi
+    if grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"; then
+      grep -vF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" > "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}.new"
+      cat "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}.new" > "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
+      rm -f "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}.new"
+    fi
     # 過渡：清理舊數據[END]
     # 「sudo -i」表示完全乾淨的「root/環境」
     # 「sudo -s -E」表示繼承當前環境變量的「root/環境」
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -s -E'
-    grep -qF -- "$variCommand" /home/ubuntu/.bashrc || echo "$variCommand" >> /home/ubuntu/.bashrc
+    grep -qF -- "$variCommand" "${variUbuntuBashrc}" || echo "$variCommand" >> "${variUbuntuBashrc}"
     # grep -qF -- "$variCommand" "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}" || echo "$variCommand" >> "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
   fi
   # 係統兼容[END]
