@@ -1033,7 +1033,7 @@ function funcPublicCloudSkeletonHourlyCrontab(){
 
 # 將「80」端口轉發至「9501」端口
 # cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/feature/zengweitao/migration && chmod -R 777 . && ./init/system/system.sh init && source /etc/bashrc
-function funcPublicCloudSkeletonPaddlewaverProxy(){
+function funcPublicCloudSkeletonNginx80(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
   local variContainerName="skeleton-nginx"
@@ -1083,7 +1083,7 @@ DOCKERCOMPOSEYML
 
 # 將「80/443」端口轉發至「9501」端口
 # cd /workspace/repository/chunio/omni && git fetch origin && git reset --hard origin/main && chmod 777 -R . && ./init/system/system.sh init && source /etc/bashrc
-function funcPublicCloudSkeletonYoneProxy(){
+function funcPublicCloudSkeletonNginx443(){
   # local variParameterDescList=("domain")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   local variContainerName="skeleton-nginx"
