@@ -143,9 +143,13 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
   # return 0
   # --------------------------------------------------
 function funcProtectedCloudSelector() {
+  local variParameterDescList=("tar status，value：0/disable，1/able（default）")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variTarStatus=${1:-1}
+  if [ "${variTarStatus}" -eq 1 ];then
+    tar -czf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh
+  fi
   VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
-  tar -czf ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz -C ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]} ssh 
-  # 未使用「local」關鍵字的變量皆全局變量
   local variFirstIndexSlice=(
     "01 COMMON --"
     "02 PADDLEWAVER --"
@@ -578,7 +582,7 @@ function funcPublicCloudIndex_Archived(){
 }
 
 function funcPublicCloudIndex(){
-  funcProtectedCloudSelector
+  funcProtectedCloudSelector 0
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
     local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
     local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
