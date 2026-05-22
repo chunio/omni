@@ -546,7 +546,7 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-function funcPublicCloudIndex(){
+function funcPublicCloudIndex_Archived(){
   funcProtectedCloudSelector
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
@@ -575,6 +575,26 @@ function funcPublicCloudIndex(){
     return 0
   done
   return 0
+}
+
+function funcPublicCloudIndex(){
+  funcProtectedCloudSelector
+  for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
+    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+    echo "[ command ] ssh ubuntu@${variEachIp}"
+    ssh ubuntu@${variEachIp}
+    return 0
+  done
 }
 
 # 重置「堡壘機器」（依賴：雲服務器後台配置「SSH」）
