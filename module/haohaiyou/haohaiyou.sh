@@ -142,7 +142,7 @@ declare -a VARI_B40BC66C185E49E93B95239A8365AC4A
   # done
   # return 0
   # --------------------------------------------------
-function funcProtectedCloudSelector() {
+function funcProtectedCloudSelector_Archived() {
   local variParameterDescList=("tar status，value：0/disable，1/able（default）")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
   local variTarStatus=${1:-1}
@@ -242,6 +242,106 @@ function funcProtectedCloudSelector() {
     echo "invalid selection"
     return 1
   fi 
+  # printf '%s\n' "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"
+  return 0
+}
+
+function funcProtectedCloudSelector() {
+  local variParameterDescList=("tar status，value：0/disable，1/able（default）")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variTarStatus=${1:-1}
+  if [ "${variTarStatus}" -eq 1 ];then
+    tar -czf "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/omni.haohaiyou.cloud.ssh.tgz" -C "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}" ssh
+  fi
+  VARI_B40BC66C185E49E93B95239A8365AC4A=() # 防御性的
+  local variFirstIndexSlice=(
+    "01 COMMON --"
+    "02 PADDLEWAVER --"
+    "03 YONE --"
+  )
+  local variSecondIndexSlice=(
+    "01 SKELETON include:php/go({adx&&dsp}SingletonGoroutine)"
+    "02 ADX --"
+    "03 DSP --"
+  )
+  printf "%-15s %-15s %-15s\n" "INDEX" "CLOUD" "DESC"
+  for variEachValue in "${variFirstIndexSlice[@]}"; do
+    read -r variEachIndex variEachCloud variEachDesc <<< "$variEachValue"
+    printf "%-15s %-15s %-15s\n" "$variEachIndex" "$variEachCloud" "$variEachDesc"
+  done
+  echo -n "enter the index : "
+  read variSelectedCloudIndex
+  local -a variSelectedCloudSlice
+  case $variSelectedCloudIndex in
+    01) variSelectedCloudSlice=("${VARI_ENCRYPT_IPTABLE_CLOUD_SLICE[@]}") ;;
+    02) variSelectedCloudSlice=("${VARI_ENCRYPT_PADDLEWAVER_CLOUD_SLICE[@]}") ;;
+    03) variSelectedCloudSlice=("${VARI_ENCRYPT_YONE_CLOUD_SLICE[@]}") ;;
+    *) echo "invalid selection : ${variSelectedCloudIndex}"; return 1 ;;
+  esac
+  # ----------
+  if [[ ${variSelectedCloudIndex} == "01" ]]; then
+    variSelectedModuleName="--"
+  else
+    printf "%-15s %-15s %-15s\n" "INDEX" "MODULE" "DESC"
+    for variEachValue in "${variSecondIndexSlice[@]}"; do
+      read -r variEachIndex variEachModule variEachDesc <<< "$variEachValue"
+      printf "%-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachDesc"
+    done
+    echo -n "enter the index : "
+    read variSelectedModuleIndex
+    case $variSelectedModuleIndex in
+      01) variSelectedModuleName="SKELETON" ;;
+      02) variSelectedModuleName="ADX" ;;
+      03) variSelectedModuleName="DSP" ;;
+      *) echo "invalid selection : ${variSelectedModuleIndex}"; return 1 ;;
+    esac
+  fi
+  # ----------
+  printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "INDEX" "MODULE" "SERVICE" "LABEL" "DOMAIN" "REGION" "IP" "PORT" "OS" "DESC"
+  local variCheckAllSlice
+  declare -A variSelectedCloudMap
+  for variEachValue in "${variSelectedCloudSlice[@]}"; do
+    [[ $variEachValue == \#* ]] && continue
+    # local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
+    # local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
+    # local variEachService=$(echo ${variEachValue} | awk '{print $3}')
+    # local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
+    # local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
+    # local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
+    # local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
+    # local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
+    # local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
+    # local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
+    [[ $variEachModule != $variSelectedModuleName* ]] && continue
+    variCheckAllSlice="${variCheckAllSlice} ${variEachIndex}"
+    variSelectedCloudMap[$variEachIndex]="$variEachValue"
+    printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" "$variEachIndex" "$variEachModule" "$variEachService" "$variEachLabel" "$variEachDomain" "$variEachRegion" "$variEachIp" "$variEachPort" "$variEachOs" "$variEachDesc"
+  done
+  echo -n "enter the index ( 0:當前頁面的全部 / 支持多個,空格間隔 ) : "
+  read -a variInputIndexSlice
+  local -a variSelectIndexSlice
+  #「10#${variInputIndexSlice}」将八進制（如：09）轉換至十進制
+  if [[ 10#${variInputIndexSlice} -eq 0 ]]; then
+    variSelectIndexSlice=(${variCheckAllSlice})
+  else
+    variSelectIndexSlice=(${variInputIndexSlice[@]})
+  fi
+  echo "index : ${variSelectIndexSlice[*]}"
+  read -p "input「confirm」to continue : " variInput
+  if [[ "$variInput" != "confirm" ]]; then
+    return 1
+  fi
+  for variEachIndex in "${variSelectIndexSlice[@]}"; do
+    if [[ -n "${variSelectedCloudMap[$variEachIndex]}" ]]; then
+      VARI_B40BC66C185E49E93B95239A8365AC4A+=("${variSelectedCloudMap[$variEachIndex]}")
+    fi
+  done
+  length=${#VARI_B40BC66C185E49E93B95239A8365AC4A[@]}
+  if [[ ${length} -eq 0 ]]; then
+    echo "invalid selection"
+    return 1
+  fi
   # printf '%s\n' "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"
   return 0
 }
@@ -550,22 +650,14 @@ DOCKERCOMPOSEYML
   return 0
 }
 
-function funcPublicCloudIndex_Archived(){
+# 於「本地機器」使用
+function funcPublicCloudIndex_Ided25519(){
   funcProtectedCloudSelector
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     local variEachSlaveAccount="root"
     if [[ "${variEachOs}" == "UBUNTU" ]]; then
       variEachSlaveAccount="ubuntu"
@@ -581,23 +673,16 @@ function funcPublicCloudIndex_Archived(){
   return 0
 }
 
-function funcPublicCloudIndex(){
+# 於「堡壘機器」使用
+function funcPublicCloudIndex_Bastion(){
   funcProtectedCloudSelector 0
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
-    echo ">0"
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
     echo "[ command ] ssh ubuntu@${variEachIp}"
-    ssh "ubuntu@${variEachIp}"
+    # ssh "ubuntu@${variEachIp}"
+    variEachHostname="${variEachModule}-${variEachService}-${variEachLabel}-${variEachDomain}-${variEachRegion}-${variEachIp}"
+    ssh -t "ubuntu@${variEachIp}" "export PS1='\[\e[32m\]\u@${variEachHostname}\[\e[m\]:\[\e[34m\]\w\[\e[m\]\$ '; exec bash"
     return 0
   done
 }
@@ -683,20 +768,12 @@ BASTIONEOF
 
 
 function funcPublicCloudIptableReinit(){
-  funcProtectedCloudSelector
   local variBastionAccount=$(funcProtectedPullEncryptEnvi "BASTION_ACCOUNT")
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
+  funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
     ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "sudo bash -s" <<BASTIONEOF
       echo "===================================================================================================="
@@ -831,16 +908,7 @@ function funcPublicCloudSkeletonReinit() {
   ssh-keygen -R ${variBastionIp} >/dev/null 2>&1 || true
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     # 自動兼容係統類型/2[START]
     local variEachSlaveAccount="root"
     local variEachSudoCommand=""
@@ -1229,16 +1297,7 @@ function funcPublicCloudUnicornReinit() {
   ssh-keygen -R ${variBastionIp} >/dev/null 2>&1
   funcProtectedCloudSelector
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    local variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    local variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    local variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    local variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    local variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    local variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    local variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
-    local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
     # 檢測目標節點環節是否支持當前模塊[START]
     local variEachValueLower=$(echo "$variEachValue" | tr 'A-Z' 'a-z')
     if [[ $variEachValueLower != *${variModule}* && $variEachValueLower != *master* ]]; then
