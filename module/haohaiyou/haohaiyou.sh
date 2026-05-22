@@ -1434,7 +1434,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # ----------
   local variEnvi="PRODUCTION"
   local variScpPath="/var/tmp"
-  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/haohaiyou"
+  local variCloudMachineProjectPath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou"
   local variLaunchTimeout=30
   local variLaunchDuration=0
   # ----------
