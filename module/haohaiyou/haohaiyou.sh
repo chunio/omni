@@ -590,9 +590,10 @@ function funcPublicCloudIndex(){
     local variEachPort=$(echo ${variEachValue} | awk '{print $8}')
     local variEachOs=$(echo ${variEachValue} | awk '{print $9}')
     local variEachDesc=$(echo ${variEachValue} | awk '{print $10}')
+    echo ">0"
     ssh-keygen -R ${variEachIp} >/dev/null 2>&1
     echo "[ command ] ssh ubuntu@${variEachIp}"
-    ssh ubuntu@${variEachIp}
+    ssh "ubuntu@${variEachIp}"
     return 0
   done
 }
