@@ -82,7 +82,7 @@ services:
   # mysql[END]
   # ##################################################
   ${variContainerName}-redis:
-    image: redis:7.2.5
+    image: redis:8.0
     container_name: ${variContainerName}-redis
     ports:
       - "16379:6379"
