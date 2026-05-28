@@ -55,6 +55,8 @@ services:
   mongodb7:
     image: mongo:8.0
     container_name: mongo
+    extra_hosts:
+      - "${variCurrentIp}:127.0.0.1"
     ports:
       - "27017:27017"
     volumes:

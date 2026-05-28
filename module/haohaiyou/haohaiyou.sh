@@ -2088,6 +2088,222 @@ EOF
     return 1
   fi
 }
+
+#1,【xxxx 至 2026-04-28】
+#2,【2026-04-29 至 2026-05-05】
+#3,【2026-05-06 至 2026-05-20】
+#4,【2026-05-21 至 xxxx】
+function funcPublicCloudClickhouseSyncer() {
+  local variUtc0DateStart="${1:-2026-01-01}" # 含：當天
+  local variUtc0DateEnd="${2:-2026-01-05}" # 含：當天
+  # ----------
+  local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_HOST")
+  local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PORT")
+  local variFromUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_USER")
+  local variFromPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PASSWORD")
+  local variFromDatabase="dsp"
+  local variFromTable="imp_stat"
+  # ----------
+  local variIntoHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
+  local variIntoPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
+  local variIntoUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_USER")
+  local variIntoPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PASSWORD")
+  local variIntoDatabase="paddlewaver_dsp"
+  local variIntoTable="imp_stat03_temp"
+  # ----------
+  local variContainerName="clickhouse"
+  # validator[START]
+  if ! date -I -d "${variUtc0DateStart}" >/dev/null 2>&1; then
+    echo "[ error ] incorrect parameter format : ${variUtc0DateStart}";
+    return 1
+  fi
+  if ! date -I -d "${variUtc0DateEnd}" >/dev/null 2>&1; then
+    echo "[ error ] incorrect parameter format : ${variUtc0DateEnd}";
+    return 1
+  fi
+  local variContainerStatus
+  variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null || true)
+  if [ "${variContainerStatus}" != "running" ]; then
+    echo "[ error ] container is inactive : ${variContainerName}";
+    return 1
+  fi
+  # validator[END]
+  local variFromMulti="--host=${variFromHost} --port=${variFromPort} --user=${variFromUser} --password=${variFromPassword}"
+  local variIntoMulti="--host=${variIntoHost} --port=${variIntoPort} --user=${variIntoUser} --password=${variIntoPassword}"
+  local variSqlEnvi="SETTINGS connect_timeout_with_failover_ms=1000, connections_with_failover_max_tries=5, receive_timeout=7200, send_timeout=7200, max_execution_time=14400, tcp_keep_alive_timeout=120"
+  # ----------
+  local variTempPath="/tmp/haohaiyou"
+  docker exec -i "${variContainerName}" mkdir -p "${variTempPath}" 2>/dev/null || true
+  # ----------
+  echo "--------------------------------------------------"
+  echo "from : ${variFromHost}:${variFromPort}/${variFromDatabase}.${variFromTable}"
+  echo "into : ${variIntoHost}:${variIntoPort}/${variIntoDatabase}.${variIntoTable}"
+  echo "date : ${variUtc0DateStart} - ${variUtc0DateEnd}"
+  echo "--------------------------------------------------"
+  local variWhileNum=0
+  local variSucceededNum=0
+  local variFailedNum=0
+  local variFailedMulti=""
+  local variEachUtc0Date="${variUtc0DateStart}"
+  local variWhileBreak; variWhileBreak=$(date -I -d "${variUtc0DateEnd} + 1 day")
+  while [ "${variEachUtc0Date}" != "${variWhileBreak}" ]; do
+    variWhileNum=$((variWhileNum + 1))
+    echo "--------------------------------------------------"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/開始同步"
+    local variEachExportSqlUri="${variTempPath}/${variFromTable}_${variEachUtc0Date}.sql"
+    local variEachExportNativeUri="${variTempPath}/${variFromTable}_${variEachUtc0Date}.native"
+    local variEachExitCode
+    # 統計「舊的數據」[START]
+    local variEachOldRaw variEachOldCount variEachOldSum
+    variEachOldRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variFromMulti} --query="SELECT count(), toInt64(ifNull(sum(settle_01bn), 0)) FROM ${variFromDatabase}.${variFromTable} FINAL WHERE utc0_date = '${variEachUtc0Date}' ${variSqlEnvi}")
+    variEachExitCode=$?
+    if [ "${variEachExitCode}" -ne 0 ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/統計失敗(OLD)"
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day");
+      continue
+    fi
+    variEachOldCount=$(echo "${variEachOldRaw}" | awk '{print $1}' | tr -d '[:space:]')
+    variEachOldSum=$(echo "${variEachOldRaw}" | awk '{print $2}' | tr -d '[:space:]')
+    [ -z "${variEachOldCount}" ] && variEachOldCount="0"
+    [ -z "${variEachOldSum}" ] && variEachOldSum="0"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/舊的數據：[COUNT()]${variEachOldCount} , [SUM(settle_01bn)]"$(awk "BEGIN {printf \"%.4f\", ${variEachOldSum}/100000000}")
+    if [ "${variEachOldCount}" = "0" ]; then
+      variSucceededNum=$((variSucceededNum + 1))
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day")
+      continue
+    fi
+    # 統計「舊的數據」[END]
+    # 構建導出SQL命令[START]
+    cat <<EOF | docker exec -i "${variContainerName}" sh -c "cat > '${variEachExportSqlUri}'"
+SELECT
+    utc0_date,
+    toUInt32(0) AS advertiser_id,
+    toUInt32(0) AS user_id,
+    toUInt32(0) AS offer_id,
+    campaign_id,
+    creative_id,
+    '' AS creative_set_id,
+    '' AS creative_asset_id,
+    toUInt32OrZero(ssp_id) AS ssp_id,
+    ssp_name,
+    traffic_type,
+    traffic_budo,
+    device_os,
+    device_geo_country,
+    imp_type,
+    imp_label,
+    multiIf(node_region='SINGAPORE', toUInt8(1), node_region='USEAST', toUInt8(2), toUInt8(0)) AS node_region,
+    impin_num,
+    impre_num,
+    impin_bidfloor_01mn AS bid_floor_01mn,
+    toInt64(0) AS bid_price_01mn,
+    win_num,
+    bill_num,
+    impression_num,
+    click_num,
+    i2c_num,
+    toInt64(0) AS ivt_num,
+    toInt64(0) AS ivt_01bn,
+    toInt64(0) AS settle_num,
+    settle_01bn,
+    toInt64(0) AS retail_01bn,
+    utc0_timestamp
+FROM ${variFromDatabase}.${variFromTable} FINAL
+WHERE utc0_date = '${variEachUtc0Date}'
+${variSqlEnvi}
+FORMAT Native
+EOF
+    variEachExitCode=$?
+    if [ "${variEachExitCode}" -ne 0 ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/構建失敗(SQL)"
+      docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day");
+      continue
+    fi
+    # 構建導出SQL命令[END]
+    # 執行導出[START]
+    docker exec -i "${variContainerName}" sh -c "clickhouse-client ${variFromMulti} --queries-file '${variEachExportSqlUri}' > '${variEachExportNativeUri}'"
+    variEachExitCode=$?
+    if [ "${variEachExitCode}" -ne 0 ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/導出失敗(NATIVE)"
+      docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day");
+      continue
+    fi
+    local variEachFileSize
+    variEachFileSize=$(docker exec -i "${variContainerName}" sh -c "wc -c < '${variEachExportNativeUri}'" 2>/dev/null | tr -d '[:space:]')
+    [ -z "${variEachFileSize}" ] && variEachFileSize="0"
+    if [ "${variEachFileSize}" = "0" ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/空的文件：${variEachExportNativeUri} (BUT:[FROM]COUNT()=${variEachOldCount})"
+      docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day");
+      continue
+    fi
+    local variEachFileSizeFormat
+    variEachFileSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variEachFileSize}/1048576}")
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/導出文件：${variEachExportNativeUri} (${variEachFileSizeFormat} MB)"
+    # 執行導出[END]
+    # 執行導入[START]
+    docker exec -i "${variContainerName}" sh -c "clickhouse-client ${variIntoMulti} --query='INSERT INTO ${variIntoDatabase}.${variIntoTable} FORMAT Native' < '${variEachExportNativeUri}'"
+    variEachExitCode=$?
+    if [ "${variEachExitCode}" -ne 0 ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/導入失敗(NATIVE)"
+      docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day");
+      continue
+    fi
+    # 執行導入[END]
+    # 統計「新的數據」[START]
+    local variEachNewRaw variEachNewCount variEachNewSum
+    variEachNewRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variIntoMulti} --query="SELECT count(), toInt64(ifNull(sum(settle_01bn), 0)) FROM ${variIntoDatabase}.${variIntoTable} FINAL WHERE utc0_date = '${variEachUtc0Date}'")
+    variEachExitCode=$?
+    if [ "${variEachExitCode}" -ne 0 ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/統計失敗(NEW)"
+      docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+      variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day"); continue
+    fi
+    variEachNewCount=$(echo "${variEachNewRaw}" | awk '{print $1}' | tr -d '[:space:]')
+    variEachNewSum=$(echo "${variEachNewRaw}" | awk '{print $2}' | tr -d '[:space:]')
+    [ -z "${variEachNewCount}" ] && variEachNewCount="0"
+    [ -z "${variEachNewSum}" ] && variEachNewSum="0"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/新的數據：[COUNT()]${variEachNewCount} , [SUM(settle_01bn)]"$(awk "BEGIN {printf \"%.4f\", ${variEachNewSum}/100000000}")
+    if [ "${variEachOldCount}" = "${variEachNewCount}" ] && [ "${variEachOldSum}" = "${variEachNewSum}" ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/對賬成功：[COUNT()]${variEachOldCount}==${variEachNewCount} && [SUM(settle_01bn)]${variEachOldSum}==${variEachNewSum}"
+      variSucceededNum=$((variSucceededNum + 1))
+    else
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/對賬失敗：[COUNT()]${variEachOldCount}!=${variEachNewCount} || [SUM(settle_01bn)]${variEachOldSum}!=${variEachNewSum}"
+      variFailedNum=$((variFailedNum + 1));
+      variFailedMulti="${variFailedMulti} ${variEachUtc0Date}"
+    fi
+    # 統計「新的數據」[END]
+    docker exec -i "${variContainerName}" rm -f "${variEachExportSqlUri}" "${variEachExportNativeUri}" 2>/dev/null || true
+    variEachUtc0Date=$(date -I -d "${variEachUtc0Date} + 1 day")
+    sleep 1
+  done
+  echo "--------------------------------------------------"
+  echo "執行結束：總共 ${variWhileNum} 天，{成功||跳过} ${variSucceededNum} 天，失敗 ${variFailedNum} 天"
+  if [ "${variFailedNum}" -gt 0 ]; then
+    echo " 失敗清单（需重新執行/funcPublicCloudClickhouseSyncer DATE DATE）："
+    echo "${variFailedMulti}"
+    echo "--------------------------------------------------"
+    return 1
+  fi
+  echo "全部日期執行成功"
+  echo "--------------------------------------------------"
+  return 0
+}
 # public function[END]
 # ##################################################
 
