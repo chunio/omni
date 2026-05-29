@@ -2089,27 +2089,27 @@ EOF
   fi
 }
 
-#1,【xxxx 至 2026-04-28】
-#2,【2026-04-29 至 2026-05-05】
-#3,【2026-05-06 至 2026-05-20】
+#1,【xxxx 至 2026-04-28】//imp_stat
+#2,【2026-04-29 至 2026-05-05】//imp_stat02
+#3,【2026-05-06 至 2026-05-20】//imp_stat03
 #4,【2026-05-21 至 xxxx】
 function funcPublicCloudClickhouseSyncer() {
-  local variUtc0DateStart="${1:-2026-01-01}" # 含：當天
-  local variUtc0DateEnd="${2:-2026-01-05}" # 含：當天
+  local variUtc0DateStart="${1:-2026-05-01}" # 含：當天
+  local variUtc0DateEnd="${2:-2026-05-20}" # 含：當天
   # ----------
   local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_HOST")
   local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PORT")
   local variFromUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_USER")
   local variFromPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PASSWORD")
-  local variFromDatabase="dsp"
+  local variFromDatabase="adx"
   local variFromTable="imp_stat"
   # ----------
   local variIntoHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
   local variIntoPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
   local variIntoUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_USER")
   local variIntoPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PASSWORD")
-  local variIntoDatabase="paddlewaver_dsp"
-  local variIntoTable="imp_stat03_temp"
+  local variIntoDatabase="paddlewaver_adx"
+  local variIntoTable="imp_stat"
   # ----------
   local variContainerName="clickhouse"
   # validator[START]
@@ -2155,7 +2155,7 @@ function funcPublicCloudClickhouseSyncer() {
     local variEachExitCode
     # 統計「舊的數據」[START]
     local variEachOldRaw variEachOldCount variEachOldSum
-    variEachOldRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variFromMulti} --query="SELECT count(), toInt64(ifNull(sum(settle_01bn), 0)) FROM ${variFromDatabase}.${variFromTable} FINAL WHERE utc0_date = '${variEachUtc0Date}' ${variSqlEnvi}")
+    variEachOldRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variFromMulti} --query="SELECT count(), toInt64(ifNull(sum(dsp_settle_profit_01be), 0)) FROM ${variFromDatabase}.${variFromTable} FINAL WHERE utc0_date = '${variEachUtc0Date}' ${variSqlEnvi}")
     variEachExitCode=$?
     if [ "${variEachExitCode}" -ne 0 ]; then
       echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/統計失敗(OLD)"
@@ -2176,45 +2176,65 @@ function funcPublicCloudClickhouseSyncer() {
     fi
     # 統計「舊的數據」[END]
     # 構建導出SQL命令[START]
+    # ----------
     cat <<EOF | docker exec -i "${variContainerName}" sh -c "cat > '${variEachExportSqlUri}'"
 SELECT
+    id,
     utc0_date,
-    toUInt32(0) AS advertiser_id,
-    toUInt32(0) AS user_id,
-    toUInt32(0) AS offer_id,
-    campaign_id,
-    creative_id,
-    '' AS creative_set_id,
-    '' AS creative_asset_id,
-    toUInt32OrZero(ssp_id) AS ssp_id,
-    ssp_name,
+    ssp_company_id,
+    ssp_config_id,
+    ssp_currency,
+    dsp_company_id,
+    dsp_config_id,
+    dsp_currency,
+    imp_type,
+    imp_label,
     traffic_type,
     traffic_budo,
     device_os,
     device_geo_country,
-    imp_type,
-    imp_label,
-    multiIf(node_region='SINGAPORE', toUInt8(1), node_region='USEAST', toUInt8(2), toUInt8(0)) AS node_region,
-    impin_num,
-    impre_num,
-    impin_bidfloor_01mn AS bid_floor_01mn,
-    toInt64(0) AS bid_price_01mn,
-    win_num,
-    bill_num,
-    impression_num,
-    click_num,
-    i2c_num,
-    toInt64(0) AS ivt_num,
-    toInt64(0) AS ivt_01bn,
-    toInt64(0) AS settle_num,
-    settle_01bn,
-    toInt64(0) AS retail_01bn,
+    node_region,
+    ssp_bidin_200all_num,
+    ssp_bidin_200ok_eval,
+    ssp_bidin_200un_num,
+    ssp_bidre_200all_num,
+    ssp_bidre_200all_time,
+    ssp_bidre_200all_01bn,
+    dsp_bidin_200all_num,
+    dsp_bidre_504all_eval,
+    dsp_bidre_204all_num,
+    dsp_bidre_200ok_eval,
+    dsp_bidre_200ko_num,
+    dsp_bidre_200un_num,
+    dsp_bidre_200all_num,
+    dsp_bidre_200all_time,
+    dsp_bidre_200all_01bn,
+    dsp_win_200all_eval,
+    dsp_win_200ok_num,
+    dsp_win_200un_num,
+    dsp_win_cost_01bn,
+    dsp_win_retail_01bn,
+    dsp_bill_200ok_num,
+    dsp_bill_cost_01bn,
+    dsp_bill_retail_01bn,
+    dsp_impression_200ok_num,
+    dsp_impression_cost_01bn,
+    dsp_impression_retail_01bn,
+    dsp_click_200ok_num,
+    dsp_click_cost_01bn,
+    dsp_click_retail_01bn,
+    dsp_notice_200ok_num,
+    dsp_settle_base_01bn,
+    dsp_settle_cost_01bn,
+    dsp_settle_retail_01bn,
+    dsp_settle_profit_01be,
     utc0_timestamp
 FROM ${variFromDatabase}.${variFromTable} FINAL
 WHERE utc0_date = '${variEachUtc0Date}'
 ${variSqlEnvi}
 FORMAT Native
 EOF
+    # ----------
     variEachExitCode=$?
     if [ "${variEachExitCode}" -ne 0 ]; then
       echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/構建失敗(SQL)"
@@ -2265,7 +2285,7 @@ EOF
     # 執行導入[END]
     # 統計「新的數據」[START]
     local variEachNewRaw variEachNewCount variEachNewSum
-    variEachNewRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variIntoMulti} --query="SELECT count(), toInt64(ifNull(sum(settle_01bn), 0)) FROM ${variIntoDatabase}.${variIntoTable} FINAL WHERE utc0_date = '${variEachUtc0Date}'")
+    variEachNewRaw=$(docker exec -i "${variContainerName}" clickhouse-client ${variIntoMulti} --query="SELECT count(), toInt64(ifNull(sum(dsp_settle_profit_01be), 0)) FROM ${variIntoDatabase}.${variIntoTable} FINAL WHERE utc0_date = '${variEachUtc0Date}'")
     variEachExitCode=$?
     if [ "${variEachExitCode}" -ne 0 ]; then
       echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${variEachUtc0Date}/統計失敗(NEW)"
