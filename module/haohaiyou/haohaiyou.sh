@@ -2094,21 +2094,21 @@ EOF
 #3,【2026-05-06 至 2026-05-20】//imp_stat03
 #4,【2026-05-21 至 xxxx】
 function funcPublicCloudClickhouseSyncer() {
-  local variUtc0DateStart="${1:-2026-05-01}" # 含：當天
+  local variUtc0DateStart="${1:-2026-01-01}" # 含：當天
   local variUtc0DateEnd="${2:-2026-05-20}" # 含：當天
   # ----------
   local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_HOST")
   local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PORT")
   local variFromUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_USER")
   local variFromPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_FROM_PASSWORD")
-  local variFromDatabase="adx"
+  local variFromDatabase="adx_yone"
   local variFromTable="imp_stat"
   # ----------
   local variIntoHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
   local variIntoPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
   local variIntoUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_USER")
   local variIntoPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PASSWORD")
-  local variIntoDatabase="paddlewaver_adx"
+  local variIntoDatabase="yone_adx"
   local variIntoTable="imp_stat"
   # ----------
   local variContainerName="clickhouse"
