@@ -2324,6 +2324,91 @@ EOF
   echo "--------------------------------------------------"
   return 0
 }
+
+function funcPublicCloudClickhouseExport() {
+  local variTargetSqlUri="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/temp.sql"
+  local variTargetCsvUri="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/temp.csv"
+  local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
+  local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
+  local variFromUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_USER")
+  local variFromPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PASSWORD")
+  local variContainerName="clickhouse"
+  # validator[START]
+  if [ -z "${variTargetSqlUri}" ] || [ ! -f "${variTargetSqlUri}" ]; then
+    echo "[ error ] invalid parameter / sql : ${variTargetSqlUri}"
+    return 0
+  fi
+  if [ -z "${variTargetCsvUri}" ]; then
+    echo "[ error ] invalid parameter / csv"
+    return 0
+  fi
+  local variContainerStatus
+  variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null || true)
+  if [ "${variContainerStatus}" != "running" ]; then
+    echo "[ error ] container is inactive : ${variContainerName}";
+    return 0
+  fi
+  # validator[END]
+  local variFromMulti="--host=${variFromHost} --port=${variFromPort} --user=${variFromUser} --password=${variFromPassword} --compression=1"
+  local variSqlEnvi="SETTINGS connect_timeout_with_failover_ms=1000, connections_with_failover_max_tries=5, receive_timeout=7200, send_timeout=7200, max_execution_time=14400, tcp_keep_alive_timeout=120, max_block_size=8192"
+  # ----------
+  local variTempPath="/tmp/haohaiyou"
+  local variTempSqlUri="${variTempPath}/export_temp.sql"
+  local variTempCsvUri="${variTempPath}/export_temp.csv"
+  docker exec -i "${variContainerName}" mkdir -p "${variTempPath}" 2>/dev/null || true
+  # ----------
+  echo "--------------------------------------------------"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 任務明細"
+  echo "SQL來源 : ${variTargetSqlUri}"
+  echo "CSV目標 : ${variTargetCsvUri}"
+  echo "--------------------------------------------------"
+  local variExitCode
+  # 執行導出[START]
+  # 1將目標SQL寫至容器內部，並且追加「FORMAT CSVWithNames」」與「SETTINGS」
+  cat "${variTargetSqlUri}" | docker exec -i "${variContainerName}" sh -c "cat > '${variTempSqlUri}'; echo '\n${variSqlEnvi}\nFORMAT CSVWithNames' >> '${variTempSqlUri}'"
+  # 2後台執行 (&)
+  docker exec -i "${variContainerName}" sh -c "clickhouse-client ${variFromMulti} --queries-file '${variTempSqlUri}' > '${variTempCsvUri}'" &
+  local variProcessId=$!
+  # 3前台監控[START]
+  while kill -0 "${variProcessId}" 2>/dev/null; do
+    local variCurrentSize
+    variCurrentSize=$(docker exec -i "${variContainerName}" stat -c %s "${variTempCsvUri}" 2>/dev/null | tr -d '[:space:]')
+    [ -z "${variCurrentSize}" ] && variCurrentSize="0"
+    local variCurrentSizeFormat
+    variCurrentSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variCurrentSize}/1048576}")
+    #「\r」使得光標回至行首，動態刷新
+    printf "\r[$(date '+%Y-%m-%d %H:%M:%S')] 正導出至臨時文件 : %s MB" "${variCurrentSizeFormat}"
+    sleep 2
+  done
+  # 3前台監控[END]
+  wait "${variProcessId}"
+  variExitCode=$?
+  echo "" # 補充一個換行符號
+  if [ "${variExitCode}" -ne 0 ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出失敗(${variExitCode})"
+    docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempCsvUri}" 2>/dev/null || true
+    echo "--------------------------------------------------"
+    return 0
+  fi
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 正複製至目標文件 ..."
+  docker exec -i "${variContainerName}" sh -c "cat '${variTempCsvUri}'" > "${variTargetCsvUri}"
+  local variFileSize
+  variFileSize=$(wc -c < "${variTargetCsvUri}" 2>/dev/null | tr -d '[:space:]')
+  [ -z "${variFileSize}" ] && variFileSize="0"
+  if [ "${variFileSize}" = "0" ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 空的文件"
+    docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempCsvUri}" 2>/dev/null || true
+    echo "--------------------------------------------------"
+    return 0
+  fi
+  local variFileSizeFormat
+  variFileSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variFileSize}/1048576}")
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出成功（${variTargetCsvUri} (${variFileSizeFormat} MB)"
+  docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempCsvUri}" 2>/dev/null || true
+  # 執行導出[END]
+  echo "--------------------------------------------------"
+  return 0
+}
 # public function[END]
 # ##################################################
 
