@@ -1927,7 +1927,7 @@ function funcPublicCloudUnicornMinutelyCrontab(){
   local variOrderByUtc0DatehourDescUri=$(mktemp)
   # ORDER BY「storage」DESC
   # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variEachFileUri; do
-  # 檢索待歸檔文件[START]
+  # 遍歷文件[START]
   local variLogFileKeepHour=$(date -u -d "2 hours ago" "+%Y%m%d%H")
   find "${variPath}" -type f -name "*.log" | while read -r variEachFileUri; do
     variEachFilename=$(basename "${variEachFileUri}")
@@ -1952,8 +1952,8 @@ function funcPublicCloudUnicornMinutelyCrontab(){
       fi
     fi
   done
-  # 檢索待歸檔文件[END]
-  # ORDER BY「variEachUtc0Datehour」DESC[START]
+  # 遍歷文件[END]
+  # 「ORDER BY「variEachUtc0Datehour」DESC」 && 執行歸檔[START]
   sort -r -k1,1 "${variOrderByUtc0DatehourDescUri}" | while read -r variEachUtc0Datehour variEachFileUri variEachArchivedUri; do
     # exit signal monitor[START]
     if [ -f "${variArchivedExitUri}" ]; then
@@ -1987,7 +1987,7 @@ function funcPublicCloudUnicornMinutelyCrontab(){
     variEachArchivedSize=$(echo "scale=2; $(stat -c%s "${variEachArchivedUri}")/1048576" | bc)
     echo "-> ${variEachDuration} / ${variEachFileSize}MB >> ${variEachArchivedSize}MB ${variEachArchivedUri}" succeeded >> "${variArchivedLogUri}"
   done
-  # ORDER BY「variEachUtc0Datehour」DESC[END]
+  # 「ORDER BY「variEachUtc0Datehour」DESC」 && 執行歸檔[END]
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} COMPLETED" >> "${variArchivedLogUri}"
   rm -rf "${variOrderByUtc0DatehourDescUri}" "${variArchivedLockUri}" "${variArchivedExitUri}"
   return 0
