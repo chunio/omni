@@ -1892,9 +1892,9 @@ function funcPublicCloudUnicornMinutelyCrontab(){
       return 1
       ;;
   esac
-  local variArchivedLockUri="/workspace/runtime/archived.lock"
-  local variArchivedExitUri="/workspace/runtime/archived.exit"
-  local variArchivedLogUri="/workspace/runtime/archived.log"
+  local variArchivedLockUri="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/archived.lock"
+  local variArchivedExitUri="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/archived.exit"
+  local variArchivedLogUri="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/archived.log"
   if [ -f "${variArchivedLockUri}" ]; then
     # 鎖定文件大於2個小時則重置[START]
     local variCurrentTimestamp=$(date -u +%s)
@@ -1909,39 +1909,50 @@ function funcPublicCloudUnicornMinutelyCrontab(){
   fi
   touch "${variArchivedLockUri}"
   echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ACTION" >> "${variArchivedLogUri}"
-  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[START]
-  local variBidRequestCustomHour=$(date -u -d "6 hours ago" "+%Y%m%d%H")
+  #「*bid-request*」相關日誌僅保留5個小時，超時刪除[START]
+  local variBidRequestArchivedFileKeepHour=$(date -u -d "5 hours ago" "+%Y%m%d%H")
   find "${variPath}" -type f -name "*bid-request*" | while read -r variEachFileUri; do
     variEachFilename=$(basename "${variEachFileUri}")
     if [[ ${variEachFilename} =~ ([0-9]{10}) ]]; then
       variEachUtc0Datehour=${BASH_REMATCH[1]}
       if [[ ${variEachUtc0Datehour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
-        if [[ "${variEachUtc0Datehour}" -lt "${variBidRequestCustomHour}" ]]; then
+        if [[ "${variEachUtc0Datehour}" -lt "${variBidRequestArchivedFileKeepHour}" ]]; then
           rm -rf "${variEachFileUri}"
           echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ${variEachFileUri} DELETED" >> "${variArchivedLogUri}"
         fi
       fi 
     fi
   done
-  #「*bid-request*」相關日誌僅保留6個小時，超時刪除[END]
+  #「*bid-request*」相關日誌僅保留5個小時，超時刪除[END]
   local variOrderByUtc0DatehourDescUri=$(mktemp)
   # ORDER BY「storage」DESC
   # find "${variPath}" -type f -name "*.log" -printf '%s %p\n' | sort -n | cut -d' ' -f2- | while read -r variEachFileUri; do
+  # 檢索待歸檔文件[START]
+  local variLogFileKeepHour=$(date -u -d "2 hours ago" "+%Y%m%d%H")
   find "${variPath}" -type f -name "*.log" | while read -r variEachFileUri; do
     variEachFilename=$(basename "${variEachFileUri}")
     if [[ $variEachFilename =~ ([0-9]{10}) ]]; then
       variEachUtc0Datehour=${BASH_REMATCH[1]}
       if [[ ${variEachUtc0Datehour} =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])(0[0-9]|1[0-9]|2[0-3])$ ]]; then
+        # 大於等於「開始時間」&& 小於「結束時間」
         if [[ "${variEachUtc0Datehour}" -ge "${variKeywordUtc0DatehourStart}" && "${variEachUtc0Datehour}" -lt "${variKeywordUtc0DatehourEnd}" ]]; then
           variEachArchivedUri="${variEachFileUri%.log}.${variSuffix}"
           if [[ ! -f "${variEachArchivedUri}" ]]; then
               # ll -lh "${variEachFileUri}"
               echo "${variEachUtc0Datehour} ${variEachFileUri} ${variEachArchivedUri}" >> "${variOrderByUtc0DatehourDescUri}"
+          else
+            # 如「已經歸檔 && 2小時前」則刪除日誌文件[START]
+            if [[ "${variEachUtc0Datehour}" -lt "${variLogFileKeepHour}" ]]; then
+              # rm -f "${variEachFileUri}"
+              echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ${variEachFileUri} DELETED (archived && older than 2h)" >> "${variArchivedLogUri}"
+            fi
+            # 如「已經歸檔 && 2小時前」則刪除日誌文件[END]
           fi
         fi
       fi
     fi
   done
+  # 檢索待歸檔文件[END]
   # ORDER BY「variEachUtc0Datehour」DESC[START]
   sort -r -k1,1 "${variOrderByUtc0DatehourDescUri}" | while read -r variEachUtc0Datehour variEachFileUri variEachArchivedUri; do
     # exit signal monitor[START]
