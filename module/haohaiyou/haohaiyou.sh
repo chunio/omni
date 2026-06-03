@@ -1941,12 +1941,12 @@ function funcPublicCloudUnicornMinutelyCrontab(){
               # ll -lh "${variEachFileUri}"
               echo "${variEachUtc0Datehour} ${variEachFileUri} ${variEachArchivedUri}" >> "${variOrderByUtc0DatehourDescUri}"
           else
-            # 如「已經歸檔 && 2小時前」則刪除日誌文件[START]
+            # 如「已經歸檔 && 2小時前」則刪除日誌文件（含：*.log）[START]
             if [[ "${variEachUtc0Datehour}" -lt "${variLogFileKeepHour}" ]]; then
-              # rm -f "${variEachFileUri}"
+              rm -f "${variEachFileUri}"
               echo "[ UTC0 : $(date -u "+%Y-%m-%d %H:%M:%S") ] ${variExecuteId} ${variEachFileUri} DELETED (archived && older than 2h)" >> "${variArchivedLogUri}"
             fi
-            # 如「已經歸檔 && 2小時前」則刪除日誌文件[END]
+            # 如「已經歸檔 && 2小時前」則刪除日誌文件（含：*.log）[END]
           fi
         fi
       fi
