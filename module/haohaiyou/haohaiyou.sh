@@ -79,7 +79,7 @@ VARI_GLOBAL["BASTION_IP"]=""
 VARI_GLOBAL["BASTION_PORT"]=""
 VARI_GLOBAL["HOST_MACHINE_WORKSPACE_PATH"]="/Users/zengweitao/archived/workspace"
 VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]="/workspace"
-VARI_GLOBAL["OMNI_BRANCH"]="feature/zengweitao/migration"
+VARI_GLOBAL["OMNI_BRANCH"]="main"
 # 0 declare 顯式聲明，支持指定數據類型（否則：字符串（default））
 # 1 declare -a 索引數組
 # 2 declare -A 關聯數組
