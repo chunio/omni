@@ -563,6 +563,17 @@ DOCKERCOMPOSEYML
 # apt-get update
 # apt-get install -y graphviz
 # apt-get install -y vim
+:<<'MARK'
+  # 兼容處理[START]
+  mkdir -p /etc/docker
+  cat <<EOF > /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=cgroupfs"]
+}
+EOF
+  systemctl restart docker
+  # 兼容處理[END]
+MARK
 function funcPublicUnicorn()
 {
   local variContainerName="unicorn"
@@ -609,9 +620,9 @@ services:
       - GOENV=/go.env.linux
       - PATH=$PATH:/usr/local/go/bin:${variHostMachineEnviPath}/gopath/bin/linux
     volumes:
-      - /mnt/mac/Users:/Users
       # - /mnt:/mnt
       # - ${BUILTIN_UNIT_CLOUD_PATH}/bin:${variHostMachineEnviPath}/gopath/bin
+      - /mnt/mac/Users:/Users
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/go.env.linux:/go.env.linux
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/entrypoint.sh:/usr/local/bin/entrypoint.sh
     working_dir: ${variHostMachineProjectPath}
@@ -842,6 +853,8 @@ function funcPublicCloudIptableReinit(){
               "redis/yone/adx/repo 10.1.0.3 21220"
               "redis/yone/dsp/bid 10.1.0.11 21310"
               "redis/yone/dsp/repo 10.1.0.8 21320"
+              # ----------
+              "mysql/paddlewaver/skeleton/advertiser 10.1.16.37 3306"
               # ----------
               "clickhouse/union/common/http 10.1.16.11 8123"
               "clickhouse/union/common/tcp 10.1.16.11 9000"
