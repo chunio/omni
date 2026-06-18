@@ -1778,22 +1778,21 @@ function funcPublicCloudUnicornCheck() {
   local variBastionIp=$(funcProtectedPullEncryptEnvi "BASTION_IP")
   local variBastionPort=$(funcProtectedPullEncryptEnvi "BASTION_PORT")
   for variEachValue in "${VARI_B40BC66C185E49E93B95239A8365AC4A[@]}"; do
-    variEachIndex=$(echo ${variEachValue} | awk '{print $1}')
-    variEachModule=$(echo ${variEachValue} | awk '{print $2}')
-    variEachService=$(echo ${variEachValue} | awk '{print $3}')
-    variEachLabel=$(echo ${variEachValue} | awk '{print $4}')
-    variEachDomain=$(echo ${variEachValue} | awk '{print $5}')
-    variEachRegion=$(echo ${variEachValue} | awk '{print $6}')
-    variEachIp=$(echo ${variEachValue} | awk '{print $7}')
-    variEachPort=$(echo ${variEachValue} | awk '{print $8}')
-    variEachDesc=$(echo ${variEachValue} | awk '{print $9}')
-    rm -rf /root/.ssh/known_hosts
-    ssh -o StrictHostKeyChecking=no -A -p ${variBastionPort} -t ${variBastionAccount}@${variBastionIp} <<BASTIONEOF
+    read -r variEachIndex variEachModule variEachService variEachLabel variEachDomain variEachRegion variEachIp variEachPort variEachOs variEachDesc <<< "$variEachValue"
+    # 自動兼容係統類型[START]
+    local variEachSlaveAccount="root"
+    local variEachSudoCommand=""
+    if [[ "${variEachOs}" == "UBUNTU" ]]; then
+      variEachSlaveAccount="ubuntu"
+      variEachSudoCommand="sudo bash -s"
+    fi
+    # 自動兼容係統類型[END]
+    ssh -o StrictHostKeyChecking=no -p ${variBastionPort} -T ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
       echo "===================================================================================================="
       echo ">> [ SLAVE ] ${variEachValue} ..."
       echo "===================================================================================================="
-      rm -rf /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no -p ${variEachPort} -t root@${variEachIp} <<SLAVEEOF
+      ssh-keygen -R ${variEachIp} >/dev/null 2>&1
+      ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} "${variEachSudoCommand}" <<SLAVEEOF
         tail -n 50 ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variEachModule,,}.log
         # 按「文件大小」倒敘排序，取前10個
         ls -lhS ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/haohaiyou/unicorn/runtime | grep -v '^d' | head -n 11

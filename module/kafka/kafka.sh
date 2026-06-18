@@ -86,9 +86,11 @@ function funcPublicImportBusinessData_Haohaiyou() {
   local variContainerName="kafka"
   local variTopicSlice=(
     # ----------
-    paddlewaver_adx_dsp_stat_topic
-    paddlewaver_adx_imp_stat_topic
     paddlewaver_adx_imp_stream_topic
+    paddlewaver_adx_imp_stat02_topic
+    paddlewaver_adx_bid_stat_topic
+    paddlewaver_adx_track_stat_topic
+    paddlewaver_adx_dsp_stat02_topic
     paddlewaver_adx_landing_page_topic
     # ----------
     paddlewaver_dsp_budo_stat_topic
