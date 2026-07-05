@@ -224,9 +224,10 @@ function funcPublicImportBusinessData_Haohaiyou() {
     echo "[ warn ] ${varSchemaMasterPath} is empty(0)"
     return 1
   fi
-  shopt -s nullglob
-  local variSchemeSlavePathSlice=("${varSchemaMasterPath}"/*/)
-  shopt -u nullglob
+  # 目錄排序/名稱升序[START]
+  local variSchemeSlavePathSlice
+  mapfile -t variSchemeSlavePathSlice < <(find "${varSchemaMasterPath}" -mindepth 1 -maxdepth 1 -type d | sort -V)
+  # 目錄排序/名稱升序[END]
   if [ ${#variSchemeSlavePathSlice[@]} -eq 0 ]; then
     echo "[ warn ] ${varSchemaMasterPath} is empty(1)"
     return 0
@@ -241,9 +242,9 @@ function funcPublicImportBusinessData_Haohaiyou() {
   local variEachSchemaSlavePath variEachSqlUri variImportStatus variEachCommand
   local variSqlUriSlice
   for variEachSchemaSlavePath in "${variSchemeSlavePathSlice[@]}"; do
-    shopt -s nullglob
-    variSqlUriSlice=("${variEachSchemaSlavePath}"*.sql)
-    shopt -u nullglob
+    # 文件排序/名稱升序[START]
+    mapfile -t variSqlUriSlice < <(find "${variEachSchemaSlavePath}" -maxdepth 1 -name "*.sql" -type f | sort -V)
+    # 文件排序/名稱升序[END]
     if [ ${#variSqlUriSlice[@]} -eq 0 ]; then
       echo "[ warn ] ${variEachSchemaSlavePath} is empty(2)"
       continue

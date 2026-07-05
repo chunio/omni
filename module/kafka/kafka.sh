@@ -94,12 +94,20 @@ function funcPublicImportBusinessData_Haohaiyou() {
     paddlewaver_adx_landing_page_topic
     # ----------
     paddlewaver_dsp_budo_stat_topic
-    paddlewaver_dsp_impin_stat_topic
-    paddlewaver_dsp_impre_stat_topic
-    paddlewaver_dsp_imp_stat03_topic
+    # paddlewaver_dsp_impin_stat_topic
+    # paddlewaver_dsp_impre_stat_topic
+    # paddlewaver_dsp_imp_stat03_topic
+    paddlewaver_dsp_imp_stat10_topic
+    paddlewaver_dsp_imp_stat10_bid_union_topic
+    paddlewaver_dsp_imp_stat10_track_union_topic
+    paddlewaver_dsp_imp_stat10_conversion_union_topic
     paddlewaver_dsp_imp_stream_topic
+    paddlewaver_dsp_imp_stream10_topic
+    paddlewaver_dsp_imp_stream10_hour_stat_track_union_topic
+    paddlewaver_dsp_imp_stream10_value_stat_track_union_topic
+    paddlewaver_dsp_imp_stream10_affiliate_template_topic
     paddlewaver_dsp_imp_streamstate03_topic
-    paddlewaver_dsp_notice_stat_topic
+    # paddlewaver_dsp_notice_stat_topic
     # ----------
     paddlewaver_adx_sclick_bid_request_sg_topic
     paddlewaver_adx_sclick_track_impression_sg_topic
