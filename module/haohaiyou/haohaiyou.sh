@@ -940,6 +940,7 @@ function funcPublicCloudSkeletonReinit() {
     ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
       ssh-keygen -R ${variEachIp} >/dev/null 2>&1 || true
       scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
+      scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/encrypt.envi ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
       ssh -o StrictHostKeyChecking=no -A -p ${variEachPort} -T ${variEachSlaveAccount}@${variEachIp} "${variEachSudoCommand}" <<SLAVEEOF
         echo "===================================================================================================="
         echo ">> [ SLAVE ] ${variEachValue} ..."
