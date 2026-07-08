@@ -2390,7 +2390,7 @@ function funcPublicCloudClickhouseExport() {
   # 1將目標SQL寫至容器內部，並且追加「FORMAT CSVWithNames」」與「SETTINGS」
   cat "${variTargetSqlUri}" | docker exec -i "${variContainerName}" sh -c "cat > '${variTempSqlUri}'; echo '\n${variSqlEnvi}\nFORMAT CSVWithNames' >> '${variTempSqlUri}'"
   # 2後台執行 (&)
-  docker exec -i "${variContainerName}" sh -c "clickhouse-client ${variFromMulti} --queries-file '${variTempSqlUri}' > '${variTempCsvUri}'" &
+  docker exec "${variContainerName}" sh -c "clickhouse-client ${variFromMulti} --queries-file '${variTempSqlUri}' > '${variTempCsvUri}'" &
   local variProcessId=$!
   # 3前台監控[START]
   while kill -0 "${variProcessId}" 2>/dev/null; do
@@ -2428,6 +2428,131 @@ function funcPublicCloudClickhouseExport() {
   variFileSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variFileSize}/1048576}")
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出成功（${variTargetCsvUri} (${variFileSizeFormat} MB)"
   docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempCsvUri}" 2>/dev/null || true
+  # 執行導出[END]
+  echo "--------------------------------------------------"
+  return 0
+}
+
+# 根據「imp_stream10_device_stat」導出「網盟數據」，示例：yone_bidswitch_sg > factory.resource.industry > KOR > VIDE0 > 0|1l1l0%
+function funcPublicCloudAffiliateTemplateExport() {
+  local variService=${1:-"MASTER"}
+  local variDomain=${2:-"PADDLEWAVER"}
+  local variDomainLower=$(echo "${variDomain}" | tr 'A-Z' 'a-z')
+  local variRegion=${3:-"SINGAPORE"}
+  # 僅支持「UTC0 01:00:00」時段執行[START]
+  local variUtc0Hour=$(date -u +"%H")
+  if [ "${variUtc0Hour}" != "01" ]; then
+      return 0
+  fi
+  # 僅支持「UTC0 01:00:00」時段執行[END]
+  # 僅支持「MASTER && SINGAPORE」節點執行[START]
+  if [ "${variService}" != "MASTER" ] || [ "${variRegion}" != "SINGAPORE" ]; then
+      echo "${variService} != MASTER || ${variRegion} != SINGAPORE"
+      return 0
+  fi
+  # 僅支持「MASTER && SINGAPORE」節點執行[END]
+  local variUtc0DateN1
+  local variUtc0DateN1ShortName
+  variUtc0DateN1=$(date -u -d "yesterday" "+%Y-%m-%d")
+  variUtc0DateN1ShortName=$(date -u -d "yesterday" "+%Y%m%d")
+  # ----------
+  local variContainerName="clickhouse"
+  local variTempPath="/tmp/haohaiyou"
+  local variTempSqlUri="${variTempPath}/affiliate_template.sql"
+  local variTempLogUri="${variTempPath}/affiliate_template.log"
+  # local variTargetLogUri="/mnt/volume1/unicorn/runtime/imp_streamstate03-${variUtc0DateN1ShortName}.log"
+  local variTargetLogUri="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/imp_streamstate03-${variUtc0DateN1ShortName}.log"
+  # ----------
+  local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
+  local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
+  local variFromUser=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_USER")
+  local variFromPassword=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PASSWORD")
+  # ----------
+  # validator[START]
+  local variContainerStatus
+  variContainerStatus=$(docker inspect -f '{{.State.Status}}' "${variContainerName}" 2>/dev/null || true)
+  if [ "${variContainerStatus}" != "running" ]; then
+    echo "[ error ] container is inactive : ${variContainerName}"
+    return 0
+  fi
+  # validator[END]
+  local variFromMulti="--host=${variFromHost} --port=${variFromPort} --user=${variFromUser} --password=${variFromPassword} --compression=1"
+  # 配置1：限制內存：20GB (21474836480 bytes，適配量級：4000萬條記錄)
+  local variSqlEnvi="SETTINGS max_execution_time=14400, max_bytes_before_external_group_by=21474836480, max_bytes_before_external_sort=21474836480, format_custom_field_delimiter='|', format_custom_row_after_delimiter='\n'"
+  # 配置2：延遲拼接以減少內存開銷 (首先執行「GROUP BY」和「ORDER BY」，最後進行「concat」)
+  local variSqlRaw="
+SELECT
+    concat(ssp_config_name, ' > ', traffic_budo, ' > ', device_geo_country, ' > ', imp_type, ' > ', creative_id) AS concat_label,
+    impin_num,
+    device_id_num,
+    concat(toString(round(greatest((impin_num - device_id_num) / impin_num, 0) * 100, 2)), '%') AS ratio
+FROM (
+    SELECT
+        ssp_config_name,
+        traffic_budo,
+        device_geo_country,
+        imp_type,
+        creative_id,
+        countMerge(impin_num_state) AS impin_num,
+        uniqCombined64Merge(device_id_state) AS device_id_num
+    FROM ${variDomainLower}_dsp.imp_stream10_device_stat
+    WHERE utc0_date = '${variUtc0DateN1}'
+    GROUP BY ssp_config_name, traffic_budo, device_geo_country, imp_type, creative_id
+    ORDER BY impin_num DESC
+)
+"
+  # ----------
+  echo "--------------------------------------------------"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 數據日期 : ${variUtc0DateN1}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 命令文件 : ${variTempSqlUri}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 臨時文件 : ${variTempLogUri}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 最終文件 : ${variTargetLogUri}"
+  echo "--------------------------------------------------"
+  # 執行導出[START]
+  docker exec -i "${variContainerName}" mkdir -p "${variTempPath}" 2>/dev/null || true
+  docker exec -i "${variContainerName}" sh -c "cat > '${variTempSqlUri}'" <<EOF
+${variSqlRaw}
+${variSqlEnvi}
+FORMAT CustomSeparated
+EOF
+  # 後台執行導出至容器內部臨時文件 (&)
+  docker exec -i "${variContainerName}" sh -c "clickhouse-client ${variFromMulti} --queries-file '${variTempSqlUri}' > '${variTempLogUri}'" &
+  local variProcessId=$!
+  # 前台監控[START]
+  while kill -0 "${variProcessId}" 2>/dev/null; do
+    local variCurrentSize
+    variCurrentSize=$(docker exec -i "${variContainerName}" stat -c %s "${variTempLogUri}" 2>/dev/null | tr -d '[:space:]')
+    [ -z "${variCurrentSize}" ] && variCurrentSize="0"
+    local variCurrentSizeFormat
+    variCurrentSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variCurrentSize}/1048576}")
+    printf "\r[$(date '+%Y-%m-%d %H:%M:%S')] 導出進度 : %s MB" "${variCurrentSizeFormat}"
+    sleep 1
+  done
+  # 前台監控[END]
+  wait "${variProcessId}"
+  local variExitCode
+  variExitCode=$?
+  echo "" # 補充一個換行符號
+  if [ "${variExitCode}" -ne 0 ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出失敗（${variExitCode}）"
+    docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempLogUri}" 2>/dev/null || true
+    echo "--------------------------------------------------"
+    return 0
+  fi
+  docker exec -i "${variContainerName}" sh -c "cat '${variTempLogUri}'" > "${variTargetLogUri}"
+  local variFileSize
+  variFileSize=$(wc -c < "${variTargetLogUri}" 2>/dev/null | tr -d '[:space:]')
+  [ -z "${variFileSize}" ] && variFileSize="0"
+  if [ "${variFileSize}" = "0" ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出失敗（空的文件）"
+    docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempLogUri}" 2>/dev/null || true
+    echo "--------------------------------------------------"
+    return 0
+  fi
+  local variFileSizeFormat
+  variFileSizeFormat=$(awk "BEGIN {printf \"%.2f\", ${variFileSize}/1048576}")
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 導出成功 : ${variTargetLogUri}（${variFileSizeFormat} MB）"
+  docker exec -i "${variContainerName}" rm -f "${variTempSqlUri}" "${variTempLogUri}" 2>/dev/null || true
   # 執行導出[END]
   echo "--------------------------------------------------"
   return 0
