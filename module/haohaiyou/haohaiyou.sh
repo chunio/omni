@@ -2441,15 +2441,15 @@ function funcPublicCloudAffiliateTemplateExport() {
   local variDomainLower=$(echo "${variDomain}" | tr 'A-Z' 'a-z')
   local variRegion=${3:-"SINGAPORE"}
   # 僅支持「UTC0 01:00:00」時段執行[START]
-  # local variUtc0Hour=$(date -u +"%H")
-  # if [ "${variUtc0Hour}" != "01" ]; then
-  #    return 0
-  # fi
+  local variUtc0Hour=$(date -u +"%H")
+  if [ "${variUtc0Hour}" != "01" ]; then
+    return 0
+  fi
   # 僅支持「UTC0 01:00:00」時段執行[END]
   # 僅支持「MASTER && SINGAPORE」節點執行[START]
   if [ "${variService}" != "MASTER" ] || [ "${variRegion}" != "SINGAPORE" ]; then
-      echo "${variService} != MASTER || ${variRegion} != SINGAPORE"
-      return 0
+    echo "${variService} != MASTER || ${variRegion} != SINGAPORE"
+    return 0
   fi
   # 僅支持「MASTER && SINGAPORE」節點執行[END]
   local variUtc0DateN1
@@ -2461,8 +2461,8 @@ function funcPublicCloudAffiliateTemplateExport() {
   local variTempPath="/tmp/haohaiyou"
   local variTempSqlUri="${variTempPath}/affiliate_template.sql"
   local variTempLogUri="${variTempPath}/affiliate_template.log"
-  # local variTargetLogUri="/mnt/volume1/unicorn/runtime/imp_streamstate03-${variUtc0DateN1ShortName}.log"
-  local variTargetLogUri="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/imp_streamstate03-${variUtc0DateN1ShortName}.log"
+  local variTargetLogUri="/mnt/volume1/unicorn/runtime/imp_streamstate03-${variUtc0DateN1ShortName}.log"
+  # local variTargetLogUri="${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/imp_streamstate03-${variUtc0DateN1ShortName}.log"
   # ----------
   local variFromHost=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_HOST")
   local variFromPort=$(funcProtectedPullEncryptEnvi "CLICKHOUSE_INTO_PORT")
