@@ -936,6 +936,7 @@ function funcPublicCloudSkeletonReinit() {
       variEachSudoCommand="sudo bash -s"
     fi
     # 自動兼容係統類型/2[END]
+    scp -P ${variBastionPort} -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi ${variBastionAccount}@${variBastionIp}:${variScpPath}/
     ssh -o StrictHostKeyChecking=no -p ${variBastionPort} ${variBastionAccount}@${variBastionIp} "${variEachSudoCommand}" <<BASTIONEOF
       ssh-keygen -R ${variEachIp} >/dev/null 2>&1 || true
       scp -P ${variEachPort} -o StrictHostKeyChecking=no ${variScpPath}/omni.haohaiyou.cloud.ssh.tgz ${variEachSlaveAccount}@${variEachIp}:${variScpPath}/
@@ -979,7 +980,7 @@ function funcPublicCloudSkeletonReinit() {
         echo "[ omni ] git reset --hard origin/${VARI_GLOBAL["OMNI_BRANCH"]} finished"
         # ----------
         chmod 777 -R .
-        # /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
+        /usr/bin/cp -rf ${variScpPath}/encrypt.envi ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/
         ./init/system/system.sh init
         source "${VARI_GLOBAL["BUILTIN_OMNIRC_URI"]}"
         # omni.system init[END]
@@ -1023,10 +1024,9 @@ function funcPublicCloudSkeletonReinit() {
         expect eof
         '
         # crontab[START]
-        if grep -Fq "cloudSkeletonHourlyCrontab" "${variCrontabEnviUri}"; then
-          sed -i '/cloudSkeletonHourlyCrontab/d' "${variCrontabEnviUri}"
-        fi
+        sed -i -e '/cloudSkeletonHourlyCrontab/d' -e '/cloudAffiliateTemplateExport/d' "${variCrontabEnviUri}"
         echo "0 * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudSkeletonHourlyCrontab > /dev/null 2>&1" >> "${variCrontabEnviUri}"
+        echo "0 * * * * sudo /workspace/repository/chunio/omni/module/haohaiyou/haohaiyou.sh cloudAffiliateTemplateExport ${variEachService} ${variEachDomain} ${variEachRegion} > /dev/null 2>&1" >> "${variCrontabEnviUri}"
         cat "${variCrontabEnviUri}"
         ${variCrontabReloadCommand}
         # crontab[END]

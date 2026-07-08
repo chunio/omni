@@ -21,8 +21,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["CLICKHOUSE_USERNAME"]=""
-VARI_GLOBAL["CLICKHOUSE_PASSWORD"]=""
+VARI_GLOBAL["CLICKHOUSE_USERNAME"]="default"
+VARI_GLOBAL["CLICKHOUSE_PASSWORD"]="0000"
 VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]="$(echo "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" | sed 's/windows/linux/')/clickhouse"
 # global variable[END]
 # ##################################################
@@ -38,6 +38,8 @@ function funcPublicDocker(){
   # local variParameterDescList=("SQL version（default : 0 / example : 20240828）")
   # funcProtectedCheckOptionParameter 1 variParameterDescList[@]
   # ----------
+  local variHttpPort=${1:-"8123"}
+  local variTcpPort=${2:-"9000"}
   rm -rf ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
   mkdir -p ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
   chmod -R 777 ${VARI_GLOBAL["CLICKHOUSE_DATA_PATH"]}
@@ -148,8 +150,8 @@ services:
     environment:
       CLICKHOUSE_DB: default
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "${variHttpPort}:8123"
+      - "${variTcpPort}:9000"
     volumes:
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/config.xml:/etc/clickhouse-server/config.xml
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/users.xml:/etc/clickhouse-server/users.xml
