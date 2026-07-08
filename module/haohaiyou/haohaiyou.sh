@@ -2441,10 +2441,10 @@ function funcPublicCloudAffiliateTemplateExport() {
   local variDomainLower=$(echo "${variDomain}" | tr 'A-Z' 'a-z')
   local variRegion=${3:-"SINGAPORE"}
   # 僅支持「UTC0 01:00:00」時段執行[START]
-  local variUtc0Hour=$(date -u +"%H")
-  if [ "${variUtc0Hour}" != "01" ]; then
-      return 0
-  fi
+  # local variUtc0Hour=$(date -u +"%H")
+  # if [ "${variUtc0Hour}" != "01" ]; then
+  #    return 0
+  # fi
   # 僅支持「UTC0 01:00:00」時段執行[END]
   # 僅支持「MASTER && SINGAPORE」節點執行[START]
   if [ "${variService}" != "MASTER" ] || [ "${variRegion}" != "SINGAPORE" ]; then
