@@ -1842,7 +1842,7 @@ function funcPublicCloudUnicornSupervisor(){
     eval "$(cat ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/unicorn_${variModuleName}.command)"
     echo "[ UTC0 : ${variCurrentUtc0Datetime} ] health check action，${variHost}:${variHttpPort} is restart" >> ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/runtime/supervisor.log
     # supervisor[END]
-    sleep 5
+    sleep 10
     if timeout ${variTimeout} bash -c "</dev/tcp/${variHost}/${variHttpPort}" >/dev/null 2>&1; then
       ${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}/repository/chunio/omni/module/haohaiyou/haohaiyou.sh feishu "${variLabel}" "HEARTBEAT_CHECK_FAILED_AND_RESTART_SUCCEEDED"
     else
