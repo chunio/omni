@@ -1592,11 +1592,11 @@ function funcPublicCloudUnicornReinit_Kernel() {
   sysctl -w net.ipv4.tcp_slow_start_after_idle=1 2>/dev/null || true
   sysctl --system > /dev/null 2>&1 || true
   echo "[ rollback ] conntrack_max = $(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null)"
-  echo "[ rollback ] tw_buckets    = $(cat /proc/sys/net/ipv4/tcp_max_tw_buckets)"
-  echo "[ rollback ] tw_reuse      = $(cat /proc/sys/net/ipv4/tcp_tw_reuse)"
-  echo "[ rollback ] somaxconn     = $(cat /proc/sys/net/core/somaxconn)"
-  echo "[ rollback ] syn_backlog   = $(cat /proc/sys/net/ipv4/tcp_max_syn_backlog)"
-  echo "[ rollback ] port_range    = $(cat /proc/sys/net/ipv4/ip_local_port_range)"
+  echo "[ rollback ] tw_buckets = $(cat /proc/sys/net/ipv4/tcp_max_tw_buckets)"
+  echo "[ rollback ] tw_reuse = $(cat /proc/sys/net/ipv4/tcp_tw_reuse)"
+  echo "[ rollback ] somaxconn = $(cat /proc/sys/net/core/somaxconn)"
+  echo "[ rollback ] syn_backlog = $(cat /proc/sys/net/ipv4/tcp_max_syn_backlog)"
+  echo "[ rollback ] port_range = $(cat /proc/sys/net/ipv4/ip_local_port_range)"
   return 0
   # roll back[END]
   # --------------------------------------------------
