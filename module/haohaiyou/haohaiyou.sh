@@ -1572,6 +1572,34 @@ function funcPublicCloudUnicornReinit_Kernel() {
   local variSysctlConfigUri="/etc/sysctl.conf"
   local variKeySlice variEachKey variEachEscapedKey variEachConfigUri variCurrentSomaxconnValue variCurrentNfConntrackMax
   # --------------------------------------------------
+  # roll back[START]
+  rm -f /etc/modules-load.d/${variConfigFilename}
+  rm -f /etc/modprobe.d/${variConfigFilename}
+  rm -f "${vari99UnicornConfigUri}"
+  sed -i "s|^# \[moved to ${vari99UnicornConfigUri}\] ||" "${variSysctlConfigUri}"
+  sysctl -w net.netfilter.nf_conntrack_max=65536 2>/dev/null || true
+  sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=432000 2>/dev/null || true
+  sysctl -w net.netfilter.nf_conntrack_tcp_timeout_close_wait=60 2>/dev/null || true
+  sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 2>/dev/null || true
+  sysctl -w net.netfilter.nf_conntrack_tcp_timeout_fin_wait=120 2>/dev/null || true
+  sysctl -w net.ipv4.tcp_max_tw_buckets=4096 2>/dev/null || true
+  sysctl -w net.ipv4.tcp_tw_reuse=2 2>/dev/null || true
+  sysctl -w net.ipv4.tcp_fin_timeout=60 2>/dev/null || true
+  sysctl -w net.ipv4.ip_local_port_range="32768 60999" 2>/dev/null || true
+  sysctl -w net.core.somaxconn=4096 2>/dev/null || true
+  sysctl -w net.ipv4.tcp_max_syn_backlog=1024 2>/dev/null || true
+  sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null || true
+  sysctl -w net.ipv4.tcp_slow_start_after_idle=1 2>/dev/null || true
+  sysctl --system > /dev/null 2>&1 || true
+  echo "[ rollback ] conntrack_max = $(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null)"
+  echo "[ rollback ] tw_buckets    = $(cat /proc/sys/net/ipv4/tcp_max_tw_buckets)"
+  echo "[ rollback ] tw_reuse      = $(cat /proc/sys/net/ipv4/tcp_tw_reuse)"
+  echo "[ rollback ] somaxconn     = $(cat /proc/sys/net/core/somaxconn)"
+  echo "[ rollback ] syn_backlog   = $(cat /proc/sys/net/ipv4/tcp_max_syn_backlog)"
+  echo "[ rollback ] port_range    = $(cat /proc/sys/net/ipv4/ip_local_port_range)"
+  return 0
+  # roll back[END]
+  # --------------------------------------------------
   # nf_conntrack[START]
   # 啟用係統內核模塊「nf_conntrack/網絡連接狀態跟蹤表」，並且自動創建「/proc/sys/net/netfilter/*」相關目錄
   modprobe nf_conntrack 2>/dev/null || true # 立即生效
