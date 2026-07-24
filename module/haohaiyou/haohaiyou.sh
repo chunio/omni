@@ -1484,10 +1484,10 @@ function funcPublicCloudUnicornReinit_Common() {
   # （一）envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
   export DEBIAN_FRONTEND=noninteractive
+  omni.haohaiyou cloudUnicornReinit_Kernel
   # （一）envi[END]
   # --------------------------------------------------
   # （二）unicorn[START]
-  ulimit -n 655360
   docker rm -f unicorn 2> /dev/null
   if [ -d "${variCloudMachineProjectPath}/unicorn/.git" ]; then
     cd ${variCloudMachineProjectPath}/unicorn
@@ -1561,6 +1561,106 @@ function funcPublicCloudUnicornReinit_Common() {
   # （四）host[START]
   omni.haohaiyou cloudHostReinit
   # （四）host[END]
+  # --------------------------------------------------
+  return 0
+}
+
+# 調整時機：服務啟動之前
+function funcPublicCloudUnicornReinit_Kernel() {
+  local variConfigFilename="99-unicorn.conf"
+  local vari99UnicornConfigUri="/etc/sysctl.d/${variConfigFilename}"
+  local variSysctlConfigUri="/etc/sysctl.conf"
+  local variKeySlice variEachKey variEachEscapedKey variEachConfigUri variCurrentSomaxconnValue variCurrentNfConntrackMax
+  # --------------------------------------------------
+  # nf_conntrack[START]
+  # 啟用係統內核模塊「nf_conntrack/網絡連接狀態跟蹤表」，並且自動創建「/proc/sys/net/netfilter/*」相關目錄
+  modprobe nf_conntrack 2>/dev/null || true # 立即生效
+  echo "nf_conntrack" > /etc/modules-load.d/${variConfigFilename} # 永久設置
+  [ -w /sys/module/nf_conntrack/parameters/hashsize ] && echo 65536 > /sys/module/nf_conntrack/parameters/hashsize || true # 立即生效
+  echo "options nf_conntrack hashsize=65536" > /etc/modprobe.d/${variConfigFilename} # 永久設置
+  if [ ! -d /proc/sys/net/netfilter ]; then
+    echo "[ kernel ] warning : nf_conntrack unavailable, conntrack section will be skipped by sysctl"
+  fi
+  # nf_conntrack[END]
+  # --------------------------------------------------
+  # sysctl[START]
+  ulimit -n 655360 2>/dev/null || true
+  cat > "${vari99UnicornConfigUri}" <<'SYSCTLEOF'
+# 條目上限。滿時內核直接丟包（含[不分方向]：SSP && DSP）
+# dmesg -T | grep -i conntrack（報錯示例：[Thu Jul 23 20:15:55 2026] nf_conntrack: nf_conntrack: table full, dropping packet）
+# 單條≈300字節，262144≈79MB（默認：65536）
+net.netfilter.nf_conntrack_max = 262144
+
+# 已建立的空閒連接釋放時間
+# 默認:432000秒(即：5天)
+net.netfilter.nf_conntrack_tcp_timeout_established = 7200
+# 默認：60 / 120 / 120（單位：秒）
+net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15
+net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
+net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
+
+# 「TIME_WAIT」的「socket」上限
+net.ipv4.tcp_max_tw_buckets = 262144
+
+# 如满足内核安全條件（依賴：net.ipv4.tcp_timestamps=1（默認：開啟）），允許將處於「TIME_WAIT」的本地端口重新用於新的主動連接（目的：複用端口）
+net.ipv4.tcp_tw_reuse = 1
+
+# 「FIN_WAIT_2」的等待時長（默認：60秒，區別：TIME_WAIT）
+net.ipv4.tcp_fin_timeout = 15
+
+# 主動建連時的本地端口可用範圍（默認：32768-60999，共28231個，擴至55295個）
+net.ipv4.ip_local_port_range = 10240 65535
+
+# 已完成三次握手並且等待應用調用「accept()」取走的連接數（默認：4096）
+# 溢出時服務端需重傳「SYN+ACK」，客戶端需重新「ACK」
+net.core.somaxconn = 16384
+
+# 已收到「SYN」並且三次握手尚未完成的連接數
+net.ipv4.tcp_max_syn_backlog = 16384
+
+# 網卡收包速度超過「Linux Networking Stack」處理速度時的排隊長度（目的：削峰）
+net.core.netdev_max_backlog = 16384
+
+# 關閉複用閒置連接時的慢啟動
+net.ipv4.tcp_slow_start_after_idle = 0
+SYSCTLEOF
+  # sysctl[END]
+  variKeySlice=$(grep -oE '^[a-z0-9_.]+' "${vari99UnicornConfigUri}" | sort -u)
+  # 注釋係統同名配置[START]
+  # 原因：「sysctl --system」加載順序：/run/sysctl.d/* => /etc/sysctl.d/* => /usr/lib/sysctl.d/* => /etc/sysctl.conf（[同名配置]後面加載的會覆蓋前面加載的））
+  if [ -f "${variSysctlConfigUri}" ]; then
+    for variEachKey in ${variKeySlice}; do
+      variEachEscapedKey="${variEachKey//./\\.}"
+      if grep -qE "^[[:space:]]*${variEachEscapedKey}[[:space:]]*=" "${variSysctlConfigUri}"; then
+        sed -i -E "s|^([[:space:]]*${variEachEscapedKey}[[:space:]]*=)|# [moved to ${vari99UnicornConfigUri}] \1|" "${variSysctlConfigUri}"
+      fi
+    done
+  fi
+  # 注釋係統同名配置[END]
+  # 掃描係統同名配置[START]
+  # 注意：僅警告不注釋
+  for variEachConfigUri in /etc/sysctl.d/*.conf; do
+    [ -L "${variEachConfigUri}" ] && continue # 軟鏈接則跳過
+    [[ "${variEachConfigUri}" > "${vari99UnicornConfigUri}" ]] || continue # 僅關注排序位於「${vari99UnicornConfigUri}」之後的
+    for variEachKey in ${variKeySlice}; do
+      variEachEscapedKey="${variEachKey//./\\.}"
+      grep -qE "^[[:space:]]*${variEachEscapedKey}[[:space:]]*=" "${variEachConfigUri}" && echo "[ kernel ] warning : ${variEachConfigUri} >> ${variEachKey}（排序在後，將覆蓋${variConfigFilename}）" || true
+    done
+  done
+  # 掃描係統同名配置[END]
+  # --system 會按序加載「/etc/sysctl.d/*」下的文件
+  sysctl --system > /dev/null 2>&1 || true
+  # --------------------------------------------------
+  # status[START]
+  variCurrentSomaxconnValue=$(cat /proc/sys/net/core/somaxconn)
+  variCurrentNfConntrackMax=$(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null)
+  [[ "${variCurrentSomaxconnValue}" != "16384" ]] && echo "[ kernel ] warning : somaxconn=${variCurrentSomaxconnValue}, expected 16384（TODO:是否覆蓋?）" || true
+  [[ -n "${variCurrentNfConntrackMax}" && "${variCurrentNfConntrackMax}" != "262144" ]] && echo "[ kernel ] warning : nf_conntrack_max=${variCurrentNfConntrackMax}, expected 262144（TODO:是否覆蓋?）" || true
+  echo "[ kernel ] conntrack = $(cat /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null) / ${variCurrentNfConntrackMax}"
+  echo "[ kernel ] somaxconn = ${variCurrentSomaxconnValue}（[服務]重啟生效）"
+  echo "[ kernel ] tw_buckets = $(cat /proc/sys/net/ipv4/tcp_max_tw_buckets)"
+  echo "[ kernel ] port_range = $(cat /proc/sys/net/ipv4/ip_local_port_range)"
+  # status[END]
   # --------------------------------------------------
   return 0
 }
