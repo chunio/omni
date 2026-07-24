@@ -1613,13 +1613,13 @@ net.ipv4.ip_local_port_range = 10240 65535
 
 # 已完成三次握手並且等待應用調用「accept()」取走的連接數（默認：4096）
 # 溢出時服務端需重傳「SYN+ACK」，客戶端需重新「ACK」
-net.core.somaxconn = 16384
+net.core.somaxconn = 4096
 
 # 已收到「SYN」並且三次握手尚未完成的連接數
-net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.tcp_max_syn_backlog = 4096
 
 # 網卡收包速度超過「Linux Networking Stack」處理速度時的排隊長度（目的：削峰）
-net.core.netdev_max_backlog = 16384
+net.core.netdev_max_backlog = 4096
 
 # 關閉複用閒置連接時的慢啟動
 net.ipv4.tcp_slow_start_after_idle = 0
@@ -1654,7 +1654,7 @@ SYSCTLEOF
   # status[START]
   variCurrentSomaxconnValue=$(cat /proc/sys/net/core/somaxconn)
   variCurrentNfConntrackMax=$(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null)
-  [[ "${variCurrentSomaxconnValue}" != "16384" ]] && echo "[ kernel ] warning : somaxconn=${variCurrentSomaxconnValue}, expected 16384（TODO:是否覆蓋?）" || true
+  [[ "${variCurrentSomaxconnValue}" != "4096" ]] && echo "[ kernel ] warning : somaxconn=${variCurrentSomaxconnValue}, expected 4096（TODO:是否覆蓋?）" || true
   [[ -n "${variCurrentNfConntrackMax}" && "${variCurrentNfConntrackMax}" != "262144" ]] && echo "[ kernel ] warning : nf_conntrack_max=${variCurrentNfConntrackMax}, expected 262144（TODO:是否覆蓋?）" || true
   echo "[ kernel ] conntrack = $(cat /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null) / ${variCurrentNfConntrackMax}"
   echo "[ kernel ] somaxconn = ${variCurrentSomaxconnValue}（[服務]重啟生效）"
