@@ -1484,7 +1484,7 @@ function funcPublicCloudUnicornReinit_Common() {
   # （一）envi[START]
   # 跳過交互（報錯：debconf: unable to initialize frontend: Dialog，原因：「sudo bash -s」無執行終端）
   export DEBIAN_FRONTEND=noninteractive
-  # omni.haohaiyou cloudUnicornReinit_Kernel
+  omni.haohaiyou cloudUnicornReinit_Kernel
   # （一）envi[END]
   # --------------------------------------------------
   # （二）unicorn[START]
