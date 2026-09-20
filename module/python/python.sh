@@ -15,6 +15,12 @@ fi
 # compatible && validator[END]
 # ##################################################
 
+# [已驗證]交替執行兩個不同的「SOURCE」級別腳本，同名{變量 && 函數}（如：${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}）不會覆蓋（即：互相獨立），測試用例：
+# function funcPublicEchoBuiltinUnitRootPath() {
+#    omni.system echoBuiltinUnitRootPath # /Users/zengweitao/archived/workspace/repository/chunio/omni/init/system
+#    echo ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} # /Users/zengweitao/archived/workspace/repository/chunio/omni/module/haohaiyou
+#    return 0
+# }
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
@@ -40,30 +46,12 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
-function funcPublicServiceReinit(){
-  return 0
-}
-
-function funcPublicTemplateReadmeMdUpsert(){
-  cat > /README.md <<EOF
-#　sudo -i
-cd /Users/zengweitao/archived/workspace/repository/chunio
-chmod -R 777 ./omni 2> /dev/null
-./omni/init/system/system.sh init 1
-source /root/.omni.ubuntu/omni.ubuntu.sh
-omni.system proxy 1 7897
-omni.docker deveEnviReinit 0 0
-omni.python uvReinit
-# ----------
-# ssh template@orb
-cat /Users/zengweitao/.ssh/id_ed25519.pub >> /root/.ssh/authorized_keys
-chmod 700 /root/.ssh
-chmod 600 /root/.ssh/authorized_keys
-# ----------
-EOF
-  echo "--------------------------------------------------"
-  cat /README.md
-  echo "--------------------------------------------------"
+function funcPublicUvReinit(){
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  # cd /Users/zengweitao/archived/workspace/repository/chunio/fastapi
+  source $HOME/.local/bin/env
+  uv python install 3.12 3.13 3.14
+  python3.13 --version
   return 0
 }
 # public function[END]

@@ -156,7 +156,8 @@ function funcPublicImportBusinessData_Haohaiyou() {
     echo "[ import ] ${variEachSqlUri}"
     variImportStatus="failed" # default
     for ((variRetryIndex=1; variRetryIndex<=variRetryNum; variRetryIndex++)); do
-      variEachCommand="docker exec -i ${variContainerName} mysql -u${variMysqlUsername}"
+      # variEachCommand="docker exec -i ${variContainerName} mysql -u${variMysqlUsername}"
+      variEachCommand="docker exec -i ${variContainerName} mysql --default-character-set=utf8mb4 -u${variMysqlUsername}"
       if [ -n "${variMysqlPassword}" ]; then
         variEachCommand="${variEachCommand} -p${variMysqlPassword}"
       fi

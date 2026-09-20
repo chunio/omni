@@ -1790,6 +1790,11 @@ function funcPublicCloudUnicornReinit_Ascli(){
     # --------------------------------------------------
   done
   # 上傳{配置文件 && 編譯程序}[END]
+  # 清理日誌[START]
+  local variCurrentPwd="$(pwd)"
+  [ -f "${variCurrentPwd}/coscli.log" ] && rm -f "${variCurrentPwd}/coscli.log"
+  [ -d "${variCurrentPwd}/coscli_output" ] && rm -rf "${variCurrentPwd}/coscli_output"
+  # 清理日誌[END]
   return 0
 }
 
