@@ -150,6 +150,63 @@ EOF
         echo "--------------------------------------------------"
         local variVlessLink="vless://${variClientId}@${customIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#xray-${variShortId}"
         echo "${variVlessLink}"
+        local variYamlUri="/tmp/xray-${variShortId}.yaml"
+        cat > ${variYamlUri} <<EOF
+port: 7890
+socks-port: 7891
+allow-lan: true
+bind-address: 0.0.0.0
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+proxies:
+  - name: xray-${variShortId}
+    type: vless
+    server: ${customIp}
+    port: 443
+    uuid: ${variClientId}
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: ${variServerName}
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: ${variPublicKey}
+      short-id: ${variShortId}
+    packet-encoding: xudp
+
+proxy-groups:
+  - name: --
+    type: select
+    proxies:
+      - DIRECT
+      - xray-${variShortId}
+
+rules:
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,bejson.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,chaoxing.com,DIRECT
+  - DOMAIN-SUFFIX,tencentcloud.com,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  - IP-CIDR,100.64.0.0/10,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR6,::1/128,DIRECT
+  - IP-CIDR6,fc00::/7,DIRECT
+  - IP-CIDR6,fe80::/10,DIRECT
+  - IP-CIDR6,fd00::/8,DIRECT
+  - MATCH,--
+EOF
+    echo "--------------------------------------------------"
+    cat /tmp/xray-${variShortId}.yaml
+    echo "--------------------------------------------------"
     else
         echo "error : xray run -test -config ${variConfigJsonUri}"
         return 1
