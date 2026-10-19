@@ -83,6 +83,9 @@ function funcPublicXrayReinit() {
         return 1
     fi
     mkdir -p $(dirname ${variConfigJsonUri})
+    touch /usr/local/etc/xray/access.log
+    touch /usr/local/etc/xray/error.log
+    chown -R 777 /var/log/xray
     cat > ${variConfigJsonUri} <<EOF
 {
   "log": {
