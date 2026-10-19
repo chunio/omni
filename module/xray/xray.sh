@@ -65,15 +65,15 @@ function funcPublicXrayReinit() {
     # 僞裝目標[END]
     # install xray-core[START]
     if ! command -v xray &> /dev/null; then
-      apt update
-      apt install -y unzip
-      bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -v 26.6.27
+        apt update
+        apt install -y unzip
+        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -v 26.6.27
     fi
     # install xray-core[END]
     # ----------
     local variXrayX25519Output=$(xray x25519)
-    local variPrivateKey=$(echo "$variXrayX25519Output" | head -n 1 | awk '{print $NF}')
-    local variPublicKey=$(echo "$variXrayX25519Output" | tail -n 1 | awk '{print $NF}')
+    local variPrivateKey=$(printf '%s\n' "$variXrayX25519Output" | awk '/^[[:space:]]*(PrivateKey|Private key):/ {print $NF; exit}')
+    local variPublicKey=$(printf '%s\n' "$variXrayX25519Output" | awk '/^[[:space:]]*(Password|PublicKey|Public key)[^:]*:/ {print $NF; exit}')
     # ----------
     local variClientId=$(xray uuid)
     local variShortId=$(openssl rand -hex 8)
@@ -85,7 +85,6 @@ function funcPublicXrayReinit() {
     mkdir -p $(dirname ${variConfigJsonUri})
     touch /usr/local/etc/xray/access.log
     touch /usr/local/etc/xray/error.log
-    chown -R 777 /var/log/xray
     cat > ${variConfigJsonUri} <<EOF
 {
   "log": {
@@ -100,7 +99,7 @@ function funcPublicXrayReinit() {
         "clients": [
           {
             "id": "${variClientId}",
-            "flow": ""
+            "flow": "xtls-rprx-vision"
           }
         ],
         "decryption": "none"
@@ -171,13 +170,14 @@ proxies:
     port: 443
     uuid: ${variClientId}
     network: tcp
+    flow: xtls-rprx-vision
     tls: true
     udp: true
     servername: ${variServerName}
     client-fingerprint: chrome
     reality-opts:
       public-key: ${variPublicKey}
-      short-id: ${variShortId}
+      short-id: "${variShortId}"
     packet-encoding: xudp
 
 proxy-groups:
@@ -207,9 +207,9 @@ rules:
   - IP-CIDR6,fd00::/8,DIRECT
   - MATCH,--
 EOF
-    echo "--------------------------------------------------"
-    cat /tmp/xray-${variShortId}.yaml
-    echo "--------------------------------------------------"
+        echo "--------------------------------------------------"
+        cat /tmp/xray-${variShortId}.yaml
+        echo "--------------------------------------------------"
     else
         echo "error : xray run -test -config ${variConfigJsonUri}"
         return 1
