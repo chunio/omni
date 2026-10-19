@@ -60,8 +60,8 @@ function funcPublicXrayReinit() {
     local customIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------
     # 僞裝目標[START]
-    local variTarget=${1:-"www.microsoft.com:443"}
-    local variServerName=${2:-"www.microsoft.com"}
+    local variTarget=${1:-"www.apple.com:443"}
+    local variServerName=${2:-"www.apple.com"}
     # 僞裝目標[END]
     # install xray-core[START]
     if ! command -v xray &> /dev/null; then
@@ -115,7 +115,8 @@ function funcPublicXrayReinit() {
           "privateKey": "${variPrivateKey}",
           "shortIds": [
             "${variShortId}"
-          ]
+          ],
+          "minClientVer": "1.0.0"
         }
       },
       "sniffing": {
