@@ -67,7 +67,7 @@ function funcPublicXrayReinit() {
     if ! command -v xray &> /dev/null; then
       apt update
       apt install -y unzip
-      bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+      bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -v 26.6.27
     fi
     # install xray-core[END]
     # ----------
@@ -100,7 +100,7 @@ function funcPublicXrayReinit() {
         "clients": [
           {
             "id": "${variClientId}",
-            "flow": "xtls-rprx-vision"
+            "flow": ""
           }
         ],
         "decryption": "none"
@@ -173,7 +173,6 @@ proxies:
     network: tcp
     tls: true
     udp: true
-    flow: xtls-rprx-vision
     servername: ${variServerName}
     client-fingerprint: chrome
     reality-opts:
