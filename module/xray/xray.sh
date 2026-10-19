@@ -86,7 +86,9 @@ function funcPublicXrayReinit() {
     cat > ${variConfigJsonUri} <<EOF
 {
   "log": {
-    "loglevel": "warning"
+    "access": "/usr/local/etc/xray/access.log",
+    "error": "/usr/local/etc/xray/error.log",
+    "loglevel": "debug"
   },
   "inbounds": [
     {
