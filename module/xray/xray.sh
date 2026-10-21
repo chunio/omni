@@ -247,8 +247,8 @@ function funcPublicWarpReinit() {
     # mkdir -p /etc/wireguard
     # echo "E" > /etc/wireguard/language
     # 設置「menu.sh」語言（避免：触发交互）[END]
-expect <<'EOF'
-set timeout 300
+    expect -c '
+set timeout -1
 # 忽略大小寫匹配
 set case_insensitive 1
 spawn bash /tmp/warp-menu.sh
@@ -302,7 +302,7 @@ expect -re "(?i)port"
 send "\r"
 # --------------------------------------------------
 expect eof
-EOF
+'
     if [ $? -ne 0 ]; then
         echo "error : expect execution failed"
         return 1
