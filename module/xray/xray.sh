@@ -220,11 +220,21 @@ EOF
 function funcPublicWarpReinit() {
     # 更新「systemd-resolved」[START]
     # 解決：GO程序解釋失敗的問題
-    if ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
-        echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
+    if [ -f /etc/systemd/resolved.conf ] && systemctl list-unit-files | grep -q systemd-resolved; then
+        # 係統自帶「systemd-resolved」
+        if ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
+            echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
+        fi
+        # 「systemd-resolved」會根據「/etc/systemd/resolved.conf」自動生成「/run/systemd/resolve/resolv.conf」
+        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+        systemctl restart systemd-resolved
+    else
+        # 係統沒有「systemd-resolved」
+        echo "warning : systemd-resolved not found"
+        rm -f /etc/resolv.conf # 刪除可能存在的軟連接
+        echo "nameserver 1.1.1.1" > /etc/resolv.conf
+        echo "nameserver 8.8.8.8" >> /etc/resolv.conf
     fi
-    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-    systemctl restart systemd-resolved
     if ! nslookup engage.cloudflareclient.com > /dev/null 2>&1; then
         echo "error : [ nslookup engage.cloudflareclient.com failed ] systemd-resolved repair failed"
         return 1
