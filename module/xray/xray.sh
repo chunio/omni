@@ -243,6 +243,10 @@ function funcPublicWarpReinit() {
     # 安裝「wireproxy」[START]
     wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /tmp/warp-menu.sh
     # 安裝 wireproxy（端口默認：40000），讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
+    # 設置「menu.sh」語言（避免：触发交互）[START]
+    mkdir -p /etc/wireguard
+    echo "E" > /etc/wireguard/language
+    # 設置「menu.sh」語言（避免：触发交互）[END]
     bash /tmp/warp-menu.sh w
     sleep 5 # TODO:[倒計時]等待服務啟動
     if ! systemctl is-active --quiet wireproxy; then
