@@ -67,7 +67,7 @@ function funcPublicXrayReinit() {
     if ! command -v xray &> /dev/null; then
         apt update
         apt install -y unzip
-        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -v 26.6.27
+        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version 26.6.27
     fi
     # install xray-core[END]
     # ----------

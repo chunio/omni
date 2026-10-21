@@ -11,11 +11,11 @@ darwin : macos 26.4.1
 
 ```shell
 # linux[START]
+sudo -i # ubuntu
 mkdir -p /windows/code/backend/chunio && cd /windows/code/backend/chunio
 [ -f /etc/redhat-release ] && yum install -y git
 [ -f /etc/debian_version ] && apt-get update && apt-get install -y git
 git clone https://github.com/chunio/omni.git && chmod -R 777 ./omni
-sudo -i # ubuntu
 ./omni/init/system/system.sh init 1
 # linux[END]
 
