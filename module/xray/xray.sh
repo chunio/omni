@@ -43,6 +43,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
+VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/etc/xray/config.json"
 # global variable[END]
 # ##################################################
 
@@ -55,9 +56,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # public function[START]
 function funcPublicRealityReinit() {
     # ----------
-    local variServiceName="xray"
-    local variConfigJsonUri="/usr/local/etc/xray/config.json"
-    local customIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
+    local ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}="/usr/local/etc/xray/config.json"
+    local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------
     # 僞裝目標[START]
     local variTarget=${1:-"www.bing.com:443"}
@@ -82,10 +82,8 @@ function funcPublicRealityReinit() {
         echo "error : {variPrivateKey || variPublicKey || variClientId || variShortId} is(are) empty"
         return 1
     fi
-    mkdir -p $(dirname ${variConfigJsonUri})
-    touch /usr/local/etc/xray/access.log
-    touch /usr/local/etc/xray/error.log
-    cat > ${variConfigJsonUri} <<EOF
+    mkdir -p $(dirname ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]})
+    cat > ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} <<EOF
 {
   "log": {
     "loglevel": "warning"
@@ -135,9 +133,9 @@ function funcPublicRealityReinit() {
   ]
 }
 EOF
-    if xray run -test -config ${variConfigJsonUri}; then
-        systemctl restart ${variServiceName}
-        systemctl enable ${variServiceName}
+    if xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}; then
+        systemctl restart xray
+        systemctl enable xray
         echo "--------------------------------------------------"
         echo "Address（IP地址）: xxxx"
         echo "Port（端口）: 443"
@@ -151,9 +149,10 @@ EOF
         echo "PublicKey (pbk) : ${variPublicKey}"
         echo "ShortId (sid) : ${variShortId}"
         echo "--------------------------------------------------"
-        local variVlessLink="vless://${variClientId}@${customIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#xray-${variShortId}"
+        local variYamlFilename="reality-${variShortId}"
+        local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
         echo "${variVlessLink}"
-        local variYamlUri="/tmp/xray-${variShortId}.yaml"
+        local variYamlUri="/tmp/${variYamlFilename}.yaml"
         cat > ${variYamlUri} <<EOF
 port: 7890
 socks-port: 7891
@@ -166,7 +165,7 @@ external-controller: 127.0.0.1:9090
 proxies:
   - name: xray-${variShortId}
     type: vless
-    server: ${customIp}
+    server: ${variCurrentVpsIp}
     port: 443
     uuid: ${variClientId}
     network: tcp
@@ -211,7 +210,7 @@ EOF
         cat /tmp/xray-${variShortId}.yaml
         echo "--------------------------------------------------"
     else
-        echo "error : xray run -test -config ${variConfigJsonUri}"
+        echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
         return 1
     fi
     return 0
@@ -251,7 +250,7 @@ EOF
 # 11.安裝 iptable + dnsmasq + ipset，讓 warp ipv4 only 接管流媒體流量 (不適用於 ipv6 only vps) (bash menu.sh e)
 # 12.安裝 wireproxy，讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
 # 13.安裝 cloudflare client 並設置爲 warp 模式 (bash menu.sh l)
-# 0.退出腳本
+# 00.退出腳本
 # 請選擇:
 # --------------------------------------------------
 # please customize the client port (1000-65535. default to 40000 if it is blank):
@@ -291,8 +290,6 @@ function funcPublicWarpReinit() {
     expect <<'EOF'
 # 不設超時
 set timeout -1
-# 調試開關，值：0/關閉，1/顯示{收到內容 && 匹配過程}
-exp_internal 1
 # 函數封裝[START]
 # 等待目標指示，成功匹配則歸還控制權
 proc expect_prompt {pattern description} {
@@ -363,11 +360,11 @@ EOF
     echo "wireproxy install succeeded"
     # 安裝「wireproxy」[END]
     # 更新「[xray]config.json」出站規則[START]
-    local variConfigJsonUri="/usr/local/etc/xray/config.json"
+    local ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}="/usr/local/etc/xray/config.json"
     python3 - <<EOF
 import json
 import sys
-config_json_uri = "${variConfigJsonUri}"
+config_json_uri = "${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
 try:
     with open(config_json_uri, 'r') as f:
         config = json.load(f)
@@ -395,25 +392,25 @@ try:
         config["outbounds"].insert(0, new_outbound_dict)
         with open(config_json_uri, 'w') as f:
             json.dump(config, f, indent=2)
-        print("[ ${variConfigJsonUri} ] warp_outbound_tag success")
+        print("[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag success")
     else:
-        print("[ ${variConfigJsonUri} ] warp_outbound_tag skipped")
+        print("[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag skipped")
 except Exception as e:
-    print(f"[ ${variConfigJsonUri} ] warp_outbound_tag failed : {e}")
+    print(f"[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag failed : {e}")
     sys.exit(1)
 EOF
     if [ $? -ne 0 ]; then
-        echo "error : ${variConfigJsonUri} update failed"
+        echo "error : ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} update failed"
         return 1
     fi
     systemctl restart xray
     if ! systemctl is-active --quiet xray; then
-        echo "error : systemctl restart xray ( try ：xray run -test -config ${variConfigJsonUri} )"
+        echo "error : systemctl restart xray ( try ：xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} )"
         return 1
     fi
     # 更新「[xray]config.json」出站規則[END]
-    systemctl status xray
-    systemctl status wireproxy
+    # systemctl status xray
+    # systemctl status wireproxy
     return 0
 }
 # public function[END]
