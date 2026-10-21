@@ -53,7 +53,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # public function[START]
-function funcPublicXrayReinit() {
+function funcPublicRealityReinit() {
     # ----------
     local variServiceName="xray"
     local variConfigJsonUri="/usr/local/etc/xray/config.json"
@@ -214,6 +214,89 @@ EOF
         echo "error : xray run -test -config ${variConfigJsonUri}"
         return 1
     fi
+    return 0
+}
+
+function funcPublicWarpReinit() {
+    # 更新「systemd-resolved」[START]
+    # 解決：GO程序解釋失敗的問題
+    if ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
+        echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
+    fi
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    systemctl restart systemd-resolved
+    if ! nslookup engage.cloudflareclient.com > /dev/null 2>&1; then
+        echo "error : [ nslookup engage.cloudflareclient.com failed ] systemd-resolved repair failed"
+        return 1
+    fi
+    # 更新「systemd-resolved」[END]
+    # 安裝「wireproxy」[START]
+    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /tmp/warp-menu.sh
+    # 安裝 wireproxy（端口默認：40000），讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
+    bash /tmp/warp-menu.sh w
+    sleep 5 # TODO:[倒計時]等待服務啟動
+    if ! systemctl is-active --quiet wireproxy; then
+        echo "error : wireproxy install failed（ detail : journalctl -u wireproxy.service ）"
+        return 1
+    fi
+    if ! curl -x socks5h://127.0.0.1:40000 -I --connect-timeout 10 https://www.google.com > /dev/null 2>&1; then
+        echo "error : curl -x socks5h://127.0.0.1:40000 -I --connect-timeout 10 https://www.google.com"
+    fi
+    systemctl enable wireproxy
+    echo "wireproxy install succeeded"
+    # 安裝「wireproxy」[END]
+    # 更新「[xray]config.json」出站規則[START]
+    local variConfigJsonUri="/usr/local/etc/xray/config.json"
+    python3 - <<EOF
+import json
+import sys
+config_json_uri = "${variConfigJsonUri}"
+try:
+    with open(config_json_uri, 'r') as f:
+        config = json.load(f)
+    warp_outbound_tag_status = False
+    for outbound in config.get("outbounds", []):
+        if outbound.get("tag") == "warp_outbound_tag":
+            warp_outbound_tag_status = True
+            break
+    if not warp_outbound_tag_status:
+        new_outbound_dict = {
+            "protocol": "socks",
+            "settings": {
+                "servers": [
+                    {
+                        "address": "127.0.0.1",
+                        "port": 40000
+                    }
+                ]
+            },
+            "tag": "warp_outbound_tag"
+        }
+        if "outbounds" not in config:
+            config["outbounds"] = []
+        # 插至「outbounds」頭部（確保：優先匹配）
+        config["outbounds"].insert(0, new_outbound_dict)
+        with open(config_json_uri, 'w') as f:
+            json.dump(config, f, indent=2)
+        print("[ ${variConfigJsonUri} ] warp_outbound_tag success")
+    else:
+        print("[ ${variConfigJsonUri} ] warp_outbound_tag skipped")
+except Exception as e:
+    print(f"[ ${variConfigJsonUri} ] warp_outbound_tag failed : {e}")
+    sys.exit(1)
+EOF
+    if [ $? -ne 0 ]; then
+        echo "error : ${variConfigJsonUri} update failed"
+        return 1
+    fi
+    systemctl restart xray
+    if ! systemctl is-active --quiet xray; then
+        echo "error : systemctl restart xray ( try ：xray run -test -config ${variConfigJsonUri} )"
+        return 1
+    fi
+    # 更新「[xray]config.json」出站規則[END]
+    systemctl status xray
+    systemctl status wireproxy
     return 0
 }
 # public function[END]
