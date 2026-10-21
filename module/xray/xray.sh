@@ -217,6 +217,47 @@ EOF
     return 0
 }
 
+# --------------------------------------------------
+# language:
+# 01.english (default)
+# 02.簡體中文
+# --------------------------------------------------
+# 01.add warp ipv4 interface to ipv4 only vps (bash menu.sh 4)
+# 02.add warp ipv6 interface to ipv4 only vps (bash menu.sh 6)
+# 03.add warp dualstack interface to ipv4 only vps (bash menu.sh d)
+# 04.turn on warp (warp o)
+# 05.install cloudflare client and set mode to proxy (bash menu.sh c)
+# 06.change the warp ip to support netflix (warp i)
+# 07.turn off, uninstall warp interface, linux client and wireproxy (warp u)
+# 08.upgrade kernel, turn on bbr, change linux system (warp b)
+# 09.sync the latest version (warp v)
+# 10.professional one-click script for warp to unblock streaming media (supports multi-platform, multi-mode and tg push)
+# 11.install iptable + dnsmasq + ipset. let warp only take over the streaming media traffic (not available for ipv6 only) (bash menu.sh e)
+# 12.install wireproxy. wireguard client that exposes itself as a socks5 proxy or tunnels (bash menu.sh w)
+# 13.install cloudflare client and set mode to warp (bash menu.sh l)
+# 00.exit
+# choose:
+# ----------
+# 01.爲 ipv4 only 添加 warp ipv4 網絡接口 (bash menu.sh 4)
+# 02.爲 ipv4 only 添加 warp ipv6 網絡接口 (bash menu.sh 6)
+# 03.爲 ipv4 only 添加 warp 雙棧網絡接口 (bash menu.sh d)
+# 04.打開 warp (warp o)
+# 05.安裝 cloudflare client 並設置爲 proxy 模式 (bash menu.sh c)
+# 06.更換支持 netflix 的 ip (warp i)
+# 07.永久關閉 warp 網絡接口，並刪除 warp、 linux client 和 wireproxy (warp u)
+# 08.升級內核、安裝bbr、dd腳本 (warp b)
+# 09.同步最新版本 (warp v)
+# 10.warp 解鎖 netflix 等流媒體專業一鍵(支持多平台、多方式和 tg 通知)
+# 11.安裝 iptable + dnsmasq + ipset，讓 warp ipv4 only 接管流媒體流量 (不適用於 ipv6 only vps) (bash menu.sh e)
+# 12.安裝 wireproxy，讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
+# 13.安裝 cloudflare client 並設置爲 warp 模式 (bash menu.sh l)
+# 0.退出腳本
+# 請選擇:
+# --------------------------------------------------
+# please customize the client port (1000-65535. default to 40000 if it is blank):
+# ----------
+# 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
+# --------------------------------------------------
 function funcPublicWarpReinit() {
     # 更新「systemd-resolved」[START]
     # 解決：GO程序解釋失敗的問題
@@ -247,24 +288,20 @@ function funcPublicWarpReinit() {
     # mkdir -p /etc/wireguard
     # echo "E" > /etc/wireguard/language
     # 設置「menu.sh」語言（避免：触发交互）[END]
-        expect <<'EOF'
-set timeout 120
-# 忽略大小寫匹配
-# 各匹配分支使用 -nocase
-
-# 調試時改爲 1，顯示收到的內容及匹配過程
-exp_internal 0
-
+    expect <<'EOF'
+# 不設超時
+set timeout -1
+# 調試開關，值：0/關閉，1/顯示{收到內容 && 匹配過程}
+exp_internal 1
+# 函數封裝[START]
+# 等待目標指示，成功匹配則歸還控制權
 proc expect_prompt {pattern description} {
-    global spawn_id
-
+    # [expect]內置變量
+    global spawn_id timeout
     expect {
+        # -nocase : 忽略大小寫，-re : 正則匹配
         -nocase -re $pattern {
             return
-        }
-        timeout {
-            send_error "\nerror : timeout while waiting for $description\n"
-            exit 1
         }
         eof {
             send_error "\nerror : process exited before $description\n"
@@ -272,122 +309,53 @@ proc expect_prompt {pattern description} {
         }
     }
 }
-
+# 函數封裝[END]
 spawn bash /tmp/warp-menu.sh
-# --------------------------------------------------
-# language:
-# 1.english (default)
-# 2.簡體中文
-# --------------------------------------------------
-# 1.add warp ipv4 interface to ipv4 only vps (bash menu.sh 4)
-# 2.add warp ipv6 interface to ipv4 only vps (bash menu.sh 6)
-# 3.add warp dualstack interface to ipv4 only vps (bash menu.sh d)
-# 4.turn on warp (warp o)
-# 5.install cloudflare client and set mode to proxy (bash menu.sh c)
-# 6.change the warp ip to support netflix (warp i)
-# 7.turn off, uninstall warp interface, linux client and wireproxy (warp u)
-# 8.upgrade kernel, turn on bbr, change linux system (warp b)
-# 9.sync the latest version (warp v)
-# 10.professional one-click script for warp to unblock streaming media (supports multi-platform, multi-mode and tg push)
-# 11.install iptable + dnsmasq + ipset. let warp only take over the streaming media traffic (not available for ipv6 only) (bash menu.sh e)
-# 12.install wireproxy. wireguard client that exposes itself as a socks5 proxy or tunnels (bash menu.sh w)
-# 13.install cloudflare client and set mode to warp (bash menu.sh l)
-# 0.exit
-# choose:
-# ----------
-# 1.爲 ipv4 only 添加 warp ipv4 網絡接口 (bash menu.sh 4)
-# 2.爲 ipv4 only 添加 warp ipv6 網絡接口 (bash menu.sh 6)
-# 3.爲 ipv4 only 添加 warp 雙棧網絡接口 (bash menu.sh d)
-# 4.打開 warp (warp o)
-# 5.安裝 cloudflare client 並設置爲 proxy 模式 (bash menu.sh c)
-# 6.更換支持 netflix 的 ip (warp i)
-# 7.永久關閉 warp 網絡接口，並刪除 warp、 linux client 和 wireproxy (warp u)
-# 8.升級內核、安裝bbr、dd腳本 (warp b)
-# 9.同步最新版本 (warp v)
-# 10.warp 解鎖 netflix 等流媒體專業一鍵(支持多平台、多方式和 tg 通知)
-# 11.安裝 iptable + dnsmasq + ipset，讓 warp ipv4 only 接管流媒體流量 (不適用於 ipv6 only vps) (bash menu.sh e)
-# 12.安裝 wireproxy，讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
-# 13.安裝 cloudflare client 並設置爲 warp 模式 (bash menu.sh l)
-# 0.退出腳本
-# 請選擇:
-# ----------
-
-# 先處理語言選擇，再識別 WireProxy 菜單；已有語言配置時可直接識別菜單
+# [expect]內置函數[START]
+expect_before {
+    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
+        send -- "N\r"
+        # 回到外層「expect」
+        exp_continue
+    }
+}
+# [expect]內置函數[END]
 expect {
-    -nocase -re {language[[:space:]]*:} {
-        expect_prompt \
-            {choose[[:space:]]*:|请选择[[:space:]]*:} \
-            "language selection"
-
+    -nocase -re {language[ \t]*:} {
+        expect_prompt {choose[ \t]*:} "language selection"
         send -- "1\r"
         exp_continue
     }
-
-    -nocase -re {([0-9]+)\.[^\r\n]*(install[[:space:]]+wireproxy|安装[[:space:]]*wireproxy)} {
-        set wireproxy_menu_number $expect_out(1,string)
+    -nocase -re {([0-9]+)\.[^\r\n]*install[ \t]+wireproxy} {
+        # 將正則匹配得到的「菜單序號」存儲至「$expect_out」（[expect]內置變量）
+        # 從「$expect_out」讀取首個捕獲結果，賦值至「vari_install_wireproxy_index」
+        set vari_install_wireproxy_index $expect_out(1,string)
     }
-
-    timeout {
-        send_error "\nerror : timeout while waiting for language selection or WireProxy menu\n"
-        exit 1
-    }
-
     eof {
-        send_error "\nerror : process exited before WireProxy menu\n"
+        send_error "\nerror : process exited before wireproxy selection\n"
         exit 1
     }
 }
-
-# 菜單項出現不代表已開始等待輸入，因此繼續等待選擇提示
-expect_prompt \
-    {choose[[:space:]]*:|请选择[[:space:]]*:} \
-    "main menu selection"
-
-send -- "$wireproxy_menu_number\r"
-
-# --------------------------------------------------
-# please customize the client port (1000-65535. default to 40000 if it is blank):
-# ----------
-# 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
-# ----------
-expect_prompt \
-    {please customize[^\r\n]*port[^\r\n]*:|请自定义[^\r\n]*端口[^\r\n]*:|請自定義[^\r\n]*端口[^\r\n]*:} \
-    "SOCKS5 port configuration"
-
+expect_prompt {choose[ \t]*:} "menu selection"
+send -- "$vari_install_wireproxy_index\r"
+expect_prompt {please customize[^\r\n]*port[^\r\n]*:} "port selection"
 send -- "\r"
-
-# --------------------------------------------------
-# 安裝階段使用獨立超時，避免下載耗時導致提前退出
-set timeout 600
-
-expect {
-    eof {
-        # 輸出結束，繼續取得子程序退出碼
-    }
-    timeout {
-        send_error "\nerror : WireProxy installation timed out\n"
-        exit 1
-    }
-}
-
-set result [wait]
-
-if {[lindex $result 2] != 0 || [llength $result] > 4} {
-    send_error "\nerror : installer terminated abnormally: $result\n"
-    exit 1
-}
-
-exit [lindex $result 3]
+expect eof
 EOF
-    if [ $? -ne 0 ]; then
-        echo "error : expect execution failed"
-        return 1
-    fi
-    sleep 5 # TODO:[倒計時]等待服務啟動
-    if ! systemctl is-active --quiet wireproxy; then
-        echo "error : wireproxy install failed（ detail : journalctl -u wireproxy.service ）"
-        return 1
-    fi
+    # 等待N秒至服務啟動[START]
+    local variRetryMax=10
+    local variRetryIndex
+    for ((variRetryIndex = 1; variRetryIndex <= variRetryMax; variRetryIndex++)); do
+        if systemctl is-active --quiet wireproxy; then
+            break
+        fi
+        if ((variRetryIndex == variRetryMax)); then
+            echo "error : wireproxy install failed（ detail : journalctl -u wireproxy.service ）"
+            return 1
+        fi
+        sleep 1
+    done
+    # 等待N秒至服務啟動[END]
     if ! curl -x socks5h://127.0.0.1:40000 -I --connect-timeout 10 https://www.google.com > /dev/null 2>&1; then
         echo "error : curl -x socks5h://127.0.0.1:40000 -I --connect-timeout 10 https://www.google.com"
     fi
