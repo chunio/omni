@@ -56,7 +56,6 @@ VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/etc/xray/config.json"
 # public function[START]
 function funcPublicRealityReinit() {
     # ----------
-    local ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}="/usr/local/etc/xray/config.json"
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------
     # 僞裝目標[START]
