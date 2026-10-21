@@ -247,17 +247,37 @@ function funcPublicWarpReinit() {
     # mkdir -p /etc/wireguard
     # echo "E" > /etc/wireguard/language
     # 設置「menu.sh」語言（避免：触发交互）[END]
-    expect <<'EOF'
-set timeout -1
+        expect <<'EOF'
+set timeout 120
 # 忽略大小寫匹配
-set case_insensitive 1
+# 各匹配分支使用 -nocase
+
+# 調試時改爲 1，顯示收到的內容及匹配過程
+exp_internal 0
+
+proc expect_prompt {pattern description} {
+    global spawn_id
+
+    expect {
+        -nocase -re $pattern {
+            return
+        }
+        timeout {
+            send_error "\nerror : timeout while waiting for $description\n"
+            exit 1
+        }
+        eof {
+            send_error "\nerror : process exited before $description\n"
+            exit 1
+        }
+    }
+}
+
 spawn bash /tmp/warp-menu.sh
 # --------------------------------------------------
 # language:
 # 1.english (default)
 # 2.簡體中文
-expect -re "(?i)choose:"
-send "1\r"
 # --------------------------------------------------
 # 1.add warp ipv4 interface to ipv4 only vps (bash menu.sh 4)
 # 2.add warp ipv6 interface to ipv4 only vps (bash menu.sh 6)
@@ -291,17 +311,73 @@ send "1\r"
 # 0.退出腳本
 # 請選擇:
 # ----------
-expect -re "(?i)12.*wireproxy"
-send "12\r"
+
+# 先處理語言選擇，再識別 WireProxy 菜單；已有語言配置時可直接識別菜單
+expect {
+    -nocase -re {language[[:space:]]*:} {
+        expect_prompt \
+            {choose[[:space:]]*:|请选择[[:space:]]*:} \
+            "language selection"
+
+        send -- "1\r"
+        exp_continue
+    }
+
+    -nocase -re {([0-9]+)\.[^\r\n]*(install[[:space:]]+wireproxy|安装[[:space:]]*wireproxy)} {
+        set wireproxy_menu_number $expect_out(1,string)
+    }
+
+    timeout {
+        send_error "\nerror : timeout while waiting for language selection or WireProxy menu\n"
+        exit 1
+    }
+
+    eof {
+        send_error "\nerror : process exited before WireProxy menu\n"
+        exit 1
+    }
+}
+
+# 菜單項出現不代表已開始等待輸入，因此繼續等待選擇提示
+expect_prompt \
+    {choose[[:space:]]*:|请选择[[:space:]]*:} \
+    "main menu selection"
+
+send -- "$wireproxy_menu_number\r"
+
 # --------------------------------------------------
 # please customize the client port (1000-65535. default to 40000 if it is blank):
 # ----------
 # 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
 # ----------
-expect -re "(?i)port"
-send "\r"
+expect_prompt \
+    {please customize[^\r\n]*port[^\r\n]*:|请自定义[^\r\n]*端口[^\r\n]*:|請自定義[^\r\n]*端口[^\r\n]*:} \
+    "SOCKS5 port configuration"
+
+send -- "\r"
+
 # --------------------------------------------------
-expect eof
+# 安裝階段使用獨立超時，避免下載耗時導致提前退出
+set timeout 600
+
+expect {
+    eof {
+        # 輸出結束，繼續取得子程序退出碼
+    }
+    timeout {
+        send_error "\nerror : WireProxy installation timed out\n"
+        exit 1
+    }
+}
+
+set result [wait]
+
+if {[lindex $result 2] != 0 || [llength $result] > 4} {
+    send_error "\nerror : installer terminated abnormally: $result\n"
+    exit 1
+}
+
+exit [lindex $result 3]
 EOF
     if [ $? -ne 0 ]; then
         echo "error : expect execution failed"
