@@ -244,10 +244,69 @@ function funcPublicWarpReinit() {
     wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /tmp/warp-menu.sh
     # 安裝 wireproxy（端口默認：40000），讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
     # 設置「menu.sh」語言（避免：触发交互）[START]
-    mkdir -p /etc/wireguard
-    echo "E" > /etc/wireguard/language
+    # mkdir -p /etc/wireguard
+    # echo "E" > /etc/wireguard/language
     # 設置「menu.sh」語言（避免：触发交互）[END]
-    bash /tmp/warp-menu.sh w
+expect <<'EOF'
+set timeout 300
+# 忽略大小寫匹配
+set case_insensitive 1
+spawn bash /tmp/warp-menu.sh
+# --------------------------------------------------
+# language:
+# 1.english (default)
+# 2.簡體中文
+expect -re "(?i)choose:"
+send "1\r"
+# --------------------------------------------------
+# 1.add warp ipv4 interface to ipv4 only vps (bash menu.sh 4)
+# 2.add warp ipv6 interface to ipv4 only vps (bash menu.sh 6)
+# 3.add warp dualstack interface to ipv4 only vps (bash menu.sh d)
+# 4.turn on warp (warp o)
+# 5.install cloudflare client and set mode to proxy (bash menu.sh c)
+# 6.change the warp ip to support netflix (warp i)
+# 7.turn off, uninstall warp interface, linux client and wireproxy (warp u)
+# 8.upgrade kernel, turn on bbr, change linux system (warp b)
+# 9.sync the latest version (warp v)
+# 10.professional one-click script for warp to unblock streaming media (supports multi-platform, multi-mode and tg push)
+# 11.install iptable + dnsmasq + ipset. let warp only take over the streaming media traffic (not available for ipv6 only) (bash menu.sh e)
+# 12.install wireproxy. wireguard client that exposes itself as a socks5 proxy or tunnels (bash menu.sh w)
+# 13.install cloudflare client and set mode to warp (bash menu.sh l)
+# 0.exit
+# choose:
+# ----------
+# 1.爲 ipv4 only 添加 warp ipv4 網絡接口 (bash menu.sh 4)
+# 2.爲 ipv4 only 添加 warp ipv6 網絡接口 (bash menu.sh 6)
+# 3.爲 ipv4 only 添加 warp 雙棧網絡接口 (bash menu.sh d)
+# 4.打開 warp (warp o)
+# 5.安裝 cloudflare client 並設置爲 proxy 模式 (bash menu.sh c)
+# 6.更換支持 netflix 的 ip (warp i)
+# 7.永久關閉 warp 網絡接口，並刪除 warp、 linux client 和 wireproxy (warp u)
+# 8.升級內核、安裝bbr、dd腳本 (warp b)
+# 9.同步最新版本 (warp v)
+# 10.warp 解鎖 netflix 等流媒體專業一鍵(支持多平台、多方式和 tg 通知)
+# 11.安裝 iptable + dnsmasq + ipset，讓 warp ipv4 only 接管流媒體流量 (不適用於 ipv6 only vps) (bash menu.sh e)
+# 12.安裝 wireproxy，讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
+# 13.安裝 cloudflare client 並設置爲 warp 模式 (bash menu.sh l)
+# 0.退出腳本
+# 請選擇:
+# ----------
+expect -re "(?i)12.*wireproxy"
+send "12\r"
+# --------------------------------------------------
+# please customize the client port (1000-65535. default to 40000 if it is blank):
+# ----------
+# 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
+# ----------
+expect -re "(?i)port"
+send "\r"
+# --------------------------------------------------
+expect eof
+EOF
+    if [ $? -ne 0 ]; then
+        echo "error : expect execution failed"
+        return 1
+    fi
     sleep 5 # TODO:[倒計時]等待服務啟動
     if ! systemctl is-active --quiet wireproxy; then
         echo "error : wireproxy install failed（ detail : journalctl -u wireproxy.service ）"
