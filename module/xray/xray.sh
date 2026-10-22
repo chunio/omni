@@ -303,22 +303,22 @@ function funcPublicWarpReinit() {
     # 更新「systemd-resolved」[START]
     # 「127.0.0.53:53」是「[linux/systemd]systemd-resolved」默認使用的本地DNS存根監聽端點，用於處理發送至該端點的DNS查詢（順序：本地記錄 >> 有效緩存 >> 上游DNS（來自：上游查詢列表配置））
     # [存根DNS入口配置]/run/systemd/resolve/stub-resolv.conf
-    # [上游DNS列表配置]/run/systemd/resolve/resolv.conf（由「systemd-resolved」根據「/etc/systemd/resolved.conf && DHCP && 網卡配置」等自動生成/更新）
-    if :; then # :內置命令，表示{無操作 && 返回成功狀態}
-    # if [ -f /etc/systemd/resolved.conf ] && systemctl list-unit-files | grep -q systemd-resolved; then
-        # 係統自帶「systemd-resolved」
-        if ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
-            echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
-        fi
-        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-        systemctl restart systemd-resolved
-    else
+    # [上游DNS列表配置]/run/systemd/resolve/resolv.conf（由「systemd-resolved」根據{/etc/systemd/resolved.conf && DHCP && 網卡配置}等自動生成/更新）
+    # if :; then # :內置命令，表示{無操作 && 返回成功狀態}
+    if ! systemctl list-unit-files | grep -q systemd-resolved; then
         # 係統沒有「systemd-resolved」
-        echo "warning : systemd-resolved not found"
-        rm -f /etc/resolv.conf # 刪除可能存在的軟連接
-        echo "nameserver 1.1.1.1" > /etc/resolv.conf
-        echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+        rm -f /etc/resolv.conf # 刪除[可能存在的]軟連接
+        sh -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
+        apt update && apt install -y systemd-resolved
     fi
+    if [ -f /etc/systemd/resolved.conf ] && ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
+        echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
+    else
+        echo "DNS=1.1.1.1 8.8.8.8" > /etc/systemd/resolved.conf
+    fi
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    systemctl enable systemd-resolved
+    systemctl restart systemd-resolved
     if ! nslookup engage.cloudflareclient.com > /dev/null 2>&1; then
         echo "error : [ nslookup engage.cloudflareclient.com failed ] systemd-resolved repair failed"
         return 1
