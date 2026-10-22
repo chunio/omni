@@ -4,13 +4,54 @@
 # datetime : 0000/00/00 00:00:00
 
 :<<'MARK'
+# ##################################################
 入站方案（即：用戶終端連接至境外VPS）：
 1，[xray]VLESS（代理層/一種不帶加密傳輸協議） + TCP/RAW（傳輸層） + reality（安全層/一種安全僞裝技術（即：僞裝瀏覽真實大站（本質：借用其TLS指紋），要求直連禁止CDN））
 2，[v2ray]VMESS（代理層/一種自帶加密傳輸協議（注意：嚴格要求{客戶端 && 服務端}時間同步）） + websocket（傳輸層/雙向通信） + TLS（安全層/僞裝瀏覽常規網頁，並且由NGINX承載/終結TLS（即：加密/解密SSL）） + CDN（用於隱藏VPS真實IP，如：cloudflare）
 [2026/10/20]總結：自2023年起，「裸露IP的方案1」相對「隱藏IP的方案2」抗封（原因：[GFW/防火長城]打擊策略已從「檢測連接哪個IP」升級至「DPI/分析用戶流量特徵」，因此「reality/規避檢測」優於「CDN/隱藏IP」，前提：VPS真實IP不被[針對性的]精確打擊）
+# ##################################################
 出站方案（即：境外VPS連接至目標內容）：
 1，[cloudflare]warp
 2，residential ip
+# ##################################################
+1，https://www.youtube.com/watch?v=RNS2yiVvRVE //「fscarmen/warp」功能介紹（含：1可解鎖chatgpt等應用地區限制問題）
+2，https://gitlab.com/fscarmen/warp //將「自身vpn」接入至cloudflare.com的局域網，再由其提供代理流量的出口/入口）
+3，直接於VPS服務器執行（已驗證：已安裝v2ray的基礎上）：wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
+# ----------
+wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
+安裝引導
+-> 2. 簡體中文
+-> 1. 爲「ipv4 only」添加「warp ipv4」網絡接口 (bash menu.sh 4) # 優於：爲「ipv4 only」添加warp雙棧網絡接口 (bash menu.sh d)
+-> 1. wireguard内核 (默認)
+-> 1. 全局 (默認)
+-> 1. 使用免費賬戶 (默認)
+-> 3. 使用vps初始設置 (默認)
+# ----------
+查看配置: cat /etc/wireguard/warp.conf
+檢查端口：nc -u engage.cloudflareclient.com 2408
+卸載套件（不影響：v2ray）：warp u
+管理服務（不影響：v2ray）：systemctl {stop/status/restart} wg-quick@warp.service
+# ----------
+故障日志：
+2025/08/15
+問題描述：
+1，vpn忽然失效（此時：v2ray正常運行）
+2，本地可以ssh至搬瓦工服務器，但搬瓦工服務器內部無法訪問互聯網
+3，[warp服務]後台獲取「warp ip」中,最大嘗試5次.../最後失敗
+操作記錄：
+1，systemctl stop wg-quick@warp.service可以恢復vpn服務
+2，開通warp+賬戶，沒有作用（「免費賬戶」與「warp+/付費賬戶」區別：付費賬戶僅在訪問cloudflare網站時會觸發類似argo的加速技術，但在訪問非cloudflare網站時沒有任何差異）
+最終解決：
+warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
+2026/10/19
+問題描述：
+1，「gemini」提示處於禁用地區
+2，皆是請求「https://www.google.com」，[情況1]使用「warp/cloudflare」作爲出口時{chrome && firefox}皆會自動重定向至「https://www.google.com.hk」，[情況2]使用「vps真實ip」作爲出口則正常
+操作記錄：
+1，warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh >> 報錯：bash版本過舊不兼容腳本的「local -n」等命令
+最終解決：
+1，重裝VPS，採用「xray/vless + tcp/raw + reality + warp」方案
+2，[ios/client]從「shadowrocket」替換至「hiddify/開源」
 MARK
 
 # ##################################################
@@ -43,6 +84,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
+VARI_GLOBAL["XRAY_HOME"]="/usr/local/etc/xray"
 VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/etc/xray/config.json"
 # global variable[END]
 # ##################################################
@@ -148,10 +190,10 @@ EOF
         echo "PublicKey (pbk) : ${variPublicKey}"
         echo "ShortId (sid) : ${variShortId}"
         echo "--------------------------------------------------"
-        local variYamlFilename="reality-${variShortId}"
+        local variYamlFilename="vless-raw-reality-${variShortId}"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
         echo "${variVlessLink}"
-        local variYamlUri="/tmp/${variYamlFilename}.yaml"
+        local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
         cat > ${variYamlUri} <<EOF
 port: 7890
 socks-port: 7891
@@ -206,7 +248,7 @@ rules:
   - MATCH,--
 EOF
         echo "--------------------------------------------------"
-        cat /tmp/xray-${variShortId}.yaml
+        cat ${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml
         echo "--------------------------------------------------"
     else
         echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
