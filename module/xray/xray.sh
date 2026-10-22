@@ -305,8 +305,7 @@ function funcPublicWarpReinit() {
     # [存根DNS入口配置]/run/systemd/resolve/stub-resolv.conf
     # [上游DNS列表配置]/run/systemd/resolve/resolv.conf（由「systemd-resolved」根據{/etc/systemd/resolved.conf && DHCP && 網卡配置}等自動生成/更新）
     # if :; then # :內置命令，表示{無操作 && 返回成功狀態}
-    if ! systemctl list-unit-files | grep -q systemd-resolved; then
-        # 係統沒有「systemd-resolved」
+    if ! systemctl list-unit-files --type=service | grep -q '^systemd-resolved\.service'; then
         rm -f /etc/resolv.conf # 刪除[可能存在的]軟連接
         sh -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
         apt update && apt install -y systemd-resolved
@@ -314,11 +313,13 @@ function funcPublicWarpReinit() {
     if [ -f /etc/systemd/resolved.conf ] && ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
         echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
     else
-        echo "DNS=1.1.1.1 8.8.8.8" > /etc/systemd/resolved.conf
+      cat > /etc/systemd/resolved.conf <<'EOF'
+[Resolve]
+DNS=1.1.1.1 8.8.8.8
+EOF
     fi
-    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-    systemctl enable systemd-resolved
-    systemctl restart systemd-resolved
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+    systemctl enable --now systemd-resolved
     if ! nslookup engage.cloudflareclient.com > /dev/null 2>&1; then
         echo "error : [ nslookup engage.cloudflareclient.com failed ] systemd-resolved repair failed"
         return 1
@@ -353,13 +354,13 @@ proc expect_prompt {pattern description} {
 # 函數封裝[END]
 spawn bash /tmp/warp-menu.sh
 # [expect]內置函數[START]
-expect_before {
-    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
-        send -- "N\r"
-        # 回到外層「expect」
-        exp_continue
-    }
-}
+# expect_before {
+#    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
+#        send -- "N\r"
+#        # 回到外層「expect」
+#        exp_continue
+#    }
+# }
 # [expect]內置函數[END]
 expect {
     -nocase -re {language[ \t]*:} {
