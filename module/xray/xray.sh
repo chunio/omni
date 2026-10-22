@@ -85,7 +85,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # ##################################################
 # global variable[START]
 VARI_GLOBAL["VPN_HOME"]="/usr/local/vpn"
-VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/vpn/xray/config.json"
+VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/vpn/xray/client.envi"
+VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/vpn/xray/config.json"
 # global variable[END]
 # ##################################################
 
@@ -123,8 +124,8 @@ function funcPublicRealityReinit() {
         echo "error : {variPrivateKey || variPublicKey || variClientId || variShortId} is(are) empty"
         return 1
     fi
-    mkdir -p $(dirname ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]})
-    cat > ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} <<EOF
+    mkdir -p $(dirname ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]})
+    cat > ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} <<EOF
 {
   "log": {
     "loglevel": "warning"
@@ -174,13 +175,13 @@ function funcPublicRealityReinit() {
   ]
 }
 EOF
-    if xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}; then
+    if xray run -test -config ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]}; then
         systemctl enable xray
         systemctl restart xray
         local variYamlFilename
         variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
-        funcProtectedTodo "${variVlessLink}"
+        echo "${variVlessLink}" > ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
         local variXrayYamlUri="${VARI_GLOBAL["VPN_HOME"]}/xray/${variYamlFilename}.yaml"
         cat > ${variXrayYamlUri} <<EOF
 port: 7890
@@ -236,9 +237,10 @@ rules:
   - IP-CIDR6,fd00::/8,DIRECT
   - MATCH,--
 EOF
-        funcProtectedTodo $(cat ${variXrayYamlUri})
+        cat ${variXrayYamlUri} >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
     else
-        echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
+        echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]}"
         return 1
     fi
     return 0
@@ -399,7 +401,7 @@ EOF
     python3 - <<EOF
 import json
 import sys
-config_json_uri = "${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
+config_json_uri = "${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]}"
 try:
     with open(config_json_uri, 'r') as f:
         config = json.load(f)
@@ -427,20 +429,20 @@ try:
         config["outbounds"].insert(0, new_outbound_dict)
         with open(config_json_uri, 'w') as f:
             json.dump(config, f, indent=2)
-        print("[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag success")
+        print("[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag success")
     else:
-        print("[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag skipped")
+        print("[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag skipped")
 except Exception as e:
-    print(f"[ ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} ] warp_outbound_tag failed : {e}")
+    print(f"[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag failed : {e}")
     sys.exit(1)
 EOF
     if [ $? -ne 0 ]; then
-        echo "error : ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} update failed"
+        echo "error : ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} update failed"
         return 1
     fi
     systemctl restart xray
     if ! systemctl is-active --quiet xray; then
-        echo "error : systemctl restart xray ( try ：xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} )"
+        echo "error : systemctl restart xray ( try ：xray run -test -config ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} )"
         # ----------
         local variJournalctlLogUri
         variJournalctlLogUri="/tmp/wireproxy.service.log"
