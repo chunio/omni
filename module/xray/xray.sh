@@ -84,8 +84,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/vpn/xray/client.envi"
-VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/vpn/xray/server.json"
+VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/xray/client.envi"
+VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/xray/server.json"
 # global variable[END]
 # ##################################################
 
