@@ -190,7 +190,7 @@ EOF
         echo "PublicKey (pbk) : ${variPublicKey}"
         echo "ShortId (sid) : ${variShortId}"
         echo "--------------------------------------------------"
-        local variYamlFilename="vless-raw-reality-${variShortId}"
+        local variYamlFilename=$(TZ=UTC0 date +%Y%m%d%H%M%S)
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
         echo "${variVlessLink}"
         local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
