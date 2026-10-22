@@ -102,8 +102,8 @@ function funcPublicRealityReinit() {
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------
     # 僞裝目標[START]
-    local variTarget=${1:-"www.cloudflare.com:443"}
-    local variServerName=${2:-"www.cloudflare.com"}
+    local variTarget=${1:-"www.bing.com:443"}
+    local variServerName=${2:-"www.bing.com"}
     # 僞裝目標[END]
     # install xray-core[START]
     if ! command -v xray &> /dev/null; then
@@ -175,7 +175,8 @@ function funcPublicRealityReinit() {
 }
 EOF
     if xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}; then
-        systemctl enable --now xray
+        systemctl enable xray
+        systemctl restart xray
         local variYamlFilename
         variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
@@ -310,7 +311,8 @@ DNS=1.1.1.1 8.8.8.8
 EOF
     fi
     ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
-    systemctl enable --now systemd-resolved
+    systemctl enable systemd-resolved
+    systemctl restart systemd-resolved
     if ! nslookup engage.cloudflareclient.com > /dev/null 2>&1; then
         echo "error : [ nslookup engage.cloudflareclient.com failed ] systemd-resolved repair failed"
         return 1
