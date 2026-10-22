@@ -84,8 +84,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/xray/client.envi"
-VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/xray/server.json"
+VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/etc/xray/client.envi"
+VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/etc/xray/config.json"
 # global variable[END]
 # ##################################################
 
@@ -185,7 +185,7 @@ EOF
         echo "${variVlessLink}" >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
         echo "--------------------------------------------------" >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
         # ----------
-        local variXrayYamlUri="/usr/local/xray/${variYamlFilename}.yaml"
+        local variXrayYamlUri="/usr/local/etc/xray/${variYamlFilename}.yaml"
         cat > ${variXrayYamlUri} <<EOF
 port: 7890
 socks-port: 7891
@@ -323,8 +323,8 @@ EOF
     fi
     # 更新「systemd-resolved」[END]
     # 安裝「wireproxy」[START]
-    mkdir -p /usr/local/warp
-    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /usr/local/warp/menu.sh
+    mkdir -p /usr/local/etc/warp
+    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /usr/local/etc/warp/menu.sh
     # 安裝 wireproxy（端口默認：40000），讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
     # 設置「menu.sh」語言（避免：触发交互）[START]
     # mkdir -p /etc/wireguard
@@ -350,7 +350,7 @@ proc expect_prompt {pattern description} {
     }
 }
 # 函數封裝[END]
-spawn bash /usr/local/warp/menu.sh
+spawn bash /usr/local/etc/warp/menu.sh
 # [expect]內置函數[START]
 # expect_before {
 #    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
