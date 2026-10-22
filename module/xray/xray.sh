@@ -51,7 +51,7 @@ warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash me
 1，warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh >> 報錯：bash版本過舊不兼容腳本的「local -n」等命令
 最終解決：
 1，重裝VPS，採用「xray/vless + tcp/raw + reality + warp/wireproxy」方案
-2，[ios/client]從「shadowrocket」替換至「hiddify/開源」
+2，[ios/client]從「shadowrocket」調整至「hiddify/開源」
 MARK
 
 # ##################################################
@@ -301,13 +301,15 @@ EOF
 # --------------------------------------------------
 function funcPublicWarpReinit() {
     # 更新「systemd-resolved」[START]
-    # 解決：GO程序解釋失敗的問題
-    if [ -f /etc/systemd/resolved.conf ] && systemctl list-unit-files | grep -q systemd-resolved; then
+    # 「127.0.0.53:53」是「[linux/systemd]systemd-resolved」默認使用的本地DNS存根監聽端點，用於處理發送至該端點的DNS查詢（順序：本地記錄 >> 有效緩存 >> 上游DNS（來自：上游查詢列表配置））
+    # [存根DNS入口配置]/run/systemd/resolve/stub-resolv.conf
+    # [上游DNS列表配置]/run/systemd/resolve/resolv.conf（由「systemd-resolved」根據「/etc/systemd/resolved.conf && DHCP && 網卡配置」等自動生成/更新）
+    if :; then # :內置命令，表示{無操作 && 返回成功狀態}
+    # if [ -f /etc/systemd/resolved.conf ] && systemctl list-unit-files | grep -q systemd-resolved; then
         # 係統自帶「systemd-resolved」
         if ! grep -q "^DNS=" /etc/systemd/resolved.conf; then
             echo "DNS=1.1.1.1 8.8.8.8" >> /etc/systemd/resolved.conf
         fi
-        # 「systemd-resolved」會根據「/etc/systemd/resolved.conf」自動生成「/run/systemd/resolve/resolv.conf」
         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
         systemctl restart systemd-resolved
     else
@@ -448,6 +450,13 @@ EOF
     systemctl restart xray
     if ! systemctl is-active --quiet xray; then
         echo "error : systemctl restart xray ( try ：xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]} )"
+        # ----------
+        local variJournalctlLogUri
+        variJournalctlLogUri="/tmp/wireproxy.service.log"
+        journalctl -xeu wireproxy.service > "$variJournalctlLogUri" 2>&1
+        cat "$variJournalctlLogUri"
+        rm -f "$variJournalctlLogUri"
+        # ----------
         return 1
     fi
     # 更新「[xray]config.json」出站規則[END]
