@@ -181,7 +181,11 @@ EOF
         local variYamlFilename
         variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
-        echo "${variVlessLink}" > ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        # ----------
+        echo "--------------------------------------------------" > ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        echo "${variVlessLink}" >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        echo "--------------------------------------------------" >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        # ----------
         local variXrayYamlUri="${VARI_GLOBAL["VPN_HOME"]}/xray/${variYamlFilename}.yaml"
         cat > ${variXrayYamlUri} <<EOF
 port: 7890
@@ -237,8 +241,11 @@ rules:
   - IP-CIDR6,fd00::/8,DIRECT
   - MATCH,--
 EOF
+        # ----------
         cat ${variXrayYamlUri} >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
         cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+        funcProtectedTodo "cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}"
+        # ----------
     else
         echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]}"
         return 1
