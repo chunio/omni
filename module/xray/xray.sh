@@ -11,12 +11,12 @@
 [2026/10/20]總結：自2023年起，「裸露IP的方案1」相對「隱藏IP的方案2」抗封（原因：[GFW/防火長城]打擊策略已從「檢測連接哪個IP」升級至「DPI/分析用戶流量特徵」，因此「reality/規避檢測」優於「CDN/隱藏IP」，前提：VPS真實IP不被[針對性的]精確打擊）
 # ##################################################
 出站方案（即：境外VPS連接至目標內容）：
-1，[cloudflare]warp
+1，[fscarmen/warp]cloudflare
 2，residential ip
 # ##################################################
-1，https://www.youtube.com/watch?v=RNS2yiVvRVE //「fscarmen/warp」功能介紹（含：1可解鎖chatgpt等應用地區限制問題）
-2，https://gitlab.com/fscarmen/warp //將「自身vpn」接入至cloudflare.com的局域網，再由其提供代理流量的出口/入口）
-3，直接於VPS服務器執行（已驗證：已安裝v2ray的基礎上）：wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
+1，https://www.youtube.com/watch?v=RNS2yiVvRVE //「fscarmen/warp」功能介紹（含：1可解鎖「chatgpt」等地區限制問題，原因：「cloudflare」自有「ASN」相對普通機房信任度高）
+2，https://gitlab.com/fscarmen/warp //將「VPS」接入至「cloudflare」的局域網，再由其提供代理流量出口/入口）
+3，直接於「VPS」服務器執行（已驗證：已安裝v2ray的基礎上）：wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 # ----------
 wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
 安裝引導
@@ -50,7 +50,7 @@ warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash me
 操作記錄：
 1，warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh >> 報錯：bash版本過舊不兼容腳本的「local -n」等命令
 最終解決：
-1，重裝VPS，採用「xray/vless + tcp/raw + reality + warp」方案
+1，重裝VPS，採用「xray/vless + tcp/raw + reality + warp/wireproxy」方案
 2，[ios/client]從「shadowrocket」替換至「hiddify/開源」
 MARK
 
@@ -292,6 +292,7 @@ EOF
 # 12.安裝 wireproxy，讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
 # 13.安裝 cloudflare client 並設置爲 warp 模式 (bash menu.sh l)
 # 00.退出腳本
+# [01/02/03會默認將全部流量繞至「warp」(含：ssh)，12則支持用戶設置出口規則]
 # 請選擇:
 # --------------------------------------------------
 # please customize the client port (1000-65535. default to 40000 if it is blank):
