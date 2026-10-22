@@ -63,12 +63,6 @@ fi
 # compatible && validator[END]
 # ##################################################
 
-# 名稱脫敏（避免：加載至自動補全）
-# function xxxx() {
-#    omni.system xxxx # /Users/zengweitao/archived/workspace/repository/chunio/omni/init/system
-#    echo ${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]} # /Users/zengweitao/archived/workspace/repository/chunio/omni/module/haohaiyou
-#    return 0
-# }
 declare -A VARI_GLOBAL
 VARI_GLOBAL["BUILTIN_BASH_ENVI"]="DETACH"
 # VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"][START]
