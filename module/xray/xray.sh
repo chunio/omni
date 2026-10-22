@@ -96,6 +96,7 @@ VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/etc/xray/config.json"
 
 # ##################################################
 # public function[START]
+# 入站處理
 function funcPublicRealityReinit() {
     # ----------
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
@@ -106,8 +107,7 @@ function funcPublicRealityReinit() {
     # 僞裝目標[END]
     # install xray-core[START]
     if ! command -v xray &> /dev/null; then
-        apt update
-        apt install -y unzip
+        apt update && apt install -y unzip
         bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version 26.6.27
     fi
     # install xray-core[END]
@@ -175,22 +175,9 @@ function funcPublicRealityReinit() {
 }
 EOF
     if xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}; then
-        systemctl restart xray
-        systemctl enable xray
-        echo "--------------------------------------------------"
-        echo "Address（IP地址）: xxxx"
-        echo "Port（端口）: 443"
-        echo "Uuid : ${variClientId}"
-        echo "Flow（流控插件）: xtls-rprx-vision"
-        echo "Network (傳輸層) : tcp (raw)"
-        echo "Security (安全層) : reality"
-        echo "SNI: ${variServerName}"
-        echo "Fingerprint（作用：指定使用目標瀏覽器的TLS指紋發起連接）: chrome"
-        echo "PrivateKey : ${variPrivateKey}"
-        echo "PublicKey (pbk) : ${variPublicKey}"
-        echo "ShortId (sid) : ${variShortId}"
-        echo "--------------------------------------------------"
-        local variYamlFilename=$(TZ=UTC0 date +%Y%m%d%H%M%S)
+        systemctl enable --now xray
+        local variYamlFilename
+        variYamlFilename=$(TZ=UTC0 date +%Y%m%d%H%M%S)
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
         echo "${variVlessLink}"
         local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
@@ -204,7 +191,7 @@ log-level: info
 external-controller: 127.0.0.1:9090
 
 proxies:
-  - name: xray-${variShortId}
+  - name: ${variYamlFilename}
     type: vless
     server: ${variCurrentVpsIp}
     port: 443
@@ -214,6 +201,7 @@ proxies:
     tls: true
     udp: true
     servername: ${variServerName}
+    # client-fingerprint：用於指定使用目標瀏覽器的TLS指紋發起連接
     client-fingerprint: chrome
     reality-opts:
       public-key: ${variPublicKey}
@@ -225,7 +213,7 @@ proxy-groups:
     type: select
     proxies:
       - DIRECT
-      - xray-${variShortId}
+      - ${variYamlFilename}
 
 rules:
   - DOMAIN-SUFFIX,local,DIRECT
@@ -299,6 +287,7 @@ EOF
 # ----------
 # 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
 # --------------------------------------------------
+# 出站處理
 function funcPublicWarpReinit() {
     # 更新「systemd-resolved」[START]
     # 「127.0.0.53:53」是「[linux/systemd]systemd-resolved」默認使用的本地DNS存根監聽端點，用於處理發送至該端點的DNS查詢（順序：本地記錄 >> 有效緩存 >> 上游DNS（來自：上游查詢列表配置））
@@ -353,6 +342,15 @@ proc expect_prompt {pattern description} {
 }
 # 函數封裝[END]
 spawn bash /tmp/warp-menu.sh
+# [expect]內置函數[START]
+# expect_before {
+#    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
+#        send -- "N\r"
+#        # 回到外層「expect」
+#        exp_continue
+#    }
+# }
+# [expect]內置函數[END]
 expect {
     -nocase -re {language[ \t]*:} {
         expect_prompt {choose[ \t]*:} "language selection"
