@@ -177,7 +177,7 @@ EOF
     if xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}; then
         systemctl enable --now xray
         local variYamlFilename
-        variYamlFilename=$(TZ=UTC0 date +%Y%m%d%H%M%S)
+        variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
         echo "${variVlessLink}"
         local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
@@ -201,7 +201,7 @@ proxies:
     tls: true
     udp: true
     servername: ${variServerName}
-    # client-fingerprint：用於指定使用目標瀏覽器的TLS指紋發起連接
+    # client-fingerprint：指定使用目標瀏覽器的TLS指紋發起連接
     client-fingerprint: chrome
     reality-opts:
       public-key: ${variPublicKey}
