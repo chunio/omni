@@ -84,8 +84,8 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["XRAY_HOME"]="/usr/local/etc/xray"
-VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/etc/xray/config.json"
+VARI_GLOBAL["VPN_HOME"]="/usr/local/vpn"
+VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]="/usr/local/vpn/xray/config.json"
 # global variable[END]
 # ##################################################
 
@@ -180,11 +180,9 @@ EOF
         local variYamlFilename
         variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
-        echo "--------------------------------------------------"
-        echo "${variVlessLink}"
-        echo "--------------------------------------------------"
-        local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
-        cat > ${variYamlUri} <<EOF
+        funcProtectedTodo "${variVlessLink}"
+        local variXrayYamlUri="${VARI_GLOBAL["VPN_HOME"]}/xray/${variYamlFilename}.yaml"
+        cat > ${variXrayYamlUri} <<EOF
 port: 7890
 socks-port: 7891
 allow-lan: true
@@ -238,9 +236,7 @@ rules:
   - IP-CIDR6,fd00::/8,DIRECT
   - MATCH,--
 EOF
-        echo "--------------------------------------------------"
-        cat ${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml
-        echo "--------------------------------------------------"
+        funcProtectedTodo $(cat ${variXrayYamlUri})
     else
         echo "error : xray run -test -config ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}"
         return 1
@@ -319,7 +315,8 @@ EOF
     fi
     # 更新「systemd-resolved」[END]
     # 安裝「wireproxy」[START]
-    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O /tmp/warp-menu.sh
+    mkdir -p ${VARI_GLOBAL["VPN_HOME"]}/warp
+    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh -O ${VARI_GLOBAL["VPN_HOME"]}/warp/menu.sh
     # 安裝 wireproxy（端口默認：40000），讓 warp 在本地創建一個 socks5 代理 (bash menu.sh w)
     # 設置「menu.sh」語言（避免：触发交互）[START]
     # mkdir -p /etc/wireguard
@@ -345,7 +342,7 @@ proc expect_prompt {pattern description} {
     }
 }
 # 函數封裝[END]
-spawn bash /tmp/warp-menu.sh
+spawn bash /usr/local/vpn/warp/menu.sh
 # [expect]內置函數[START]
 # expect_before {
 #    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
@@ -388,6 +385,7 @@ EOF
             echo "error : wireproxy install failed（ detail : journalctl -u wireproxy.service ）"
             return 1
         fi
+        echo "try(systemctl is-active --quiet wireproxy) ${variRetryIndex} ..."
         sleep 1
     done
     # 等待N秒至服務啟動[END]
@@ -398,7 +396,6 @@ EOF
     echo "wireproxy install succeeded"
     # 安裝「wireproxy」[END]
     # 更新「[xray]config.json」出站規則[START]
-    local ${VARI_GLOBAL["XRAY_CONFIG_JSON_URI"]}="/usr/local/etc/xray/config.json"
     python3 - <<EOF
 import json
 import sys
