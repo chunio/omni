@@ -353,15 +353,6 @@ proc expect_prompt {pattern description} {
 }
 # 函數封裝[END]
 spawn bash /tmp/warp-menu.sh
-# [expect]內置函數[START]
-# expect_before {
-#    -nocase -re {\*\*\*[^\r\n]*\(y/i/n/o/d/z\)[^\r\n]*\[default=n\][ \t]*\?} {
-#        send -- "N\r"
-#        # 回到外層「expect」
-#        exp_continue
-#    }
-# }
-# [expect]內置函數[END]
 expect {
     -nocase -re {language[ \t]*:} {
         expect_prompt {choose[ \t]*:} "language selection"
