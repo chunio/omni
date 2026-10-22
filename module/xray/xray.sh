@@ -102,8 +102,8 @@ function funcPublicRealityReinit() {
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------
     # 僞裝目標[START]
-    local variTarget=${1:-"www.bing.com:443"}
-    local variServerName=${2:-"www.bing.com"}
+    local variTarget=${1:-"www.cloudflare.com:443"}
+    local variServerName=${2:-"www.cloudflare.com"}
     # 僞裝目標[END]
     # install xray-core[START]
     if ! command -v xray &> /dev/null; then
@@ -179,7 +179,9 @@ EOF
         local variYamlFilename
         variYamlFilename="vless-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
         local variVlessLink="vless://${variClientId}@${variCurrentVpsIp}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${variServerName}&fp=chrome&pbk=${variPublicKey}&sid=${variShortId}&type=tcp#${variYamlFilename}"
+        echo "--------------------------------------------------"
         echo "${variVlessLink}"
+        echo "--------------------------------------------------"
         local variYamlUri="${VARI_GLOBAL["XRAY_HOME"]}/${variYamlFilename}.yaml"
         cat > ${variYamlUri} <<EOF
 port: 7890
