@@ -85,7 +85,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # ##################################################
 # global variable[START]
 VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/vpn/xray/client.envi"
-VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/vpn/xray/server.envi"
+VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/vpn/xray/server.json"
 # global variable[END]
 # ##################################################
 
@@ -97,7 +97,7 @@ VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/vpn/xray/server.envi"
 # ##################################################
 # public function[START]
 # 入站處理
-function funcPublicRealityReinit() {
+function funcPublicXrayReinit() {
     # ----------
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
     # ----------

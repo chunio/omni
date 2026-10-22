@@ -3,7 +3,7 @@
 ## System Dependency
 
 ```
-linux : centos 7.9 , ubuntu 24.04
+linux : centos 7.9 , ubuntu 26.04
 darwin : macos 26.4.1
 ```
 
