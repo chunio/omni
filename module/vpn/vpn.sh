@@ -50,16 +50,17 @@ warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash me
 操作記錄：
 1，warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh >> 報錯：bash版本過舊不兼容腳本的「local -n」等命令
 最終解決：
-1，重裝VPS，採用「xray/vless + tcp/raw + reality + warp/wireproxy」方案
+1，omni.vpn xrayReinit && omni.vpn warpReinit
 2，[ios/client]從「shadowrocket」調整至「hiddify/開源」
 2026/10/28
 問題描述：
 1，VPN失效
-2，https://tcp.ping.pe/67.216.216.79:443 >> china, ... connection to 98.142.138.87:443 failed
+2，https://tcp.ping.pe >> 67.216.216.79:443 >> china, ... connection to 98.142.138.87:443 failed
 操作記錄：
 1，--
 最終解決：
 1，[VPS後台]migrate to another dc
+2，omni.vpn releaseCloud ${account} ${ip} ${port} && omni.vpn nginxReinit && omni.vpn v2rayReinit
 MARK
 
 # ##################################################
@@ -89,14 +90,14 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/etc/xray/client.envi"
 VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/etc/xray/config.json"
 VARI_GLOBAL["V2RAY_SERVER_ENVI_URI"]="/usr/local/etc/v2ray/config.json"
-
 # global variable[END]
 # ##################################################
 
 # ##################################################
 # protected function[START]
 function funcProtectedCloudInit() {
-  funcProtectedSyncQiniu # 存在判斷：[ -z "$(ls -A "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}")" ]
+  # funcProtectedSyncQiniu # 存在判斷：[ -z "$(ls -A "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}")" ]
+  # omni.vpn releaseCloud ${account} ${ip} ${port}
   return 0
 }
 # protected function[END]
@@ -394,7 +395,7 @@ STANDALONERENEWSHELL
 }
 
 # 入站處理
-function funcPublicV2rayInstall() {
+function funcPublicV2rayReinit() {
   local variParameterDescList=("client id")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
   local variClientId=${1:-$(cat /proc/sys/kernel/random/uuid)}
@@ -620,6 +621,7 @@ EOF
     fi
     return 0
 }
+
 # --------------------------------------------------
 # language:
 # 01.english (default)
