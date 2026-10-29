@@ -7,7 +7,7 @@
 # ##################################################
 入站方案（即：用戶終端連接至境外VPS）：
 1，[xray]VLESS（代理層/一種不帶加密傳輸協議） + TCP/RAW（傳輸層） + reality（安全層/一種安全僞裝技術（即：僞裝瀏覽真實大站（本質：借用其TLS指紋），要求直連禁止CDN））
-2，[v2ray]VMESS（代理層/一種自帶加密傳輸協議（注意：嚴格要求{客戶端 && 服務端}時間相差2分鐘內）） + websocket（傳輸層/雙向通信） + TLS（安全層/僞裝瀏覽常規網頁，並且由NGINX承載/終結TLS（即：加密/解密SSL）） + CDN（用於隱藏VPS真實IP，如：cloudflare）
+2，[v2ray]VMESS（代理層/一種自帶加密傳輸協議（注意：嚴格要求{客戶端 && 服務端}時間相差90秒內）） + websocket（傳輸層/雙向通信） + TLS（安全層/僞裝瀏覽常規網頁，並且由NGINX承載/終結TLS（即：加密/解密SSL）） + CDN（用於隱藏VPS真實IP，如：cloudflare）
 [2026/10/20]總結：自2023年起，「裸露IP的方案1」相對「隱藏IP的方案2」抗封（原因：[GFW/防火長城]打擊策略已從「檢測連接哪個IP」升級至「DPI/分析用戶流量特徵」，因此「reality/規避檢測」優於「CDN/隱藏IP」，前提：VPS真實IP不被[針對性的]精確打擊）
 # ##################################################
 出站方案（即：境外VPS連接至目標內容）：
@@ -123,9 +123,9 @@ function funcPublicNginxReinit(){
   fi
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.runtime" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/webroot/.well-known/acme-challenge"
   if [[ ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" || ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" ]]; then
-    if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/fullchain.pem" ]]; then
-      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
-      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/privkey.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
+    if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" ]]; then
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/privkey.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
     else
       # 自簽證書[START]
       openssl req -x509 -nodes -newkey rsa:2048 -days 7 -subj "/CN=${variDomain}" \
@@ -297,7 +297,7 @@ DOCKERCOMPOSEYML
 #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
 # --post-hook「certbot命令」執行結束觸發的勾子
 # --deploy-hook 證書內容成功更新觸發的勾子
-# [證書目錄] /usr/local/nginx/certbot/live/example.domain
+# [證書目錄] /usr/local/nginx/certbot/config/live/example.domain
 # [證書測試] curl -vI https://example.domain
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
 # [證書評分] https://www.ssllabs.com/ssltest/
@@ -318,16 +318,16 @@ function funcPublicCertbotRenew() {
   local variServiceStartCommand="docker start ${variServiceName}"
   local variServiceReloadCommand="docker exec ${variServiceName} nginx -s reload"
   # -L：跟隨符號鏈接（即：源文件是一個軟鏈接時，則會作用於其指向的真實文件）
-  local variDeployHookCommand="/usr/bin/cp -fL ${variCertbotPath}/live/${variDomain}/fullchain.pem ${variCertbotPath}/${variDomain}.pem && /usr/bin/cp -fL ${variCertbotPath}/live/${variDomain}/privkey.pem ${variCertbotPath}/${variDomain}.key && chmod 600 ${variCertbotPath}/${variDomain}.key && ${variServiceReloadCommand}"
+  local variDeployHookCommand="/usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/fullchain.pem ${variCertbotPath}/${variDomain}.pem && /usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/privkey.pem ${variCertbotPath}/${variDomain}.key && chmod 600 ${variCertbotPath}/${variDomain}.key && ${variServiceReloadCommand}"
   if ! command -v certbot &> /dev/null; then
     [ -f /etc/redhat-release ] && yum install -y certbot
     [ -f /etc/debian_version ] && apt-get update && apt-get install -y certbot
   fi
   # 備份證書[START]
-  if [[ -d "${variCertbotPath}/live/${variDomain}" ]]; then
+  if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
     local variBackupPath="${variCertbotPath}/backup/$(date +%Y%m%d%H%M%S)"
     mkdir -p "${variBackupPath}"
-    /usr/bin/cp -rfL "${variCertbotPath}/live/${variDomain}" "${variBackupPath}/"
+    /usr/bin/cp -rfL "${variCertbotPath}/config/live/${variDomain}" "${variBackupPath}/"
     echo "successful backup : ${variBackupPath}"
   fi
   # 備份證書[END]
@@ -401,7 +401,6 @@ STANDALONERENEWSHELL
 }
 
 # 入站處理
-# TODO:嚴格要求{客戶端 && 服務端}時間相差2分鐘內
 function funcPublicV2rayReinit() {
   local variParameterDescList=("client id")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
@@ -472,6 +471,8 @@ function funcPublicV2rayReinit() {
 V2RAYCONF
   # 核心配置[END]
   /usr/local/bin/v2ray test -c /usr/local/etc/v2ray/config.json
+  # 嚴格要求{客戶端 && 服務端}時間相差90秒內
+  timedatectl set-timezone Etc/GMT-8
   systemctl enable v2ray
   systemctl restart v2ray
   systemctl --no-pager status v2ray | head -n 5
