@@ -110,7 +110,6 @@ function funcProtectedCloudInit() {
 
 # ##################################################
 # public function[START]
-# omni.vpn nginxReinit
 function funcPublicNginxReinit(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
@@ -385,18 +384,22 @@ certbot renew --quiet \
 STANDALONERENEWSHELL
     ;;
   *)
-   echo "Unknown Mode : ${variModel}";
+   echo "unknown mode : ${variModel}";
    return 1
   ;;
   esac
   chmod +x ${variRenewShellUri}
-  # 定時任務[START]
+  # [立即執行]更新證書[START]
+  ${variRenewShellUri}
+  ${variDeployHookCommand}
+  # [立即執行]更新證書[END]
+  # [定時任務]自動續簽[START]
   # crontab命令寫入，無需reload {[centos]crond || [ubuntu]cron}
   if ! crontab -l 2> /dev/null | grep -qF "${variRenewShellUri}"; then
     ( crontab -l 2> /dev/null; echo "0 0 * * 1 ${variRenewShellUri}" ) | crontab -
     crontab -l
   fi
-  # 定時任務[END]
+  # [定時任務]自動續簽[END]
   return 0
 }
 
@@ -735,6 +738,13 @@ EOF
 # --------------------------------------------------
 # 出站處理
 function funcPublicWarpReinit() {
+    local variParameterDescMulti=(
+      "server name , value(enum) : xray , v2ray"
+      "server envi uri"
+    )
+    funcProtectedCheckRequiredParameter 2 'variParameterDescMulti[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+    local variServerName=${1}
+    local variServerEnviUri=${2}
     # 更新「systemd-resolved」[START]
     # 「127.0.0.53:53」是「[linux/systemd]systemd-resolved」默認使用的本地DNS存根監聽端點，用於處理發送至該端點的DNS查詢（順序：本地記錄 >> 有效緩存 >> 上游DNS（來自：上游查詢列表配置））
     # [存根DNS入口配置]/run/systemd/resolve/stub-resolv.conf
@@ -842,11 +852,11 @@ EOF
     systemctl enable wireproxy
     echo "wireproxy install succeeded"
     # 安裝「wireproxy」[END]
-    # 更新「[xray]config.json」出站規則[START]
+    # 更新「config.json」出站規則[START]
     python3 - <<EOF
 import json
 import sys
-config_json_uri = "${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]}"
+config_json_uri = "${variServerEnviUri}"
 try:
     with open(config_json_uri, 'r') as f:
         config = json.load(f)
@@ -874,20 +884,27 @@ try:
         config["outbounds"].insert(0, new_outbound_dict)
         with open(config_json_uri, 'w') as f:
             json.dump(config, f, indent=2)
-        print("[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag success")
+        print("[ ${variServerEnviUri} ] warp_outbound_tag success")
     else:
-        print("[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag skipped")
+        print("[ ${variServerEnviUri} ] warp_outbound_tag skipped")
 except Exception as e:
-    print(f"[ ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} ] warp_outbound_tag failed : {e}")
+    print(f"[ ${variServerEnviUri} ] warp_outbound_tag failed : {e}")
     sys.exit(1)
 EOF
     if [ $? -ne 0 ]; then
-        echo "error : ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} update failed"
+        echo "error : ${variServerEnviUri} update failed"
         return 1
     fi
-    systemctl restart xray
-    if ! systemctl is-active --quiet xray; then
-        echo "error : systemctl restart xray ( try ：xray run -test -config ${VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]} )"
+    systemctl restart "${variServerName}"
+    if ! systemctl is-active --quiet "${variServerName}"; then
+        # ----------
+        local variTryCommand=""
+        if [[ "${variServerName}" == "v2ray" ]]; then
+            variTryCommand="v2ray test -c ${variServerEnviUri}"
+        elif [[ "${variServerName}" == "xray" ]]; then
+            variTryCommand="xray run -test -config ${variServerEnviUri}"
+        fi
+        echo "error : systemctl restart ${variServerName} ( try ：${variTryCommand} )"
         # ----------
         local variJournalctlLogUri
         variJournalctlLogUri="/tmp/wireproxy.service.log"
@@ -897,8 +914,8 @@ EOF
         # ----------
         return 1
     fi
-    # 更新「[xray]config.json」出站規則[END]
-    # systemctl status xray
+    # 更新「config.json」出站規則[END]
+    # systemctl status ${variServerName}
     # systemctl status wireproxy
     return 0
 }
