@@ -258,6 +258,7 @@ services:
   ${variContainerName}:
     image: ${variImage}
     container_name: ${variContainerName}
+    # 開機自啟
     restart: unless-stopped
     network_mode: host
     volumes:
