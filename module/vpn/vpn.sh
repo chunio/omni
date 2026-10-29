@@ -51,8 +51,9 @@ wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
 調式記錄：
 1，warp u && wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh >> 報錯：bash版本過舊不兼容腳本的「local -n」等命令
 最終解決：
-1，omni.vpn xrayReinit && omni.vpn warpReinit
-2，[ios/client]從「shadowrocket」調整至「hiddify/開源」
+1，omni.vpn xrayReinit
+2，omni.vpn warpReinit xray "/usr/local/etc/xray/config.json"
+3，[ios/client]從「shadowrocket」調整至「hiddify/開源」
 # ----------
 2026/10/28
 問題描述：
