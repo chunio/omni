@@ -123,9 +123,9 @@ function funcPublicNginxReinit(){
   fi
   mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.runtime" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/webroot/.well-known/acme-challenge"
   if [[ ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" || ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" ]]; then
-    if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" ]]; then
-      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
-      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/privkey.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
+    if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/fullchain.pem" ]]; then
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/live/${variDomain}/privkey.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
     else
       # 自簽證書[START]
       openssl req -x509 -nodes -newkey rsa:2048 -days 7 -subj "/CN=${variDomain}" \
@@ -283,7 +283,7 @@ DOCKERCOMPOSEYML
   fi
   docker ps -a | grep ${variContainerName}
   # 證書管理[START]
-  omni.vpn certbot "${variDomain}" "webroot" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot" "${variContainerName}"
+  omni.vpn certbotRenew "${variDomain}" "webroot" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot" "${variContainerName}"
   # 證書管理[END]
   return 0
 }
@@ -297,11 +297,11 @@ DOCKERCOMPOSEYML
 #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
 # --post-hook「certbot命令」執行結束觸發的勾子
 # --deploy-hook 證書內容成功更新觸發的勾子
-# [證書目錄] /usr/local/nginx/certbot/config/live/example.domain
+# [證書目錄] /usr/local/nginx/certbot/live/example.domain
 # [證書測試] curl -vI https://example.domain
 # [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
 # [證書評分] https://www.ssllabs.com/ssltest/
-function funcPublicCertbot() {
+function funcPublicCertbotRenew() {
   local variParameterDescList=(
     "domain"
     "model，value(enum) : webroot, standalone"
@@ -318,16 +318,16 @@ function funcPublicCertbot() {
   local variServiceStartCommand="docker start ${variServiceName}"
   local variServiceReloadCommand="docker exec ${variServiceName} nginx -s reload"
   # -L：跟隨符號鏈接（即：源文件是一個軟鏈接時，則會作用於其指向的真實文件）
-  local variDeployHookCommand="/usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/fullchain.pem ${variCertbotPath}/${variDomain}.pem && /usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/privkey.pem ${variCertbotPath}/${variDomain}.key && chmod 600 ${variCertbotPath}/${variDomain}.key && ${variServiceReloadCommand}"
+  local variDeployHookCommand="/usr/bin/cp -fL ${variCertbotPath}/live/${variDomain}/fullchain.pem ${variCertbotPath}/${variDomain}.pem && /usr/bin/cp -fL ${variCertbotPath}/live/${variDomain}/privkey.pem ${variCertbotPath}/${variDomain}.key && chmod 600 ${variCertbotPath}/${variDomain}.key && ${variServiceReloadCommand}"
   if ! command -v certbot &> /dev/null; then
     [ -f /etc/redhat-release ] && yum install -y certbot
     [ -f /etc/debian_version ] && apt-get update && apt-get install -y certbot
   fi
   # 備份證書[START]
-  if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
+  if [[ -d "${variCertbotPath}/live/${variDomain}" ]]; then
     local variBackupPath="${variCertbotPath}/backup/$(date +%Y%m%d%H%M%S)"
     mkdir -p "${variBackupPath}"
-    /usr/bin/cp -rfL "${variCertbotPath}/config/live/${variDomain}" "${variBackupPath}/"
+    /usr/bin/cp -rfL "${variCertbotPath}/live/${variDomain}" "${variBackupPath}/"
     echo "successful backup : ${variBackupPath}"
   fi
   # 備份證書[END]
@@ -346,14 +346,14 @@ function funcPublicCertbot() {
         --register-unsafely-without-email \
         --config-dir ${variCertbotPath}/config \
         --work-dir ${variCertbotPath}/work \
-        --logs-dir ${variCertbotPath}/logs \
+        --logs-dir ${variCertbotPath}/runtime \
         --deploy-hook "${variDeployHookCommand}"
       cat <<WEBROOTRENEWSHELL > ${variRenewShellUri}
 #!/bin/bash
 certbot renew --quiet \
   --config-dir ${variCertbotPath}/config \
   --work-dir ${variCertbotPath}/work \
-  --logs-dir ${variCertbotPath}/logs \
+  --logs-dir ${variCertbotPath}/runtime \
   --deploy-hook "${variDeployHookCommand}"
 WEBROOTRENEWSHELL
     ;;
@@ -369,7 +369,7 @@ WEBROOTRENEWSHELL
         --register-unsafely-without-email \
         --config-dir ${variCertbotPath}/config \
         --work-dir ${variCertbotPath}/work \
-        --logs-dir ${variCertbotPath}/logs \
+        --logs-dir ${variCertbotPath}/runtime \
         --deploy-hook "${variDeployHookCommand}"
       ${variServiceStartCommand}
       cat <<STANDALONERENEWSHELL > ${variRenewShellUri}
@@ -378,7 +378,7 @@ certbot renew --quiet \
   --standalone \
   --config-dir ${variCertbotPath}/config \
   --work-dir ${variCertbotPath}/work \
-  --logs-dir ${variCertbotPath}/logs \
+  --logs-dir ${variCertbotPath}/runtime \
   --pre-hook "${variServiceStopCommand}" \
   --post-hook "${variServiceStartCommand}" \
   --deploy-hook "${variDeployHookCommand}"
@@ -410,12 +410,17 @@ function funcPublicV2rayReinit() {
   if ! command -v curl || ! command -v unzip &> /dev/null; then
     apt-get update && apt-get install -y curl unzip
   fi
-  # 安裝v2ray
-  bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
-  # 安裝最新發行的geoip.dat/geosite.dat
-  bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-dat-release.sh)
-  # 移除v2ray
-  # bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --remove
+  # ----------
+  curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh -o "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/install-release.sh"
+  curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-dat-release.sh -o "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/install-dat-release.sh"
+  # ----------
+  # install v2ray
+  bash "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/install-release.sh"
+  # remove v2ray
+  # bash "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/install-release.sh" --remove
+  # install {geoip.dat && geosite.dat}，使用於{IP && 域名}分流（默認：關閉（即：需自行添加路由規則））
+  bash "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/install-dat-release.sh"
+  # ----------
   mkdir -p /var/log/v2ray /usr/local/etc/v2ray
   # 核心配置[START]
   # 僅監聽「127.0.0.1」，由「nginx[:443] -> /temp」反向代理至「websocket」
@@ -524,9 +529,9 @@ rules:
   - MATCH,--
 EOF
   # ----------
-  cat ${variXrayYamlUri} >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
-  cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
-  funcProtectedTodo "cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}"
+  cat ${variXrayYamlUri} >> ${VARI_GLOBAL["V2RAY_CLIENT_ENVI_URI"]}
+  cat ${VARI_GLOBAL["V2RAY_CLIENT_ENVI_URI"]}
+  funcProtectedTodo "cat ${VARI_GLOBAL["V2RAY_CLIENT_ENVI_URI"]}"
   # ----------
   return 0
 }
