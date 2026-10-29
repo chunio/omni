@@ -86,9 +86,10 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 
 # ##################################################
 # global variable[START]
-VARI_GLOBAL["VPN_HOME"]="/usr/local/vpn"
 VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/etc/xray/client.envi"
 VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/etc/xray/config.json"
+VARI_GLOBAL["V2RAY_SERVER_ENVI_URI"]="/usr/local/etc/v2ray/config.json"
+
 # global variable[END]
 # ##################################################
 
@@ -393,6 +394,78 @@ STANDALONERENEWSHELL
 }
 
 # 入站處理
+function funcPublicV2rayInstall() {
+  local variParameterDescList=("client id")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variClientId=${1:-$(cat /proc/sys/kernel/random/uuid)}
+  if ! command -v curl || ! command -v unzip &> /dev/null; then
+    apt-get update && apt-get install -y curl unzip
+  fi
+  # 安裝v2ray
+  bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
+  # 安裝最新發行的geoip.dat/geosite.dat
+  bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-dat-release.sh)
+  # 移除v2ray
+  # bash <(curl -fsSL https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --remove
+  mkdir -p /var/log/v2ray /usr/local/etc/v2ray
+  # 核心配置[START]
+  # 僅監聽「127.0.0.1」，由「nginx[:443] -> /temp」反向代理至「websocket」
+  cat <<V2RAYCONF > ${VARI_GLOBAL["V2RAY_SERVER_ENVI_URI"]}
+{
+  "log": {
+    "access": "/var/log/v2ray/access.log",
+    "error": "/var/log/v2ray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [{
+    "listen": "127.0.0.1",
+    "port": 10703,
+    "protocol": "vmess",
+    "settings": {
+      "clients": [{
+        "id": "${variClientId}",
+        "level": 1,
+        "alterId": 0,
+        "security": "chacha20-poly1305"
+      }]
+    },
+    "streamSettings": {
+      "network": "ws",
+      "wsSettings": {
+        "path": "/temp"
+      }
+    }
+  }],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
+    }
+  ],
+  "routing": {
+    "rules": [{
+      "type": "field",
+      "ip": ["geoip:private"],
+      "outboundTag": "blocked"
+    }]
+  }
+}
+V2RAYCONF
+  # 核心配置[END]
+  /usr/local/bin/v2ray test -c /usr/local/etc/v2ray/config.json
+  systemctl enable v2ray
+  systemctl restart v2ray
+  systemctl --no-pager status v2ray | head -n 5
+  echo "client id : ${variClientId}（ websocket path : /temp，tls : 443 )"
+  return 0
+}
+
+# 入站處理
 function funcPublicXrayReinit() {
     # ----------
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
@@ -546,13 +619,6 @@ EOF
         return 1
     fi
     return 0
-}
-
-
-
-function funcPublicv2rayReinit(){
-
-  return 0
 }
 # --------------------------------------------------
 # language:
