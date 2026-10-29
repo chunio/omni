@@ -103,6 +103,7 @@ function funcProtectedCloudInit() {
 
 # ##################################################
 # public function[START]
+# omni.vpn nginxReinit
 function funcPublicNginxReinit(){
   local variParameterDescList=("domain")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
@@ -113,7 +114,7 @@ function funcPublicNginxReinit(){
     echo "error : ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside is nil" >&2
     return 1
   fi
-  mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/webroot/.well-known/acme-challenge"
+  mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.runtime" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/webroot/.well-known/acme-challenge"
   if [[ ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" || ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" ]]; then
     if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" ]]; then
       cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
@@ -253,11 +254,11 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
+      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot:/usr/local/nginx/certbot:ro
+      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside:/usr/local/nginx/webside:ro
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.conf:/etc/nginx/nginx.conf:ro
       - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variDomain}.conf:/usr/local/nginx/conf/slave/${variDomain}.conf:ro
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log:/usr/local/nginx/runtime:rw
-      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside:/usr/local/nginx/webside:ro
-      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot:/usr/local/nginx/certbot:ro
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.runtime:/usr/local/nginx/runtime:rw
 DOCKERCOMPOSEYML
   # 容器編排[END]
   cd "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
@@ -279,19 +280,31 @@ DOCKERCOMPOSEYML
   return 0
 }
 
+# 免費證書 && 自動續簽
+# 如已完成域名解釋，則由服務器端操作證書安裝即可（即：無需二次驗證/解釋）
+# 權限驗證（即：證書頒發機構確認申請者是否對域名擁有控制權的一種方法）：DNS‑01/HTTP‑01/...
+#「certbot」是由「Let’s Encrypt」官方提供的命令行客戶端，基於「ACME/自動證書(SSL/TLS)管理環境」協議，支持:[免費]申請/續簽（有效期：90天）
+#「webroot」將使用「nginx/other web serivce/...」響應「/​.well-known/acme‑challenge/」下的挑戰文件（不必:讓出80端口，推薦）
+#「standalone」將啟動一個臨時的HTTP服務來影響權限驗證（必需：讓出80端口）
+#「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+# --post-hook「certbot命令」執行結束觸發的勾子
+# --deploy-hook 證書內容成功更新觸發的勾子
+# [證書目錄] /usr/local/nginx/certbot/config/live/example.domain
+# [證書測試] curl -vI https://example.domain
+# [續簽測試] certbot renew --dry-run（#續簽時機：[默認]在證書過期前30天開始嘗試續簽）
+# [證書評分] https://www.ssllabs.com/ssltest/
 function funcPublicCertbot() {
   local variParameterDescList=(
-    "domain, example : xxxx.wiki"
+    "domain"
     "model，value(enum) : webroot, standalone"
     "certbot path，example : /usr/local/nginx/certbot"
     "container name，example : nginx"
   )
   funcProtectedCheckRequiredParameter 4 'variParameterDescList[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   local variDomain=${1}
-  local variModel=${2}
+  local variModel=${2-"webroot"}
   local variCertbotPath=${3-"/usr/local/nginx/certbot"}
   local variServiceName=${4-"nginx"}
-  local variEmail="zengweitao@msn.com"
   local variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
   local variServiceStopCommand="docker stop ${variServiceName}"
   local variServiceStartCommand="docker start ${variServiceName}"
@@ -320,9 +333,9 @@ function funcPublicCertbot() {
         -w ${variCertbotPath}/webroot \
         -d ${variDomain} \
         --agree-tos \
-        --email ${variEmail} \
         --non-interactive \
         --keep-until-expiring \
+        --register-unsafely-without-email \
         --config-dir ${variCertbotPath}/config \
         --work-dir ${variCertbotPath}/work \
         --logs-dir ${variCertbotPath}/logs \
@@ -343,9 +356,9 @@ WEBROOTRENEWSHELL
         --preferred-challenges http \
         -d ${variDomain} \
         --agree-tos \
-        --email ${variEmail} \
         --non-interactive \
         --keep-until-expiring \
+        --register-unsafely-without-email \
         --config-dir ${variCertbotPath}/config \
         --work-dir ${variCertbotPath}/work \
         --logs-dir ${variCertbotPath}/logs \
