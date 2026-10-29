@@ -350,12 +350,41 @@ function funcProtectedEchoGreen(){
 # ##################################################
 # public function[START]
 # release to cloud/internet
+# omni.vpn releaseCloud ubuntu 43.156.106.37 22
+# ssh -p 22 ubunut@43.156.106.37
 function funcPublicReleaseCloud(){
+  local variParameterDescList=("account" "ip" "port")
+  funcProtectedCheckOptionParameter 3 'variParameterDescList[@]'
   local variUnitCommand="${VARI_GLOBAL["BUILTIN_SYMBOL_LINK_PREFIX"]}.${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+  local variArchivedFilename="${variUnitCommand}.cloud.tgz"
   cd "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}"
-  tar -cvzf "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz" ./cloud
-  echo "omni.qiniu upload ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
-  omni.qiniu upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variUnitCommand}.cloud.tgz"
+  tar -cvzf "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variArchivedFilename}" ./cloud
+  if [ $# -gt 0 ]; then
+    # ssh//已驗證
+    local variAccount=$1
+    local variIp=$2
+    local variPort=${3:-22}
+    local variUnitRootPath="/workspace/repository/chunio/omni/module/${VARI_GLOBAL["BUILTIN_UNIT_FILENAME"]%.${VARI_GLOBAL["BUILTIN_UNIT_FILE_SUFFIX"]}}"
+    # 重啟保留（區別：「/tmp」重啟清空）
+    local variScpPath="/var/tmp"
+    # 兼容：係統重裝[START]
+    ssh-keygen -R ${variIp} 2>/dev/null
+    ssh-keygen -R "[${variIp}]:${variPort}" 2>/dev/null
+    # 兼容：係統重裝[END]
+    scp -P ${variPort} -o StrictHostKeyChecking=no "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variArchivedFilename}" ${variAccount}@${variIp}:${variScpPath}/ || return 1
+    ssh -o StrictHostKeyChecking=no -p ${variPort} ${variAccount}@${variIp} "sudo bash -s" <<EOF || return 1
+    mkdir -p "${variUnitRootPath}/cloud" "${variUnitRootPath}/runtime"
+    /usr/bin/mv -f "${variScpPath}/${variArchivedFilename}" "${variUnitRootPath}/runtime/${variArchivedFilename}"
+    # 已存在時默認覆蓋
+    tar -xzvf "${variUnitRootPath}/runtime/${variArchivedFilename}" -C "${variUnitRootPath}"
+    ls -lh "${variUnitRootPath}"
+EOF
+    echo "released : scp -P -o StrictHostKeyChecking=no ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variArchivedFilename} ${variAccount}@${variIp}:${variUnitRootPath}"
+  else
+    # 七牛雲//已驗證
+    echo "omni.qiniu upload ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variArchivedFilename}"
+    omni.qiniu upload "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variArchivedFilename}"
+  fi
   return 0
 }
 # public function[END]

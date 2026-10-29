@@ -49,28 +49,53 @@ function funcProtectedCloudInit() {
 # ##################################################
 # public function[START]
 function funcPublicUpload(){
-  variParameterDescList=("the uri of the file to be uploaded")
+  local variParameterDescList=("the uri of the file to be uploaded")
   funcProtectedCheckRequiredParameter 1 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variTodoUploadFileUri=${1};
+  local variTodoUploadFileUri=${1};
   # --------------------------------------------------
-  variQiniuAccount=$(funcProtectedPullEncryptEnvi "QINIU_ACCOUNT")
-  variQiniuAccessKey=$(funcProtectedPullEncryptEnvi "QINIU_ACCESS_KEY")
-  variQiniuSecretKey=$(funcProtectedPullEncryptEnvi "QINIU_SECRET_KEY")
-  variQiniuBucketName=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_NAME")
-  variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
+  local variQiniuAccount=$(funcProtectedPullEncryptEnvi "QINIU_ACCOUNT")
+  local variQiniuAccessKey=$(funcProtectedPullEncryptEnvi "QINIU_ACCESS_KEY")
+  local variQiniuSecretKey=$(funcProtectedPullEncryptEnvi "QINIU_SECRET_KEY")
+  local variQiniuBucketName=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_NAME")
+  local variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
   # --------------------------------------------------
-  qshell account ${variQiniuAccessKey} ${variQiniuSecretKey} ${variQiniuAccount} &> /dev/null || true
   if [ -n "${variTodoUploadFileUri}" ];then
-    echo "qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri"
-    qshell rput --overwrite ${variQiniuBucketName} ${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri}) $variTodoUploadFileUri
+    local variObjectIndex=${variQiniuBucketDirectory}/$(basename ${variTodoUploadFileUri})
+    qshell account ${variQiniuAccessKey} ${variQiniuSecretKey} ${variQiniuAccount} &> /dev/null || true
+    echo "qshell rput --overwrite ${variQiniuBucketName} ${variObjectIndex} $variTodoUploadFileUri"
+    qshell rput --overwrite "${variQiniuBucketName}" "${variObjectIndex}" "$variTodoUploadFileUri"
   fi
   return 0
 }
 
+#function funcPublicPrivateDownload(){
+#  local variParameterDescList=("module name" "save path")
+#  funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+#  local variCloudArchivedFilename="omni.${1}.cloud.tgz"
+#  local variSavePath=${2}
+#  # --------------------------------------------------
+#  local variQiniuAccount=$(funcProtectedPullEncryptEnvi "QINIU_ACCOUNT")
+#  local variQiniuAccessKey=$(funcProtectedPullEncryptEnvi "QINIU_ACCESS_KEY")
+#  local variQiniuSecretKey=$(funcProtectedPullEncryptEnvi "QINIU_SECRET_KEY")
+#  local variQiniuBucketName=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_NAME")
+#  local variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")
+#  # --------------------------------------------------
+#  mkdir -p "${variSavePath}"
+#  local variObjectIndex="${variQiniuBucketDirectory}/${variCloudArchivedFilename}"
+#  local variOutputFileUri="${variSavePath}/${variCloudArchivedFilename}"
+#  qshell account "${variQiniuAccessKey}" "${variQiniuSecretKey}" "${variQiniuAccount}" &> /dev/null || true
+#  echo "qshell get ${variQiniuBucketName} ${variObjectIndex} -o ${variOutputFileUri}"
+#  qshell get "${variQiniuBucketName}" "${variObjectIndex}" -o "${variOutputFileUri}" || {
+#    rm -f "${variOutputFileUri}"
+#    return 1
+#  }
+#  return 0
+#}
+
 function funcPublicDownload(){
   variParameterDescList=("the uri of the file to be downloaded" "save path")
   funcProtectedCheckRequiredParameter 2 variParameterDescList[@] $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
-  variCloudArchivedFilename=${1}
+  variCloudArchivedFilename="omni.${1}.cloud.tgz"
   variSavePath=${2}
   variQiniuDomainAlias=$(funcProtectedPullEncryptEnvi "QINIU_DOMAIN_ALIAS")
   variQiniuBucketDirectory=$(funcProtectedPullEncryptEnvi "QINIU_BUCKET_DIRECTORY")

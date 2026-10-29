@@ -956,14 +956,15 @@ function funcPublicInit(){
   funcProtectedCommandInit "${variAbleUnitFileUriList}"
   funcProtectedOptionInit "${variAbleUnitFileUriList}"
   funcProtectedCompletionRefresh
-  if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ]; then
+  # 兼容：orbstack構建的虛擬機「id: ‘ubuntu’: no such user」
+  if [ "${VARI_GLOBAL["BUILTIN_OS_DISTRO"]}" = "UBUNTU" ] && id ubuntu >/dev/null 2>&1; then
     # 升級用戶執行權限
     local variUbuntuBashrc="/home/ubuntu/.bashrc"
     # 過渡：清理舊數據[START]
     # TODO：待移除
     local variCommand='[ "$(id -u)" -ne 0 ] && [ -z "$SUDO_USER" ] && { [ -n "$SSH_CONNECTION" ] || [ -n "$TTY" ]; } && sudo -s -E'
     if grep -qF -- "$variCommand" "${variUbuntuBashrc}"; then
-      grep -vF -- "$variCommand" "${variUbuntuBashrc}" > "${variUbuntuBashrc}.new"
+      grep -vF -- "$variCommand" "${variUbuntuBashrc}" > "${variUbuntuBashrc}.new" # 取反
       cat "${variUbuntuBashrc}.new" > "${variUbuntuBashrc}"
       rm -f "${variUbuntuBashrc}.new"
     fi
