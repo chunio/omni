@@ -63,6 +63,7 @@ wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
 最終解決：
 1，[VPS後台]migrate to another dc
 2，omni.vpn releaseCloud ${account} ${ip} ${port} && omni.vpn nginxReinit && omni.vpn v2rayReinit
+3，[ios/shadowrocket]alter id : 0
 # --------------------------------------------------
 MARK
 
@@ -92,6 +93,7 @@ source "${VARI_GLOBAL["BUILTIN_UNIT_ROOT_PATH"]}/encrypt.envi" 2> /dev/null || t
 # global variable[START]
 VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]="/usr/local/etc/xray/client.envi"
 VARI_GLOBAL["XRAY_SERVER_ENVI_URI"]="/usr/local/etc/xray/config.json"
+VARI_GLOBAL["V2RAY_CLIENT_ENVI_URI"]="/usr/local/etc/v2ray/client.envi"
 VARI_GLOBAL["V2RAY_SERVER_ENVI_URI"]="/usr/local/etc/v2ray/config.json"
 # global variable[END]
 # ##################################################
@@ -403,6 +405,7 @@ function funcPublicV2rayReinit() {
   local variParameterDescList=("client id")
   funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
   local variClientId=${1:-$(cat /proc/sys/kernel/random/uuid)}
+  local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
   if ! command -v curl || ! command -v unzip &> /dev/null; then
     apt-get update && apt-get install -y curl unzip
   fi
@@ -466,15 +469,70 @@ V2RAYCONF
   systemctl enable v2ray
   systemctl restart v2ray
   systemctl --no-pager status v2ray | head -n 5
-  echo "client id : ${variClientId}（ websocket path : /temp，tls : 443 )"
+  # ----------
+  local variYamlFilename
+  variYamlFilename="vmess-$(TZ=UTC0 date +%Y%m%d%H%M%S)"
+  local variXrayYamlUri="/usr/local/etc/v2ray/${variYamlFilename}.yaml"
+  cat > ${variXrayYamlUri} <<EOF
+port: 7890
+socks-port: 7891
+allow-lan: true
+bind-address: 0.0.0.0
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+proxies:
+  - name: ${variYamlFilename}
+    type: vmess
+    server: ${variCurrentVpsIp}
+    port: 443
+    uuid: ${variClientId}
+    alterId: 0
+    cipher: auto
+    tls: true
+    servername: baichuan.wiki
+    network: ws
+    ws-opts:
+      path: /temp
+      headers:
+        Host: baichuan.wiki
+proxy-groups:
+  - name: --
+    type: select
+    proxies:
+      - DIRECT
+      - ${variYamlFilename}
+rules:
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,bejson.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,chaoxing.com,DIRECT
+  - DOMAIN-SUFFIX,tencentcloud.com,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  - IP-CIDR,100.64.0.0/10,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR6,::1/128,DIRECT
+  - IP-CIDR6,fc00::/7,DIRECT
+  - IP-CIDR6,fe80::/10,DIRECT
+  - IP-CIDR6,fd00::/8,DIRECT
+  - MATCH,--
+EOF
+  # ----------
+  cat ${variXrayYamlUri} >> ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+  cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}
+  funcProtectedTodo "cat ${VARI_GLOBAL["XRAY_CLIENT_ENVI_URI"]}"
+  # ----------
   return 0
 }
 
 # 入站處理
 function funcPublicXrayReinit() {
-    # ----------
     local variCurrentVpsIp=$(curl -s -4 https://api.ipify.org || curl -s -4 https://ifconfig.me)
-    # ----------
     # 僞裝目標[START]
     local variTarget=${1:-"www.bing.com:443"}
     local variServerName=${2:-"www.bing.com"}
