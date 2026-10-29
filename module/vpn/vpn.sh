@@ -103,6 +103,282 @@ function funcProtectedCloudInit() {
 
 # ##################################################
 # public function[START]
+function funcPublicNginxReinit(){
+  local variParameterDescList=("domain")
+  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
+  local variDomain=${1:-"baichuan.wiki"}
+  local variImage="nginx:1.31.8"
+  local variContainerName="nginx"
+  if [[ ! -d "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside" ]]; then
+    echo "error : ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside is nil" >&2
+    return 1
+  fi
+  mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/webroot/.well-known/acme-challenge"
+  if [[ ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" || ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" ]]; then
+    if [[ -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" ]]; then
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/fullchain.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem"
+      cp -fL "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/config/live/${variDomain}/privkey.pem" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
+    else
+      # 自謙證書[START]
+      openssl req -x509 -nodes -newkey rsa:2048 -days 7 -subj "/CN=${variDomain}" \
+        -keyout "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" \
+        -out "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" &> /dev/null
+      # 自謙證書[END]
+    fi
+    chmod 600 "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key"
+  fi
+  # 核心配置[START]
+  cat <<NGINXCONF > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.conf"
+error_log /usr/local/nginx/runtime/error.log;
+worker_processes 1;
+events {
+    worker_connections 1024;
+}
+http {
+    include              mime.types;
+    default_type         application/octet-stream;
+    sendfile             on;
+    keepalive_timeout    65;
+    client_max_body_size 50m;
+    access_log           /usr/local/nginx/runtime/access.log combined;
+    # log format[START]
+    map \$time_iso8601 \$time {
+         '~(.*)([+-])(.*)'               \$1;
+         default                         'nodate';
+    }
+    map \$time_iso8601 \$zone {
+         '~(.*)([+-])(.*)'               \$2;
+         default                         'nodate';
+    }
+    map \$time_iso8601 \$zonetime {
+         '~(.*)([+-])(.*)'               \$3;
+         default                         'nodate';
+    }
+    map \$msec \$millisecond {
+         '~(\d{10}).(\d{3})'             \$2;
+         default                         'nodate';
+    }
+    # 支持自定義變量，但需於「conf/slave/*.conf」的每份配置的「server{}」中添加「set \$\$customVariabel 0;」
+    log_format json '{"@timestamp":"\$time_iso8601",'
+                     '"host":"\$server_addr",'
+                     '"clientip":"\$http_x_forwarded_for",'
+                     '"size":\$body_bytes_sent,'
+                     '"responsetime":\$request_time,'
+                     '"http_host":"\$host",'
+                     '"request":"\$request",'
+                     '"request_method":"\$request_method",'
+                     '"request_body":"\$request_body",'
+                     '"agent":"\$http_user_agent",'
+                     '"status":\$status}';
+    log_format json1 escape=json '{"@timestamp":"\$time.\$millisecond\$zone\$zonetime",'
+                     '"server_addr":"\$server_addr",'
+                     '"clientip":"\$remote_addr",'
+                     '"size":\$body_bytes_sent,'
+                     '"responsetime":\$request_time,'
+                     '"http_host":"\$host",'
+                     '"request":"\$request",'
+                     '"request_body":"\$request_body",'
+                     '"request_method":"\$request_method",'
+                     '"http_user_agent":"\$http_user_agent",'
+                     '"status":\$status}';
+    # log format[END]
+    include             /usr/local/nginx/conf/slave/*.conf;
+}
+NGINXCONF
+  # 核心配置[END]
+  # 虛擬主機[START]
+  cat <<VIRTUALHOSTCONF > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variDomain}.conf"
+# 虛擬主機/${variDomain}[START]
+# 80[START]
+server {
+    listen 80;
+    server_name ${variDomain};
+    #「Let’s Encrypt」挑戰認證（宿主機：certbot/webroot）[START]
+    location ^~ /.well-known/acme-challenge/ {
+        root /usr/local/nginx/certbot/webroot;
+        default_type "text/plain";
+        allow all;
+        auth_basic off;
+        try_files \$uri =404;
+    }
+    #「Let’s Encrypt」挑戰認證[END]
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+# 80[END]
+# 443[START]
+server {
+    #「listen ... http2」已於 nginx 1.25.1 棄用，改用「http2 on」
+    listen 443 ssl;
+    http2 on;
+    server_name ${variDomain};
+    # SSL（由 funcPublicCertbot 的 deploy-hook 下發 fullchain/privkey 至此路徑）[START]
+    ssl_certificate /usr/local/nginx/certbot/${variDomain}.pem;
+    ssl_certificate_key /usr/local/nginx/certbot/${variDomain}.key;
+    #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers on;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    # SSL[END]
+    root /usr/local/nginx/webside;
+    index module/signIn/signIn.html;
+    location /temp {
+        proxy_redirect off;
+        proxy_pass http://127.0.0.1:10703;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+}
+# 443[END]
+# 虛擬主機/${variDomain}[END]
+VIRTUALHOSTCONF
+  # 虛擬主機[END]
+  # 容器編排[START]
+  cat <<DOCKERCOMPOSEYML > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml"
+services:
+  ${variContainerName}:
+    image: ${variImage}
+    container_name: ${variContainerName}
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variDomain}.conf:/usr/local/nginx/conf/slave/${variDomain}.conf:ro
+      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log:/usr/local/nginx/runtime:rw
+      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside:/usr/local/nginx/webside:ro
+      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot:/usr/local/nginx/certbot:ro
+DOCKERCOMPOSEYML
+  # 容器編排[END]
+  cd "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}"
+  docker compose -p ${variContainerName} config --quiet
+  docker compose -p ${variContainerName} pull
+  docker compose -p ${variContainerName} run --rm --no-deps --entrypoint nginx ${variContainerName} -t
+  docker rm -f ${variContainerName} &> /dev/null
+  docker compose -p ${variContainerName} down -v
+  docker compose -p ${variContainerName} up -d
+  sleep 2
+  if [[ "$(docker inspect -f '{{.State.Running}}' ${variContainerName} 2> /dev/null)" != "true" ]]; then
+    docker logs --tail 50 ${variContainerName} >&2
+    return 1
+  fi
+  docker ps -a | grep ${variContainerName}
+  # 證書管理[START]
+  omni.vpn certbot "${variDomain}" "webroot" "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot" "${variContainerName}"
+  # 證書管理[END]
+  return 0
+}
+
+function funcPublicCertbot() {
+  local variParameterDescList=(
+    "domain, example : xxxx.wiki"
+    "model，value(enum) : webroot, standalone"
+    "certbot path，example : /usr/local/nginx/certbot"
+    "container name，example : nginx"
+  )
+  funcProtectedCheckRequiredParameter 4 'variParameterDescList[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
+  local variDomain=${1}
+  local variModel=${2}
+  local variCertbotPath=${3-"/usr/local/nginx/certbot"}
+  local variServiceName=${4-"nginx"}
+  local variEmail="zengweitao@msn.com"
+  local variRenewShellUri=${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/cerbot.${variDomain}.renew.sh
+  local variServiceStopCommand="docker stop ${variServiceName}"
+  local variServiceStartCommand="docker start ${variServiceName}"
+  local variServiceReloadCommand="docker exec ${variServiceName} nginx -s reload"
+  # -L：跟隨符號鏈接（即：源文件是一個軟鏈接時，則會作用於其指向的真實文件）
+  local variDeployHookCommand="/usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/fullchain.pem ${variCertbotPath}/${variDomain}.pem && /usr/bin/cp -fL ${variCertbotPath}/config/live/${variDomain}/privkey.pem ${variCertbotPath}/${variDomain}.key && chmod 600 ${variCertbotPath}/${variDomain}.key && ${variServiceReloadCommand}"
+  if ! command -v certbot &> /dev/null; then
+    [ -f /etc/redhat-release ] && yum install -y certbot
+    [ -f /etc/debian_version ] && apt-get update && apt-get install -y certbot
+  fi
+  # 備份證書[START]
+  if [[ -d "${variCertbotPath}/config/live/${variDomain}" ]]; then
+    local variBackupPath="${variCertbotPath}/backup/$(date +%Y%m%d%H%M%S)"
+    mkdir -p "${variBackupPath}"
+    /usr/bin/cp -rfL "${variCertbotPath}/config/live/${variDomain}" "${variBackupPath}/"
+    echo "successful backup : ${variBackupPath}"
+  fi
+  # 備份證書[END]
+  mkdir -p ${variCertbotPath}/webroot/.well-known/acme-challenge
+  chown root:root ${variCertbotPath}
+  chmod 755 ${variCertbotPath}
+  case ${variModel} in
+    "webroot")
+      certbot certonly \
+        --webroot \
+        -w ${variCertbotPath}/webroot \
+        -d ${variDomain} \
+        --agree-tos \
+        --email ${variEmail} \
+        --non-interactive \
+        --keep-until-expiring \
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs \
+        --deploy-hook "${variDeployHookCommand}"
+      cat <<WEBROOTRENEWSHELL > ${variRenewShellUri}
+#!/bin/bash
+certbot renew --quiet \
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --deploy-hook "${variDeployHookCommand}"
+WEBROOTRENEWSHELL
+    ;;
+    "standalone")
+      ${variServiceStopCommand}
+      certbot certonly \
+        --standalone \
+        --preferred-challenges http \
+        -d ${variDomain} \
+        --agree-tos \
+        --email ${variEmail} \
+        --non-interactive \
+        --keep-until-expiring \
+        --config-dir ${variCertbotPath}/config \
+        --work-dir ${variCertbotPath}/work \
+        --logs-dir ${variCertbotPath}/logs \
+        --deploy-hook "${variDeployHookCommand}"
+      ${variServiceStartCommand}
+      cat <<STANDALONERENEWSHELL > ${variRenewShellUri}
+#!/bin/bash
+certbot renew --quiet \
+  --standalone \
+  --config-dir ${variCertbotPath}/config \
+  --work-dir ${variCertbotPath}/work \
+  --logs-dir ${variCertbotPath}/logs \
+  --pre-hook "${variServiceStopCommand}" \
+  --post-hook "${variServiceStartCommand}" \
+  --deploy-hook "${variDeployHookCommand}"
+STANDALONERENEWSHELL
+    ;;
+  *)
+   echo "Unknown Mode : ${variModel}";
+   return 1
+  ;;
+  esac
+  chmod +x ${variRenewShellUri}
+  # 定時任務[START]
+  # crontab命令寫入，無需reload {[centos]crond || [ubuntu]cron}
+  if ! crontab -l 2> /dev/null | grep -qF "${variRenewShellUri}"; then
+    ( crontab -l 2> /dev/null; echo "0 0 * * 1 ${variRenewShellUri}" ) | crontab -
+    crontab -l
+  fi
+  # 定時任務[END]
+  return 0
+}
+
 # 入站處理
 function funcPublicXrayReinit() {
     # ----------
@@ -259,176 +535,7 @@ EOF
     return 0
 }
 
-function funcPublicNginxReinit(){
-  local variParameterDescList=("domain")
-  funcProtectedCheckOptionParameter 1 'variParameterDescList[@]'
-  local variDomain=${1:-"baichuan.wiki"}
-  local variImage="nginx:1.31.8"
-  local variContainerName="nginx1318"
-  # 前置檢查[START]
-  if [[ ! -d "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside" ]]; then
-    echo "error : ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside is nil" >&2
-    return 1
-  fi
-  if [[ ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem" || ! -r "${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.key" ]]; then
-    echo "error : ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot/${variDomain}.pem || ${variDomain}.key is nil" >&2
-    return 1
-  fi
-  # 前置檢查[END]
-  mkdir -p "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log" || return 1
-  # 核心配置（Shell 變數展開，Nginx 變數使用 \$ 保留）[START]
-  cat <<NGINXCONF > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.conf"
-error_log /usr/local/nginx/runtime/error.log;
-worker_processes 1;
-events {
-    worker_connections 1024;
-}
-http {
-    include              mime.types;
-    default_type         application/octet-stream;
-    sendfile             on;
-    keepalive_timeout    65;
-    client_max_body_size 50m;
-    access_log           /usr/local/nginx/runtime/access.log combined;
-    # log format[START]
-    map \$time_iso8601 \$time {
-         '~(.*)([+-])(.*)'               \$1;
-         default                         'nodate';
-    }
-    map \$time_iso8601 \$zone {
-         '~(.*)([+-])(.*)'               \$2;
-         default                         'nodate';
-    }
-    map \$time_iso8601 \$zonetime {
-         '~(.*)([+-])(.*)'               \$3;
-         default                         'nodate';
-    }
-    map \$msec \$millisecond {
-         '~(\d{10}).(\d{3})'             \$2;
-         default                         'nodate';
-    }
-    # 支持自定義變量，但需於「conf/slave/*.conf」的每份配置的「server{}」中添加「set \$\$customVariabel 0;」
-    log_format json '{"@timestamp":"\$time_iso8601",'
-                     '"host":"\$server_addr",'
-                     '"clientip":"\$http_x_forwarded_for",'
-                     '"size":\$body_bytes_sent,'
-                     '"responsetime":\$request_time,'
-                     '"http_host":"\$host",'
-                     '"request":"\$request",'
-                     '"request_method":"\$request_method",'
-                     '"request_body":"\$request_body",'
-                     '"agent":"\$http_user_agent",'
-                     '"status":\$status}';
-    log_format json1 escape=json '{"@timestamp":"\$time.\$millisecond\$zone\$zonetime",'
-                     '"server_addr":"\$server_addr",'
-                     '"clientip":"\$remote_addr",'
-                     '"size":\$body_bytes_sent,'
-                     '"responsetime":\$request_time,'
-                     '"http_host":"\$host",'
-                     '"request":"\$request",'
-                     '"request_body":"\$request_body",'
-                     '"request_method":"\$request_method",'
-                     '"http_user_agent":"\$http_user_agent",'
-                     '"status":\$status}';
-    # log format[END]
-    include             /usr/local/nginx/conf/slave/*.conf;
-}
-NGINXCONF
-  # 核心配置[END]
-  # 虛擬主機[START]
-  cat <<VIRTUALHOSTCONF > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variDomain}.conf"
-# 虛擬主機/${variDomain}[START]
-server {
-    listen 80;
-    server_name ${variDomain};
-    #「Let’s Encrypt」挑戰認證[START]
-    location ^~ /.well-known/acme-challenge/ {
-        root /usr/local/nginx/certbot/webroot;
-        default_type "text/plain";
-        allow all;
-        auth_basic off;
-        try_files \$uri \$uri/ =404;
-    }
-    #「Let’s Encrypt」挑戰認證[END]
-    location / {
-        return 301 https://\$host\$request_uri;
-    }
-}
-server {
-    listen 443 ssl http2;
-    server_name ${variDomain};
-    # SSL[START]
-    ssl_certificate /usr/local/nginx/certbot/${variDomain}.pem;
-    ssl_certificate_key /usr/local/nginx/certbot/${variDomain}.key;
-    # ssl_trusted_certificate /usr/local/nginx/certbot/${variDomain}.chain.pem;
-    #「TLSv1.3」依賴[system/nginx]openssl 1.1.1+
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers on;
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:50m;
-    ssl_session_tickets off;
-    # ssl_stapling on;
-    # ssl_stapling_verify on;
-    add_header Strict-Transport-Security "max-age=63072000" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    # SSL[END]
-    root /usr/local/nginx/webside;
-    index module/signIn/signIn.html;
-    location /temp {
-        proxy_redirect off;
-        proxy_pass http://127.0.0.1:10703;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    }
-}
-# 虛擬主機/${variDomain}[END]
-VIRTUALHOSTCONF
-  # 虛擬主機[END]
-  # 容器編排（certbot 整目錄掛載：便於後續切換 certbot 自動續簽時直接沿用）[START]
-  cat <<DOCKERCOMPOSEYML > "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/docker-compose.yml"
-services:
-  ${variContainerName}:
-    image: ${variImage}
-    container_name: ${variContainerName}
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/${variDomain}.conf:/usr/local/nginx/conf/slave/${variDomain}.conf:ro
-      - ${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}/log:/usr/local/nginx/runtime:rw
-      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/webside:/usr/local/nginx/webside:ro
-      - ${VARI_GLOBAL["BUILTIN_UNIT_CLOUD_PATH"]}/certbot:/usr/local/nginx/certbot:ro
-DOCKERCOMPOSEYML
-  # 容器編排[END]
-  cd "${VARI_GLOBAL["BUILTIN_UNIT_RUNTIME_PATH"]}" || return 1
-  docker compose -p ${variContainerName} config --quiet || return 1
-  docker compose -p ${variContainerName} pull || return 1
-  # 先用新鏡像驗證配置與證書，失敗則不觸碰正在運行的容器
-  docker compose -p ${variContainerName} run --rm --no-deps --entrypoint nginx ${variContainerName} -t || return 1
-  docker rm -f ${variContainerName} &> /dev/null
-  docker compose -p ${variContainerName} down -v
-  # host 網絡模式下需確認 80/443 未被宿主機其它進程（如舊 nginx1170.service）佔用
-  if ss -ltnH '( sport = :80 or sport = :443 )' | grep -q .; then
-    ss -ltnp '( sport = :80 or sport = :443 )' >&2
-    echo "80/443 已被佔用，如為舊服務請先執行：systemctl disable --now nginx1170.service" >&2
-    return 1
-  fi
-  docker compose -p ${variContainerName} up -d || return 1
-  sleep 2
-  if [[ "$(docker inspect -f '{{.State.Running}}' ${variContainerName} 2> /dev/null)" != "true" ]]; then
-    docker logs --tail 50 ${variContainerName} >&2
-    return 1
-  fi
-  docker ps -a | grep ${variContainerName}
-  echo "Nginx 重建完成：https://${variDomain}"
-  return 0
-}
+
 
 function funcPublicv2rayReinit(){
 

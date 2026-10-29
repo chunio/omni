@@ -1426,7 +1426,12 @@ function funcPublicProcess() {
 # }
 # [nginx]示例模板[END]
 function funcPublicCertbot() {
-  local variParameterDescList=("domain, example : xxxx.wiki" "model，value : webroot, standalone" "certbot path，example : /usr/local/nginx1170/certbot" "service name，example : nginx1170")
+  local variParameterDescList=(
+    "domain, example : xxxx.wiki"
+    "model，value : webroot, standalone"
+    "certbot path，example : /usr/local/nginx1170/certbot"
+    "service name，example : nginx1170"
+  )
   funcProtectedCheckRequiredParameter 4 'variParameterDescList[@]' $# || return ${VARI_GLOBAL["BUILTIN_SUCCESS_CODE"]}
   if ! command -v certbot &> /dev/null; then
     yum install -y certbot
