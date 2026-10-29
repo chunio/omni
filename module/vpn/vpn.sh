@@ -739,7 +739,7 @@ EOF
 # ----------
 # 請自定義 client 端口號 (1000-65535，如果不輸入，會默認: 40000):
 # --------------------------------------------------
-# 出站處理
+# 出站處理/已驗證：xray && v2ray
 function funcPublicWarpReinit() {
     local variParameterDescMulti=(
       "server name , value(enum) : xray , v2ray"
