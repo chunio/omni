@@ -62,8 +62,11 @@ wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh
 1，--
 最終解決：
 1，[VPS後台]migrate to another dc
-2，omni.vpn releaseCloud ${account} ${ip} ${port} && omni.vpn nginxReinit && omni.vpn v2rayReinit && omni.vpn warpReinit v2ray "/usr/local/etc/v2ray/config.json"
-3，[ios/shadowrocket]alter id : 0
+2，omni.vpn releaseCloud ${account} ${ip} ${port}
+3，omni.vpn nginxReinit
+4，omni.vpn v2rayReinit
+5，omni.vpn warpReinit v2ray "/usr/local/etc/v2ray/config.json"
+6，[client/shadowrocket]alter id : 0
 # --------------------------------------------------
 MARK
 
