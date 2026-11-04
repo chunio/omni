@@ -231,7 +231,7 @@ max_input_time = 60
 ;[進程佔用]最大內存
 ;swoole下应設至0
 max_execution_time = 0
-memory_limit = 1024M
+memory_limit = 4096M
 error_reporting = E_ALL & ~E_NOTICE
 display_errors = off
 display_startup_errors = off
@@ -331,8 +331,9 @@ bcmath.scale = 0
 ;session.save_handler = redis
 ;session.save_path = "tcp://127.0.0.1:6379?auth=0000"
 ;##################################################
+session.upload_progress.enabled = 0
+session.use_strict_mode = 1
 session.save_handler = files
-session.use_strict_mode = 0
 session.use_cookies = 1
 session.use_only_cookies = 1
 session.name = PHPSESSID

@@ -484,7 +484,7 @@ root@${variContainerId}:/# exit
 docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
 MARK
 function funcPublicSkeleton(){
-  local variImagePattern=${1:-"chunio/php:haohaiyou"}
+  local variImagePattern=${1:-"chunio/php:haohaiyou02"}
   local variContainerName="skeleton"
   # workspace path[START]
   local variWorkspacePath="${VARI_GLOBAL["CLOUD_MACHINE_WORKSPACE_PATH"]}"
@@ -1032,7 +1032,6 @@ BASTIONEOF
   done
   return 0
 }
-
 
 function funcPublicCloudSkeletonHourlyCrontab(){
   rm -rf /workspace/repository/haohaiyou/skeleton/core.*
