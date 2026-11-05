@@ -482,6 +482,10 @@ root@${variContainerId}:/# history -c
 root@${variContainerId}:/# exit
 # ----------
 docker commit $(docker ps --filter "name=chunio-php-haohaiyou" --format "{{.ID}}") chunio/php:haohaiyou
+「chunio/php:haohaiyou02」封裝日誌：
+memory_limit = 4096M
+session.upload_progress.enabled = 0
+session.use_strict_mode = 1
 MARK
 function funcPublicSkeleton(){
   local variImagePattern=${1:-"chunio/php:haohaiyou02"}

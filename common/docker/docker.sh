@@ -38,12 +38,8 @@ function funcPublicReleaseImage(){
   variDockerUsername=$(funcProtectedPullEncryptEnvi "DOCKER_USERNAME")
   variDockerPassword=$(funcProtectedPullEncryptEnvi "DOCKER_PASSWORD")
   expect << EOF
-  spawn docker login
+  spawn docker login -u ${variDockerUsername}
   expect {
-    "Username*" {
-      send "${variDockerUsername}\r"
-      exp_continue
-    }
     "Password*" {
       send "${variDockerPassword}\r"
       exp_continue
